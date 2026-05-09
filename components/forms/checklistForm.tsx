@@ -1,0 +1,347 @@
+'use client'
+import { useState, useCallback } from 'react'
+import { CheckItem, Checklist, CheckStatus, Signature } from '@/types'
+import { DAY_LABELS, DAY_SHORT, DAYS } from '@/lib/checklist-data'
+import { cn } from '@/lib/utils'
+import { SignaturePad } from '@/components/forms/SignaturePad'
+import { ImageUploader } from '@/components/forms/ImageUploader'
+import { Save, Send, AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+
+interface ChecklistFormProps {
+  checklist: Checklist
+  readOnly?: boolean
+  isSupervisor?: boolean
+}
+
+export function ChecklistForm({ checklist, readOnly = false, isSupervisor = false }: ChecklistFormProps) {
+  const { data: session } = useSession()
+  const router = useRouter()
+  const [items, setItems] = useState<CheckItem[]>(checklist.items)
+  const [opSigs, setOpSigs] = useState(checklist.operator_signatures || {})
+  const [supSigs, setSupSigs] = useState(checklist.supervisor_signatures || {})
+  const [notes, setNotes] = useState(checklist.notes || '')
+  const [saving, setSaving] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [activeDay, setActiveDay] = useState<string>(DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1])
+
+  const user = session?.user as any
+  const isOp = !isSupervisor
+
+  const updateStatus = useCallback((itemId: string, day: string, status: CheckStatus) => {
+    setItems(prev => prev.map(item =>
+      item.id === itemId
+        ? { ...item, days: { ...item.days, [day]: { ...item.days[day], status } } }
+        : item
+    ))
+  }, [])
+
+  const updateDetail = useCallback((itemId: string, day: string, detail: string) => {
+    setItems(prev => prev.map(item =>
+      item.id === itemId
+        ? { ...item, days: { ...item.days, [day]: { ...item.days[day], detail } } }
+        : item
+    ))
+  }, [])
+
+  const updateImage = useCallback((itemId: string, day: string, url: string) => {
+    setItems(prev => prev.map(item =>
+      item.id === itemId
+        ? { ...item, days: { ...item.days, [day]: { ...item.days[day], image_url: url } } }
+        : item
+    ))
+  }, [])
+
+  const signDay = async (day: string, dataUrl: string, isSuper: boolean) => {
+    const sig: Signature = {
+      data_url: dataUrl,
+      signed_at: new Date().toISOString(),
+      user_id: user?.id,
+      user_name: user?.name,
+    }
+    if (isSuper) setSupSigs(prev => ({ ...prev, [day]: sig }))
+    else setOpSigs(prev => ({ ...prev, [day]: sig }))
+  }
+
+  const save = async (status?: string) => {
+    setSaving(true)
+    try {
+      const payload = {
+        items,
+        operator_signatures: opSigs,
+        supervisor_signatures: supSigs,
+        notes,
+        ...(status ? { status } : {}),
+      }
+      await fetch(`/api/checklists/${checklist.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+      if (status) router.refresh()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const submit = async () => {
+    setSubmitting(true)
+    await save('submitted')
+    setSubmitting(false)
+    router.push('/checklist')
+  }
+
+  const approve = async () => {
+    await save('approved')
+    router.push('/supervisor')
+  }
+
+  // Stats for active day
+  const passCount = items.filter(i => i.days[activeDay]?.status === 'pass').length
+  const failCount = items.filter(i => i.days[activeDay]?.status === 'fail').length
+  const totalCount = items.length
+
+  const obsItems = items.filter(i => i.category === 'observation')
+  const opItems  = items.filter(i => i.category === 'operation')
+
+  return (
+    <div className="space-y-5">
+      {/* Day tabs */}
+      <div className="card p-1">
+        <div className="flex gap-0.5 overflow-x-auto">
+          {DAYS.map(day => {
+            const dayPass = items.filter(i => i.days[day]?.status === 'pass').length
+            const dayFail = items.filter(i => i.days[day]?.status === 'fail').length
+            const isActive = activeDay === day
+            return (
+              <button
+                key={day}
+                onClick={() => setActiveDay(day)}
+                className={cn(
+                  'flex-1 min-w-[60px] flex flex-col items-center py-2 px-2 rounded-lg text-xs font-medium transition-all',
+                  isActive
+                    ? 'bg-blue-600 text-white shadow'
+                    : 'text-slate-600 hover:bg-slate-100'
+                )}
+              >
+                <span className="font-semibold">{DAY_SHORT[day]}</span>
+                {(dayPass > 0 || dayFail > 0) && (
+                  <div className="flex items-center gap-0.5 mt-0.5">
+                    {dayPass > 0 && <span className={cn('text-[10px]', isActive ? 'text-green-200' : 'text-green-600')}>â{dayPass}</span>}
+                    {dayFail > 0 && <span className={cn('text-[10px]', isActive ? 'text-red-200' : 'text-red-500')}>â{dayFail}</span>}
+                  </div>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Day summary bar */}
+      <div className="flex items-center gap-4 card px-4 py-3">
+        <span className="text-sm font-semibold text-slate-800">{DAY_LABELS[activeDay]}</span>
+        <div className="flex items-center gap-1.5 text-sm">
+          <CheckCircle2 className="w-4 h-4 text-green-600" />
+          <span className="text-green-700 font-medium">{passCount}</span>
+          <span className="text-slate-400">Äáº¡t</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-sm">
+          <AlertTriangle className="w-4 h-4 text-red-500" />
+          <span className="text-red-600 font-medium">{failCount}</span>
+          <span className="text-slate-400">khÃ´ng Äáº¡t</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-sm ml-auto">
+          <Clock className="w-4 h-4 text-slate-400" />
+          <span className="text-slate-500">{totalCount - passCount - failCount} chÆ°a kiá»m tra</span>
+        </div>
+      </div>
+
+      {/* Items table */}
+      {[
+        { label: 'KIá»M TRA QUAN SÃT', labelEn: 'OBSERVATION CHECK', items: obsItems, color: 'bg-blue-600' },
+        { label: 'KIá»M TRA Váº¬N HÃNH', labelEn: 'OPERATION CHECK', items: opItems, color: 'bg-teal-600' }
+      ].map(group => (
+        <div key={group.label} className="card overflow-hidden">
+          <div className={cn('px-4 py-2.5 flex items-center gap-2', group.color)}>
+            <h3 className="text-white font-semibold text-sm">{group.label}</h3>
+            <span className="text-white/70 text-xs">â {group.labelEn}</span>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {group.items.map((item, idx) => {
+              const entry = item.days[activeDay] || { status: '', detail: '', image_url: '' }
+              const isDisabled = readOnly || (isSupervisor && checklist.status !== 'submitted')
+              return (
+                <div key={item.id} className={cn(
+                  'p-4',
+                  entry.status === 'fail' ? 'bg-red-50/60' : ''
+                )}>
+                  <div className="flex flex-col gap-3">
+                    {/* Item header */}
+                    <div className="flex items-start gap-2">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-xs font-semibold flex items-center justify-center mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-800 leading-snug">{item.sub_label}</p>
+                        <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{item.label_vi}</p>
+                      </div>
+                    </div>
+
+                    {/* Status + Detail row */}
+                    <div className="flex items-start gap-2 pl-8">
+                      {/* P / X buttons */}
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          disabled={isDisabled}
+                          onClick={() => updateStatus(item.id, activeDay, entry.status === 'pass' ? '' : 'pass')}
+                          className={cn(
+                            'w-10 h-10 rounded-lg font-bold text-base border-2 transition-all',
+                            entry.status === 'pass'
+                              ? 'bg-green-600 border-green-600 text-white shadow'
+                              : 'bg-white border-slate-200 text-slate-400 hover:border-green-400 hover:text-green-600 disabled:opacity-50'
+                          )}
+                        >P</button>
+                        <button
+                          disabled={isDisabled}
+                          onClick={() => updateStatus(item.id, activeDay, entry.status === 'fail' ? '' : 'fail')}
+                          className={cn(
+                            'w-10 h-10 rounded-lg font-bold text-base border-2 transition-all',
+                            entry.status === 'fail'
+                              ? 'bg-red-600 border-red-600 text-white shadow'
+                              : 'bg-white border-slate-200 text-slate-400 hover:border-red-400 hover:text-red-600 disabled:opacity-50'
+                          )}
+                        >X</button>
+                      </div>
+
+                      {/* Detail input + image */}
+                      <div className="flex-1 flex items-start gap-2">
+                        <textarea
+                          disabled={isDisabled}
+                          value={entry.detail}
+                          onChange={e => updateDetail(item.id, activeDay, e.target.value)}
+                          placeholder={entry.status === 'fail' ? 'MÃ´ táº£ sá»± cá» cá»¥ thá»...' : 'Chi tiáº¿t (tuá»³ chá»n)'}
+                          rows={entry.detail ? 2 : 1}
+                          className={cn(
+                            'flex-1 text-xs resize-none rounded-lg border px-2.5 py-1.5 transition-colors focus:outline-none focus:ring-1',
+                            entry.status === 'fail'
+                              ? 'border-red-200 bg-red-50 focus:ring-red-400 focus:border-red-400 placeholder-red-300'
+                              : 'border-slate-200 bg-slate-50 focus:ring-blue-400 focus:border-blue-400 placeholder-slate-400',
+                            isDisabled ? 'opacity-60 cursor-not-allowed' : ''
+                          )}
+                        />
+                        {!isDisabled && (
+                          <ImageUploader
+                            value={entry.image_url}
+                            onChange={url => updateImage(item.id, activeDay, url)}
+                            disabled={isDisabled}
+                            checklistId={checklist.id}
+                            itemId={item.id}
+                            day={activeDay}
+                          />
+                        )}
+                        {isDisabled && entry.image_url && (
+                          <a href={entry.image_url} target="_blank" rel="noopener noreferrer">
+                            <img src={entry.image_url} alt="áº¢nh" className="w-14 h-14 object-cover rounded-lg border border-slate-200" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+
+      {/* Signatures section */}
+      <div className="card">
+        <div className="px-4 py-2.5 bg-slate-800">
+          <h3 className="text-white font-semibold text-sm">KÃ TÃN â {DAY_LABELS[activeDay]}</h3>
+        </div>
+        <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+          {/* Operator signature */}
+          <div className="p-5 space-y-2">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">TÃ i xáº¿ xe nÃ¢ng</p>
+            <p className="text-sm text-slate-600">Forklift driver</p>
+            <div className="pt-2">
+              <SignaturePad
+                onSave={url => signDay(activeDay, url, false)}
+                existingSignature={opSigs[activeDay]?.data_url}
+                label="TÃ i xáº¿ kÃ½ tÃªn"
+                disabled={readOnly || isSupervisor || !!opSigs[activeDay]}
+              />
+              {opSigs[activeDay] && (
+                <p className="text-xs text-slate-400 mt-1">
+                  ÄÃ£ kÃ½ bá»i {opSigs[activeDay].user_name} â {new Date(opSigs[activeDay].signed_at).toLocaleString('vi-VN')}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Supervisor signature */}
+          <div className="p-5 space-y-2">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">GiÃ¡m sÃ¡t</p>
+            <p className="text-sm text-slate-600">Supervisor</p>
+            <div className="pt-2">
+              <SignaturePad
+                onSave={url => signDay(activeDay, url, true)}
+                existingSignature={supSigs[activeDay]?.data_url}
+                label="GiÃ¡m sÃ¡t kÃ½ tÃªn"
+                disabled={readOnly || (!isSupervisor) || checklist.status !== 'submitted'}
+              />
+              {supSigs[activeDay] && (
+                <p className="text-xs text-slate-400 mt-1">
+                  ÄÃ£ kÃ½ bá»i {supSigs[activeDay].user_name} â {new Date(supSigs[activeDay].signed_at).toLocaleString('vi-VN')}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div className="card p-4 space-y-2">
+        <label className="block text-sm font-semibold text-slate-700">
+          Ghi chÃº chung <span className="font-normal text-slate-400 text-xs">(CÃ¡c má»¥c cáº§n sá»­a chá»¯a hay cÄn chá»nh)</span>
+        </label>
+        <textarea
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          disabled={readOnly}
+          rows={3}
+          placeholder="Ghi chÃº thÃªm vá» cÃ¡c váº¥n Äá» cáº§n xá»­ lÃ½..."
+          className="input resize-none"
+        />
+      </div>
+
+      {/* Action buttons */}
+      {!readOnly && (
+        <div className="flex flex-wrap items-center gap-3 no-print">
+          <button onClick={() => save()} disabled={saving} className="btn-secondary">
+            <Save className="w-4 h-4" />
+            {saving ? 'Äang lÆ°u...' : saved ? 'â ÄÃ£ lÆ°u' : 'LÆ°u táº¡m'}
+          </button>
+
+          {isOp && checklist.status === 'draft' && (
+            <button onClick={submit} disabled={submitting} className="btn-primary">
+              <Send className="w-4 h-4" />
+              {submitting ? 'Äang ná»p...' : 'Ná»p bÃ¡o cÃ¡o'}
+            </button>
+          )}
+
+          {isSupervisor && checklist.status === 'submitted' && (
+            <button onClick={approve} className="btn-success">
+              <CheckCircle2 className="w-4 h-4" />
+              XÃ¡c nháº­n & Duyá»t
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
