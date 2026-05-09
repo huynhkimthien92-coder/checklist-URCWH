@@ -1,3 +1,4 @@
+import { ExportPDFButton } from '@/components/ExportPDFButton'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
@@ -57,12 +58,7 @@ export default async function ChecklistDetailPage({ params }: { params: { id: st
           >
             <Download className="w-4 h-4" /> Xuất Excel
           </a>
-          <button
-            onClick={() => window.dispatchEvent(new Event('export-pdf'))}
-            className="btn-secondary text-sm no-print"
-          >
-            <Download className="w-4 h-4" /> Xuất PDF
-          </button>
+          <ExportPDFButton />
 
           
         </div>
