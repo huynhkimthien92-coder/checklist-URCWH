@@ -50,6 +50,14 @@ export default async function ChecklistDetailPage({ params }: { params: { id: st
           <a href={`/api/reports/${checklist.id}`} className="btn-secondary text-sm no-print">
             <Download className="w-4 h-4" /> Xuất Excel
           </a>
+          <a
+            href={`/api/export-pdf/${id}`}
+            target="_blank"
+            className="px-2 py-1 rounded hover:bg-gray-200"
+            title="Xuất PDF"
+            >
+            <svg ...>ICON PDF</svg>
+</a>
         </div>
 
         {/* Info banner */}
