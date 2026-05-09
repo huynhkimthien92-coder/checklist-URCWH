@@ -24,7 +24,7 @@ export default async function ChecklistDetailPage({ params }: { params: { id: st
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-5">
+      <main id="report" className="max-w-4xl mx-auto px-4 py-6 space-y-5">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
@@ -57,15 +57,14 @@ export default async function ChecklistDetailPage({ params }: { params: { id: st
           >
             <Download className="w-4 h-4" /> Xuất Excel
           </a>
-
-          <a
-            href={`/api/export-pdf/${checklist.id}`}
-            target="_blank"
-            className="px-2 py-1 rounded hover:bg-gray-200"
-            title="Xuất PDF"
+          <button
+            onClick={() => window.dispatchEvent(new Event('export-pdf'))}
+            className="btn-secondary text-sm no-print"
           >
-            <span>PDF</span>
-          </a>
+            <Download className="w-4 h-4" /> Xuất PDF
+          </button>
+
+          
         </div>
 
         {/* Info banner */}
