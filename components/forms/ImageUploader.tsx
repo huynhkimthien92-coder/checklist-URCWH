@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef , useEffect } from 'react'
 import { X, Loader2, ImagePlus } from 'lucide-react'
 
 
@@ -15,6 +15,10 @@ interface ImageUploaderProps {
 export function ImageUploader({ value, onChange, disabled, checklistId, itemId, day }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(value || null)
+  useEffect(() => {
+  setPreview(value || null)
+  }, [value])
+
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = async (file: File) => {
@@ -28,11 +32,19 @@ export function ImageUploader({ value, onChange, disabled, checklistId, itemId, 
       formData.append('day', day)
 
       const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      if (!res.ok) {
+        const text = await res.text()
+          throw new Error(`Upload failed: ${text}`)
+      }
+
       const data = await res.json()
       if (data.url) {
         setPreview(data.url)
         onChange(data.url)
+      } else {
+        throw new Error('No URL returned')
       }
+
     } catch (err) {
       console.error('Upload failed:', err)
     } finally {
