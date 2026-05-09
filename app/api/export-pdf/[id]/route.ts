@@ -150,7 +150,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   status: 200,
   headers: {
     'Content-Type': 'application/pdf',
-    'Content-Disposition': 'attachment; filename="report.pdf"',
+    'Content-Disposition': 'attachment; filename="checklist.pdf"',
   },
   })
 }
