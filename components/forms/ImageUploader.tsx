@@ -32,12 +32,14 @@ export function ImageUploader({ value, onChange, disabled, checklistId, itemId, 
       formData.append('day', day)
 
       const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      
+      const text = await res.text()
+      console.log('RAW RESPONSE:', text)
       if (!res.ok) {
-        const text = await res.text()
-          throw new Error(`Upload failed: ${text}`)
+        throw new Error(text)
       }
-
-      const data = await res.json()
+      const data = JSON.parse(text)
+      console.log('UPLOAD OK:', data)
       if (data.url) {
         setPreview(data.url)
         onChange(data.url)
