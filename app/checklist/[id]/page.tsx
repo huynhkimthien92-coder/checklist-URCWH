@@ -31,15 +31,18 @@ export default async function ChecklistDetailPage({ params }: { params: { id: st
             <Link href="/checklist" className="btn-secondary p-2">
               <ArrowLeft className="w-4 h-4" />
             </Link>
+
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-bold text-slate-900">
                   Tuần {checklist.week_number}/{checklist.year}
                 </h1>
+
                 <span className={cn('badge', checklistStatusColor(checklist.status))}>
                   {checklistStatusLabel(checklist.status)}
                 </span>
               </div>
+
               <p className="text-sm text-slate-500 mt-0.5">
                 {checklist.forklift_model && `${checklist.forklift_model} · `}
                 {checklist.forklift_number && `Xe ${checklist.forklift_number} · `}
@@ -47,23 +50,28 @@ export default async function ChecklistDetailPage({ params }: { params: { id: st
               </p>
             </div>
           </div>
-          <a href={`/api/reports/${checklist.id}`} className="btn-secondary text-sm no-print">
+
+          <a
+            href={`/api/reports/${checklist.id}`}
+            className="btn-secondary text-sm no-print"
+          >
             <Download className="w-4 h-4" /> Xuất Excel
           </a>
+
           <a
             href={`/api/export-pdf/${checklist.id}`}
             target="_blank"
             className="px-2 py-1 rounded hover:bg-gray-200"
             title="Xuất PDF"
-            >
-            <svg ...>ICON PDF</svg>
-</a>
+          >
+            <span>PDF</span>
+          </a>
         </div>
 
         {/* Info banner */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
-          <strong>Hướng dẫn:</strong> Đánh dấu <strong>"P"</strong> nếu tình trạng đạt, <strong>"X"</strong> nếu không đạt.
-          Có thể thêm ảnh và ghi chú chi tiết cho từng hạng mục. Ký tên sau khi hoàn thành mỗi ngày.
+          <strong>Hướng dẫn:</strong> Đánh dấu <strong>"P"</strong> nếu tình trạng đạt,{" "}
+          <strong>"X"</strong> nếu không đạt. Có thể thêm ảnh và ghi chú chi tiết cho từng hạng mục. Ký tên sau khi hoàn thành mỗi ngày.
         </div>
 
         <ChecklistForm checklist={checklist} />
