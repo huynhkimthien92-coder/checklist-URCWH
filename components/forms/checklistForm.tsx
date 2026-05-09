@@ -147,16 +147,16 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
         <div className="flex items-center gap-1.5 text-sm">
           <CheckCircle2 className="w-4 h-4 text-green-600" />
           <span className="text-green-700 font-medium">{passCount}</span>
-          <span className="text-slate-400">Äáº¡t</span>
+          <span className="text-slate-400">đạt</span>
         </div>
         <div className="flex items-center gap-1.5 text-sm">
           <AlertTriangle className="w-4 h-4 text-red-500" />
           <span className="text-red-600 font-medium">{failCount}</span>
-          <span className="text-slate-400">khÃ´ng Äáº¡t</span>
+          <span className="text-slate-400">không đạt</span>
         </div>
         <div className="flex items-center gap-1.5 text-sm ml-auto">
           <Clock className="w-4 h-4 text-slate-400" />
-          <span className="text-slate-500">{totalCount - passCount - failCount} chÆ°a kiá»m tra</span>
+          <span className="text-slate-500">{totalCount - passCount - failCount} chưa kiểm tra</span>
         </div>
       </div>
 
@@ -223,7 +223,7 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
                           disabled={isDisabled}
                           value={entry.detail}
                           onChange={e => updateDetail(item.id, activeDay, e.target.value)}
-                          placeholder={entry.status === 'fail' ? 'MÃ´ táº£ sá»± cá» cá»¥ thá»...' : 'Chi tiáº¿t (tuá»³ chá»n)'}
+                          placeholder={entry.status === 'fail' ? 'MÃ´ táº£ sá»± cá» cá»¥ thá»...' : 'Chi tiết (tùy chọn)'}
                           rows={entry.detail ? 2 : 1}
                           className={cn(
                             'flex-1 text-xs resize-none rounded-lg border px-2.5 py-1.5 transition-colors focus:outline-none focus:ring-1',
@@ -261,23 +261,23 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
       {/* Signatures section */}
       <div className="card">
         <div className="px-4 py-2.5 bg-slate-800">
-          <h3 className="text-white font-semibold text-sm">KÃ TÃN â {DAY_LABELS[activeDay]}</h3>
+          <h3 className="text-white font-semibold text-sm">KÝ TÊN — {DAY_LABELS[activeDay]}</h3>
         </div>
         <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
           {/* Operator signature */}
           <div className="p-5 space-y-2">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">TÃ i xáº¿ xe nÃ¢ng</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Tài xế xe nâng</p>
             <p className="text-sm text-slate-600">Forklift driver</p>
             <div className="pt-2">
               <SignaturePad
                 onSave={url => signDay(activeDay, url, false)}
                 existingSignature={opSigs[activeDay]?.data_url}
-                label="TÃ i xáº¿ kÃ½ tÃªn"
+                label="Tài xế ký tên"
                 disabled={readOnly || isSupervisor || !!opSigs[activeDay]}
               />
               {opSigs[activeDay] && (
                 <p className="text-xs text-slate-400 mt-1">
-                  ÄÃ£ kÃ½ bá»i {opSigs[activeDay].user_name} â {new Date(opSigs[activeDay].signed_at).toLocaleString('vi-VN')}
+                  Đã ký bởi {opSigs[activeDay].user_name} —{" "} {new Date(opSigs[activeDay].signed_at).toLocaleString('vi-VN')}
                 </p>
               )}
             </div>
@@ -285,7 +285,7 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
 
           {/* Supervisor signature */}
           <div className="p-5 space-y-2">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">GiÃ¡m sÃ¡t</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Giám sát</p>
             <p className="text-sm text-slate-600">Supervisor</p>
             <div className="pt-2">
               <SignaturePad
@@ -307,14 +307,14 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
       {/* Notes */}
       <div className="card p-4 space-y-2">
         <label className="block text-sm font-semibold text-slate-700">
-          Ghi chÃº chung <span className="font-normal text-slate-400 text-xs">(CÃ¡c má»¥c cáº§n sá»­a chá»¯a hay cÄn chá»nh)</span>
+          Ghi chú chung <span className="font-normal text-slate-400 text-xs">(Các mục cần sửa chữa hay cân chỉnh)</span>
         </label>
         <textarea
           value={notes}
           onChange={e => setNotes(e.target.value)}
           disabled={readOnly}
           rows={3}
-          placeholder="Ghi chÃº thÃªm vá» cÃ¡c váº¥n Äá» cáº§n xá»­ lÃ½..."
+          placeholder="Ghi chú thêm về các vấn đề cần xử lý..."
           className="input resize-none"
         />
       </div>
@@ -324,20 +324,20 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
         <div className="flex flex-wrap items-center gap-3 no-print">
           <button onClick={() => save()} disabled={saving} className="btn-secondary">
             <Save className="w-4 h-4" />
-            {saving ? 'Äang lÆ°u...' : saved ? 'â ÄÃ£ lÆ°u' : 'LÆ°u táº¡m'}
+            {saving ? 'Đang lưu...' : saved ? '✓ Đã lưu' : 'Lưu tạm'}
           </button>
 
           {isOp && checklist.status === 'draft' && (
             <button onClick={submit} disabled={submitting} className="btn-primary">
               <Send className="w-4 h-4" />
-              {submitting ? 'Äang ná»p...' : 'Ná»p bÃ¡o cÃ¡o'}
+              {submitting ? 'Đang nộp...' : 'Nộp báo cáo'}
             </button>
           )}
 
           {isSupervisor && checklist.status === 'submitted' && (
             <button onClick={approve} className="btn-success">
               <CheckCircle2 className="w-4 h-4" />
-              XÃ¡c nháº­n & Duyá»t
+              Xác nhận & Duyệt
             </button>
           )}
         </div>
