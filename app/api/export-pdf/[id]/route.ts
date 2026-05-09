@@ -63,13 +63,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
             const res = await fetch(cell.image_url)
             const buffer = await res.arrayBuffer()
             const base64 = Buffer.from(buffer).toString('base64')
-
             lines.push({
               image: `data:image/jpeg;base64,${base64}`,
               fit: [50, 50],
+              margin: [0, 4, 0, 0]
             })
           } catch (err) {
-            console.error('Image fetch failed', err)
+            console.error('❌ Load image failed:', err)
           }
         }
 
