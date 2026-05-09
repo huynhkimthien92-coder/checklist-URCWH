@@ -2,7 +2,7 @@ export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from 'next/server'
-import PdfPrinter from 'pdfmake'
+import PdfPrinter from 'pdfmake/src/printer'
 import { createServiceClient } from '@/lib/supabase'
 import { DAYS, DAY_LABELS } from '@/data/checklist-template'
 
