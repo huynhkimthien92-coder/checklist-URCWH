@@ -1,6 +1,11 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from 'next/server'
 import PdfPrinter from 'pdfmake'
 import { createClient } from '@supabase/supabase-js'
+import fs from "fs";
+import path from "path";
 import { DAYS, DAY_LABELS } from '@/data/checklist-template'
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
