@@ -131,8 +131,8 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
                 <span className="font-semibold">{DAY_SHORT[day]}</span>
                 {(dayPass > 0 || dayFail > 0) && (
                   <div className="flex items-center gap-0.5 mt-0.5">
-                    {dayPass > 0 && <span className={cn('text-[10px]', isActive ? 'text-green-200' : 'text-green-600')}>â{dayPass}</span>}
-                    {dayFail > 0 && <span className={cn('text-[10px]', isActive ? 'text-red-200' : 'text-red-500')}>â{dayFail}</span>}
+                    {dayPass > 0 && <span className={cn('text-[10px]', isActive ? 'text-green-200' : 'text-green-600')}>✓{dayPass}</span>}
+                    {dayFail > 0 && <span className={cn('text-[10px]', isActive ? 'text-red-200' : 'text-red-500')}>✗{dayFail}</span>}
                   </div>
                 )}
               </button>
@@ -162,13 +162,13 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
 
       {/* Items table */}
       {[
-        { label: 'KIá»M TRA QUAN SÃT', labelEn: 'OBSERVATION CHECK', items: obsItems, color: 'bg-blue-600' },
-        { label: 'KIá»M TRA Váº¬N HÃNH', labelEn: 'OPERATION CHECK', items: opItems, color: 'bg-teal-600' }
+        { label: 'KIỂM TRA QUAN SÁT', labelEn: 'OBSERVATION CHECK', items: obsItems, color: 'bg-blue-600' },
+        { label: 'KIỂM TRA VẬN HÀNH', labelEn: 'OPERATION CHECK', items: opItems, color: 'bg-teal-600' }
       ].map(group => (
         <div key={group.label} className="card overflow-hidden">
           <div className={cn('px-4 py-2.5 flex items-center gap-2', group.color)}>
             <h3 className="text-white font-semibold text-sm">{group.label}</h3>
-            <span className="text-white/70 text-xs">â {group.labelEn}</span>
+            <span className="text-white/70 text-xs">— {group.labelEn}</span>
           </div>
           <div className="divide-y divide-slate-100">
             {group.items.map((item, idx) => {
@@ -223,7 +223,7 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
                           disabled={isDisabled}
                           value={entry.detail}
                           onChange={e => updateDetail(item.id, activeDay, e.target.value)}
-                          placeholder={entry.status === 'fail' ? 'MÃ´ táº£ sá»± cá» cá»¥ thá»...' : 'Chi tiết (tùy chọn)'}
+                          placeholder={entry.status === 'fail' ? 'Mô tả sự cố cụ thể...' : 'Chi tiết (tùy chọn)'}
                           rows={entry.detail ? 2 : 1}
                           className={cn(
                             'flex-1 text-xs resize-none rounded-lg border px-2.5 py-1.5 transition-colors focus:outline-none focus:ring-1',
@@ -245,7 +245,7 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
                         )}
                         {isDisabled && entry.image_url && (
                           <a href={entry.image_url} target="_blank" rel="noopener noreferrer">
-                            <img src={entry.image_url} alt="áº¢nh" className="w-14 h-14 object-cover rounded-lg border border-slate-200" />
+                            <img src={entry.image_url} alt="ảnh" className="w-14 h-14 object-cover rounded-lg border border-slate-200" />
                           </a>
                         )}
                       </div>
@@ -291,12 +291,12 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
               <SignaturePad
                 onSave={url => signDay(activeDay, url, true)}
                 existingSignature={supSigs[activeDay]?.data_url}
-                label="GiÃ¡m sÃ¡t kÃ½ tÃªn"
+                label="Giám sát ký tên"
                 disabled={readOnly || (!isSupervisor) || checklist.status !== 'submitted'}
               />
               {supSigs[activeDay] && (
                 <p className="text-xs text-slate-400 mt-1">
-                  ÄÃ£ kÃ½ bá»i {supSigs[activeDay].user_name} â {new Date(supSigs[activeDay].signed_at).toLocaleString('vi-VN')}
+                  Đã ký bởi {supSigs[activeDay].user_name} - {new Date(supSigs[activeDay].signed_at).toLocaleString('vi-VN')}
                 </p>
               )}
             </div>
