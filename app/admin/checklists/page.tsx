@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Navbar } from '@/components/layout/Navbar'
 import { Checklist } from '@/types'
 import { cn, checklistStatusLabel, checklistStatusColor, formatDate } from '@/lib/utils'
-import { FileText, Download, Loader2, ArrowLeft, Eye, Trash2 } from 'lucide-react'
+import { Download, Loader2, ArrowLeft, Eye, Trash2 } from 'lucide-react'
 
 export default function AdminChecklistsPage() {
   const [checklists, setChecklists] = useState<Checklist[]>([])
@@ -33,7 +33,9 @@ export default function AdminChecklistsPage() {
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-5">
         <div className="flex items-center gap-3">
-          <Link href="/admin" className="btn-secondary p-2"><ArrowLeft className="w-4 h-4" /></Link>
+          <Link href="/admin" className="btn-secondary p-2">
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
           <div>
             <h1 className="text-xl font-bold text-slate-900">Quản lý Checklists</h1>
             <p className="text-sm text-slate-500 mt-0.5">{checklists.length} checklist</p>
@@ -48,16 +50,25 @@ export default function AdminChecklistsPage() {
             { key: 'submitted', label: 'Chờ duyệt' },
             { key: 'approved', label: 'Đã duyệt' },
           ].map(({ key, label }) => (
-            <button key={key} onClick={() => setFilter(key)}
-              className={cn('flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all',
-                filter === key ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100')}>
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              className={cn(
+                'flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all',
+                filter === key
+                  ? 'bg-blue-600 text-white shadow'
+                  : 'text-slate-600 hover:bg-slate-100'
+              )}
+            >
               {label}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
+          <div className="flex justify-center py-16">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+          </div>
         ) : (
           <div className="card overflow-hidden">
             <table className="w-full">
@@ -74,34 +85,90 @@ export default function AdminChecklistsPage() {
               </thead>
               <tbody>
                 {checklists.map(cl => {
-                  const pass = cl.items?.reduce((a, i) => a + Object.values(i.days||{}).filter(d=>d.status==='pass').length,0)||0
-                  const fail = cl.items?.reduce((a, i) => a + Object.values(i.days||{}).filter(d=>d.status==='fail').length,0)||0
+                  const pass =
+                    cl.items?.reduce(
+                      (a, i) =>
+                        a +
+                        Object.values(i.days || {}).filter(d => d.status === 'pass').length,
+                      0
+                    ) || 0
+
+                  const fail =
+                    cl.items?.reduce(
+                      (a, i) =>
+                        a +
+                        Object.values(i.days || {}).filter(d => d.status === 'fail').length,
+                      0
+                    ) || 0
+
                   return (
                     <tr key={cl.id} className="hover:bg-slate-50">
-                      <td className="table-cell font-medium">T{cl.week_number}/{cl.year}</td>
-                      <td className="table-cell">{(cl as any).operator?.name || '—'}</td>
-                      <td className="table-cell text-slate-500">{cl.forklift_number || '—'} {cl.forklift_model && `(${cl.forklift_model})`}</td>
-                      <td className="table-cell">
-                        <span className={cn('badge', checklistStatusColor(cl.status))}>{checklistStatusLabel(cl.status)}</span>
+                      <td className="table-cell font-medium">
+                        T{cl.week_number}/{cl.year}
                       </td>
+
                       <td className="table-cell">
-                        <span className="text-green-600 text-xs font-medium">✓{pass}</span>
-                        {fail > 0 && <span className="text-red-600 text-xs font-medium ml-2">✗{fail}</span>}
+                        {(cl as any).operator?.name || '—'}
                       </td>
-                      <td className="table-cell text-slate-500 text-xs">{formatDate(cl.created_at)}</td>
+
+                      <td className="table-cell text-slate-500">
+                        {cl.forklift_number || '—'}{' '}
+                        {cl.forklift_model && `(${cl.forklift_model})`}
+                      </td>
+
+                      <td className="table-cell">
+                        <span className={cn('badge', checklistStatusColor(cl.status))}>
+                          {checklistStatusLabel(cl.status)}
+                        </span>
+                      </td>
+
+                      <td className="table-cell">
+                        <span className="text-green-600 text-xs font-medium">
+                          ✓{pass}
+                        </span>
+                        {fail > 0 && (
+                          <span className="text-red-600 text-xs font-medium ml-2">
+                            ✗{fail}
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="table-cell text-slate-500 text-xs">
+                        {formatDate(cl.created_at)}
+                      </td>
+
                       <td className="table-cell">
                         <div className="flex items-center gap-1.5">
-                          <a href={`/api/reports/${cl.id}`} className="p-1 hover:text-blue-600 text-slate-400" title="Xuất Excel">
+                          <a
+                            href={`/api/reports/${cl.id}`}
+                            className="p-1 hover:text-blue-600 text-slate-400"
+                            title="Xuất Excel"
+                          >
                             <Download className="w-4 h-4" />
                           </a>
-                          <a href={`/api/export-pdf/${cl.id}`} target="_blank" className="px-2 py-1 rounded hover:bg-gray-200" title="Xuất PDF">
-                            <svg ...>ICON PDF</svg>
+
+                          <a
+                            href={`/api/export-pdf/${cl.id}`}
+                            target="_blank"
+                            className="px-2 py-1 rounded hover:bg-gray-200"
+                            title="Xuất PDF"
+                          >
+                            <span>PDF</span>
                           </a>
-                          
-                          <Link href={`/supervisor/${cl.id}`} className="p-1 hover:text-blue-600 text-slate-400" title="Xem chi tiết">
+
+                          <Link
+                            href={`/supervisor/${cl.id}`}
+                            className="p-1 hover:text-blue-600 text-slate-400"
+                            title="Xem chi tiết"
+                          >
                             <Eye className="w-4 h-4" />
                           </Link>
-                          <button onClick={() => deleteChecklist(cl.id)} className="p-1 hover:text-red-600 text-slate-400" title="Xoá">
+
+                          <button
+                            onClick={() => deleteChecklist(cl.id)}
+                            className="p-1 hover:text-red-600 text-slate-400"
+                            title="Xoá"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -111,8 +178,11 @@ export default function AdminChecklistsPage() {
                 })}
               </tbody>
             </table>
+
             {checklists.length === 0 && (
-              <div className="text-center py-12 text-slate-400">Không có checklist nào</div>
+              <div className="text-center py-12 text-slate-400">
+                Không có checklist nào
+              </div>
             )}
           </div>
         )}
