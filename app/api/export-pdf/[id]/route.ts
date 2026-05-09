@@ -146,11 +146,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   });
 
 
-  return new NextResponse(pdfBuffer, {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="checklist_${checklistId}.pdf"`
-    }
+  return new NextResponse(new Uint8Array(pdfBuffer), {
+  status: 200,
+  headers: {
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': 'attachment; filename="report.pdf"',
+  },
   })
 }
