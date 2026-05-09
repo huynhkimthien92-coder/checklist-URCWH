@@ -51,7 +51,7 @@ export default async function ChecklistDetailPage({ params }: { params: { id: st
             <Download className="w-4 h-4" /> Xuất Excel
           </a>
           <a
-            href={`/api/export-pdf/${id}`}
+            href={`/api/export-pdf/${checklist.id}`}
             target="_blank"
             className="px-2 py-1 rounded hover:bg-gray-200"
             title="Xuất PDF"
