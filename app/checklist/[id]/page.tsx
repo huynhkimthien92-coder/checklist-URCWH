@@ -19,7 +19,7 @@ export default async function ChecklistDetailPage({ params }: { params: { id: st
     .select('*')
     .eq('id', params.id)
     .single()
-
+' ghi'
   if (error || !checklist) notFound()
 
   return (
