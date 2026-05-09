@@ -94,12 +94,7 @@ export default function AdminChecklistsPage() {
                           <a href={`/api/reports/${cl.id}`} className="p-1 hover:text-blue-600 text-slate-400" title="Xuất Excel">
                             <Download className="w-4 h-4" />
                           </a>
-                          <a
-                            href={`/api/export-pdf/${id}`}
-                            target="_blank"
-                            className="px-2 py-1 rounded hover:bg-gray-200"
-                            title="Xuất PDF"
-                            >
+                          <a href={`/api/export-pdf/${cl.id}`} target="_blank" className="px-2 py-1 rounded hover:bg-gray-200" title="Xuất PDF">
                             <svg ...>ICON PDF</svg>
                           </a>
                           
