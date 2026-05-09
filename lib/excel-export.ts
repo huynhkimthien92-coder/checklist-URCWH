@@ -2,173 +2,379 @@ import * as XLSX from 'xlsx'
 import { Checklist, CheckItem } from '@/types'
 import { DAY_LABELS, DAYS } from './checklist-data'
 
+// ─── Style helpers ────────────────────────────────────────────────────────────
+
+const thinBorder = {
+  top: { style: 'thin' },
+  bottom: { style: 'thin' },
+  left: { style: 'thin' },
+  right: { style: 'thin' },
+}
+
+const titleStyle = {
+  font: { bold: true, sz: 20 },
+  alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+}
+
+const metaLabelStyle = {
+  font: { bold: true, sz: 11 },
+  alignment: { horizontal: 'center', vertical: 'center' },
+}
+
+const metaValueStyle = {
+  font: { sz: 11 },
+  alignment: { horizontal: 'center', vertical: 'center' },
+}
+
+const infoStyle = {
+  font: { sz: 12 },
+  alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+}
+
+const infoSmallStyle = {
+  font: { sz: 8 },
+  alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+}
+
+const legendStyle = {
+  font: { sz: 12 },
+  alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+}
+
+const colHeaderStyle = {
+  font: { bold: true, sz: 12 },
+  alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+  border: thinBorder,
+}
+
+const subHeaderStyle = {
+  font: { bold: true, sz: 9 },
+  alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+  border: thinBorder,
+}
+
+const groupLabelStyle = {
+  font: { bold: true, sz: 11 },
+  alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+  border: thinBorder,
+}
+
+const contentStyle = {
+  font: { bold: true, sz: 10 },
+  alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+  border: thinBorder,
+}
+
+const statusCellStyle = {
+  font: { sz: 11 },
+  alignment: { horizontal: 'center', vertical: 'center' },
+  border: thinBorder,
+}
+
+const detailCellStyle = {
+  font: { sz: 10 },
+  alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+  border: thinBorder,
+}
+
+const sigLabelStyle = {
+  font: { bold: true, sz: 9 },
+  alignment: { horizontal: 'center', vertical: 'center' },
+  border: thinBorder,
+}
+
+const sigNameStyle = {
+  font: { bold: true, sz: 11 },
+  alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+  border: thinBorder,
+}
+
+const sigValueStyle = {
+  font: { sz: 10 },
+  alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+  border: thinBorder,
+}
+
+const noteLabelStyle = {
+  font: { bold: true, sz: 10 },
+  alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+  border: thinBorder,
+}
+
+const noteLineStyle = {
+  font: { sz: 10 },
+  alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+  border: thinBorder,
+}
+
+const footerStyle = {
+  font: { sz: 10 },
+  alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+}
+
+// ─── Column layout (mirrors XE_NANG_HANG.xlsx) ────────────────────────────────
+// Col A (0): unused spacer
+// Col B (1): group label  → "OBSERVATION CHECK/..." or "OPERATION CHECK/..."
+// Col C (2): sub_label    → "Damage – Gãy vỡ"
+// Col D (3): content      → full label_vi text  (merged C:D in sample)
+// Col E (4): Thứ Hai – Tình trạng
+// Col F (5): Thứ Hai – Chi tiết
+// Col G (6): Thứ Ba – Tình trạng
+// Col H (7): Thứ Ba – Chi tiết
+// ... repeats for 7 days → last status col = Q (16), last detail col = R (17)
+
+// NOTE: In the sample, columns C and D are merged for content text.
+// We replicate: B=group, C:D merged=sub_label+content together, then status/detail pairs.
+// Actually the sample shows: B=group, C:D=sub_label (short), but content is in the same
+// cell with wrapText. We'll put sub_label on col C and content on col D with a merged C:D
+// Actually looking at the sample again: C is short label, D is full text — but C:D are merged
+// in data rows. So col B = group, merged C:D = "Damage – Gãy vỡ\nBent, dented..."
+// Then E+F = Monday, G+H = Tuesday etc.
+//
+// Column indices (0-based): B=1, C=2, D=3, E=4, F=5 ... R=17
+// Days start at col 4 (E), each day takes 2 cols → 7 days → cols 4..17
+
+const COL_GROUP = 1   // B
+const COL_CONTENT_START = 2  // C (merged C:D)
+const COL_CONTENT_END = 3    // D
+const COL_DAYS_START = 4     // E  (status col for Monday)
+
+function dayStatusCol(dayIdx: number) { return COL_DAYS_START + dayIdx * 2 }
+function dayDetailCol(dayIdx: number) { return COL_DAYS_START + dayIdx * 2 + 1 }
+
+const TOTAL_COLS = COL_DAYS_START + DAYS.length * 2  // 4 + 14 = 18 → col R (index 17)
+
 export function generateExcelReport(checklist: Checklist): Buffer {
   const wb = XLSX.utils.book_new()
   const ws: XLSX.WorkSheet = {}
+  const merges: XLSX.Range[] = []
 
-  // Styles helper
-  const headerStyle = {
-    font: { bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
-    fill: { fgColor: { rgb: '1E40AF' } },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-    border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
-  }
-  const titleStyle = {
-    font: { bold: true, sz: 13, color: { rgb: '1E3A8A' } },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
-  }
-  const passStyle = {
-    font: { bold: true, sz: 12, color: { rgb: '15803D' } },
-    alignment: { horizontal: 'center', vertical: 'center' },
-    fill: { fgColor: { rgb: 'F0FDF4' } }
-  }
-  const failStyle = {
-    font: { bold: true, sz: 12, color: { rgb: 'B91C1C' } },
-    alignment: { horizontal: 'center', vertical: 'center' },
-    fill: { fgColor: { rgb: 'FFF1F2' } }
-  }
-  const cellStyle = {
-    alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
-    border: { top: { style: 'thin', color: { rgb: 'E2E8F0' } }, bottom: { style: 'thin', color: { rgb: 'E2E8F0' } }, left: { style: 'thin', color: { rgb: 'E2E8F0' } }, right: { style: 'thin', color: { rgb: 'E2E8F0' } } }
+  let row = 0  // 0-based row index
+
+  const setCell = (r: number, c: number, value: string | number, style?: object) => {
+    ws[XLSX.utils.encode_cell({ r, c })] = { v: value, t: typeof value === 'number' ? 'n' : 's', s: style }
   }
 
-  let row = 0
+  // ── Row 0: Title + Trang ──────────────────────────────────────────────────
+  // B1:C3 merged (logo placeholder — left blank, matching sample col B1:C3)
+  merges.push({ s: { r: 0, c: 1 }, e: { r: 2, c: 2 } })  // B1:C3 (blank logo area)
 
-  // Title
-  ws[XLSX.utils.encode_cell({ r: row, c: 0 })] = {
-    v: 'BIỂU MẪU KIỂM TRA AN TOÀN HÀNG NGÀY - Operators Safety Daily Checklist',
-    t: 's', s: titleStyle
-  }
-  ws[XLSX.utils.encode_cell({ r: row, c: 12 })] = { v: 'Trang: 1/1', t: 's' }
-  row++
+  // D1:J3 merged → title
+  setCell(row, 3, 'BIỂU MẪU KIỂM TRA AN TOÀN HÀNG NGÀY\n Operators Safety daily Checklist', titleStyle)
+  merges.push({ s: { r: 0, c: 3 }, e: { r: 2, c: 9 } })
 
-  ws[XLSX.utils.encode_cell({ r: row, c: 12 })] = { v: 'Mã hiệu: WH-SOP01-FR01', t: 's' }
-  row++
-  ws[XLSX.utils.encode_cell({ r: row, c: 12 })] = { v: `Ngày ban hành: 20/09/2025`, t: 's' }
-  row++
-
-  row++ // blank
-  ws[XLSX.utils.encode_cell({ r: row, c: 0 })] = { v: `Model: ${checklist.forklift_model}`, t: 's' }
-  ws[XLSX.utils.encode_cell({ r: row, c: 6 })] = { v: `Số Seri: ${checklist.forklift_serial}`, t: 's' }
-  ws[XLSX.utils.encode_cell({ r: row, c: 10 })] = { v: `Tuần thứ: ${checklist.week_number}/${checklist.year}`, t: 's' }
-  row++
-  ws[XLSX.utils.encode_cell({ r: row, c: 0 })] = { v: `Xe số: ${checklist.forklift_number}    Ca thứ: ${checklist.shift}`, t: 's' }
+  // K1:N1 → "Trang :"   O1:R1 → "1/1"
+  setCell(row, 10, 'Trang :', metaLabelStyle)
+  merges.push({ s: { r: 0, c: 10 }, e: { r: 0, c: 13 } })
+  setCell(row, 14, '1/1', metaValueStyle)
+  merges.push({ s: { r: 0, c: 14 }, e: { r: 0, c: 17 } })
   row++
 
-  row++ // blank
-  // Legend
-  ws[XLSX.utils.encode_cell({ r: row, c: 0 })] = {
-    v: 'Đánh dấu "P" vào ô tình trạng nếu tình trạng là tốt/đạt; Đánh dấu "X" nếu tình trạng là không đạt',
-    t: 's'
-  }
-  row++
+  // ── Row 1: Ngày ban hành ──────────────────────────────────────────────────
+  setCell(row, 10, 'Ngày ban hành:', metaLabelStyle)
+  merges.push({ s: { r: 1, c: 10 }, e: { r: 1, c: 13 } })
+  setCell(row, 14, '20/09/2025', metaValueStyle)
+  merges.push({ s: { r: 1, c: 14 }, e: { r: 1, c: 17 } })
   row++
 
-  // Table header row 1
-  const headers1 = ['', 'NỘI DUNG KIỂM TRA', '', ...DAYS.flatMap(d => [DAY_LABELS[d], ''])]
-  headers1.forEach((h, c) => {
-    ws[XLSX.utils.encode_cell({ r: row, c })] = { v: h, t: 's', s: headerStyle }
+  // ── Row 2: Mã hiệu ───────────────────────────────────────────────────────
+  setCell(row, 10, 'Mã hiệu: ', metaLabelStyle)
+  merges.push({ s: { r: 2, c: 10 }, e: { r: 2, c: 13 } })
+  setCell(row, 14, 'WH- SOP01- FR01', metaValueStyle)
+  merges.push({ s: { r: 2, c: 14 }, e: { r: 2, c: 17 } })
+  row++
+
+  // ── Row 3: thin separator (blank) ─────────────────────────────────────────
+  row++
+
+  // ── Row 4: Model / Số Seri / Tuần thứ ────────────────────────────────────
+  const modelSerial = `\nModel: ${checklist.forklift_model || ''}     Số Seri: ${checklist.forklift_serial || ''}`
+  setCell(row, 1, modelSerial, infoSmallStyle)
+  merges.push({ s: { r: 4, c: 1 }, e: { r: 4, c: 9 } })
+  setCell(row, 10, `\nTuần thứ:`, metaLabelStyle)
+  merges.push({ s: { r: 4, c: 10 }, e: { r: 4, c: 12 } })
+  setCell(row, 13, `${checklist.week_number}/${checklist.year}`, metaValueStyle)
+  merges.push({ s: { r: 4, c: 13 }, e: { r: 4, c: 17 } })
+  row++
+
+  // ── Row 5: Ghi chú note / Ca thứ ─────────────────────────────────────────
+  setCell(row, 1,
+    'Ghi chú: Biên bản kiểm tra này cần được thực hiện bởi tài xế bắt đầu vào ca làm việc.\nCác mục liệt kê chỉ áp dụng cho một số loại xe. Cần phải kiểm tra hết các mục được ghi bên dưới.',
+    infoStyle)
+  merges.push({ s: { r: 5, c: 1 }, e: { r: 5, c: 9 } })
+  setCell(row, 10, `\nCa thứ:`, metaLabelStyle)
+  merges.push({ s: { r: 5, c: 10 }, e: { r: 5, c: 12 } })
+  setCell(row, 13, checklist.shift || '', metaValueStyle)
+  merges.push({ s: { r: 5, c: 13 }, e: { r: 5, c: 17 } })
+  row++
+
+  // ── Row 6: Xe số ─────────────────────────────────────────────────────────
+  setCell(row, 10, `\nXe số:`, metaLabelStyle)
+  merges.push({ s: { r: 6, c: 1 }, e: { r: 6, c: 9 } })
+  merges.push({ s: { r: 6, c: 10 }, e: { r: 6, c: 12 } })
+  setCell(row, 13, checklist.forklift_number || '', metaValueStyle)
+  merges.push({ s: { r: 6, c: 13 }, e: { r: 6, c: 17 } })
+  row++
+
+  // ── Row 7: Legend ─────────────────────────────────────────────────────────
+  setCell(row, 1, 'Đánh dấu "P" vào ô tình trạng nếu tình trạng là tốt, đạt; Đánh dấu "X" nếu tình trạng là không đạt;', legendStyle)
+  merges.push({ s: { r: 7, c: 1 }, e: { r: 7, c: 6 } })
+  setCell(row, 7, 'Cần sữa chữa hay căn chỉnh (Ghi chi tiết cụ thể):', legendStyle)
+  merges.push({ s: { r: 7, c: 7 }, e: { r: 7, c: 17 } })
+  row++
+
+  // ── Row 8: blank separator ────────────────────────────────────────────────
+  row++
+
+  // ── Row 9: Column headers row 1 (day names) ───────────────────────────────
+  setCell(row, COL_GROUP, '', colHeaderStyle)
+  merges.push({ s: { r: row, c: 1 }, e: { r: row, c: 1 } })
+
+  setCell(row, COL_CONTENT_START, 'NỘI DUNG KIỂM TRA', colHeaderStyle)
+  merges.push({ s: { r: row, c: COL_CONTENT_START }, e: { r: row + 1, c: COL_CONTENT_END } })
+
+  DAYS.forEach((day, di) => {
+    const sCol = dayStatusCol(di)
+    const dCol = dayDetailCol(di)
+    setCell(row, sCol, DAY_LABELS[day] ?? day, colHeaderStyle)
+    merges.push({ s: { r: row, c: sCol }, e: { r: row, c: dCol } })
   })
   row++
 
-  // Table header row 2
-  const headers2 = ['Nhóm', 'Hạng mục', 'Nội dung (VI/EN)', ...DAYS.flatMap(() => ['Tình trạng', 'Chi tiết'])]
-  headers2.forEach((h, c) => {
-    ws[XLSX.utils.encode_cell({ r: row, c })] = { v: h, t: 's', s: headerStyle }
+  // ── Row 10: Column headers row 2 (Tình trạng / Chi tiết) ─────────────────
+  setCell(row, COL_GROUP, '', subHeaderStyle)
+  // C:D already merged above from row 9
+  DAYS.forEach((_day, di) => {
+    setCell(row, dayStatusCol(di), 'Tình trạng', subHeaderStyle)
+    setCell(row, dayDetailCol(di), 'Chi tiết', subHeaderStyle)
   })
   row++
 
-  // Group items
+  // ── Data rows ─────────────────────────────────────────────────────────────
   const obsItems = checklist.items.filter(i => i.category === 'observation')
   const opItems = checklist.items.filter(i => i.category === 'operation')
 
   const writeGroup = (items: CheckItem[], groupLabel: string) => {
+    const groupStartRow = row
     items.forEach((item, idx) => {
-      const isFirstInGroup = idx === 0
-      ws[XLSX.utils.encode_cell({ r: row, c: 0 })] = {
-        v: isFirstInGroup ? groupLabel : '',
-        t: 's',
-        s: { ...cellStyle, font: { bold: true }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true } }
-      }
-      ws[XLSX.utils.encode_cell({ r: row, c: 1 })] = { v: item.sub_label || '', t: 's', s: cellStyle }
-      ws[XLSX.utils.encode_cell({ r: row, c: 2 })] = { v: item.label_vi, t: 's', s: { ...cellStyle, font: { sz: 9 } } }
+      // Group label cell — only set value on first row, merge all rows
+      setCell(row, COL_GROUP, idx === 0 ? groupLabel : '', groupLabelStyle)
 
+      // Content: merged C:D
+      const content = `${item.sub_label || ''}\n${item.label_vi}`
+      setCell(row, COL_CONTENT_START, content, contentStyle)
+      merges.push({ s: { r: row, c: COL_CONTENT_START }, e: { r: row, c: COL_CONTENT_END } })
+
+      // Day status + detail
       DAYS.forEach((day, di) => {
         const entry = item.days[day]
-        const col = 3 + di * 2
         const statusVal = entry?.status === 'pass' ? 'P' : entry?.status === 'fail' ? 'X' : ''
-        ws[XLSX.utils.encode_cell({ r: row, c: col })] = {
-          v: statusVal, t: 's',
-          s: entry?.status === 'pass' ? passStyle : entry?.status === 'fail' ? failStyle : cellStyle
-        }
-        ws[XLSX.utils.encode_cell({ r: row, c: col + 1 })] = {
-          v: entry?.detail || '', t: 's', s: cellStyle
-        }
+        setCell(row, dayStatusCol(di), statusVal, statusCellStyle)
+        setCell(row, dayDetailCol(di), entry?.detail || '', detailCellStyle)
       })
       row++
     })
+    // Merge group label column over all rows in this group
+    if (items.length > 1) {
+      merges.push({ s: { r: groupStartRow, c: COL_GROUP }, e: { r: row - 1, c: COL_GROUP } })
+    }
   }
 
-  writeGroup(obsItems, 'KIỂM TRA\nQUAN SÁT')
-  writeGroup(opItems, 'KIỂM TRA\nVẬN HÀNH')
+  writeGroup(obsItems, 'OBSERVATION CHECK/\nKIỂM TRA QUAN SÁT')
+  writeGroup(opItems, 'OPERATION CHECK/\nKIỂM TRA VẬN HÀNH')
 
-  row++ // blank
-  // Signatures
-  ws[XLSX.utils.encode_cell({ r: row, c: 0 })] = { v: 'KÝ TÊN', t: 's', s: { font: { bold: true }, alignment: { horizontal: 'center', vertical: 'center' } } }
-  ws[XLSX.utils.encode_cell({ r: row, c: 1 })] = { v: 'Tài xế xe nâng – Forklift driver', t: 's', s: { font: { bold: true } } }
+  // ── Signature rows ────────────────────────────────────────────────────────
+  // Row: KÝ TÊN | Forklift driver – Tài xế xe nâng | [day values...]
+  setCell(row, COL_GROUP, 'KÝ TÊN', sigLabelStyle)
+  merges.push({ s: { r: row, c: COL_GROUP }, e: { r: row + 1, c: COL_GROUP } })
+  setCell(row, COL_CONTENT_START, 'Forklift driver – Tài xế xe nâng', sigNameStyle)
+  merges.push({ s: { r: row, c: COL_CONTENT_START }, e: { r: row, c: COL_CONTENT_END } })
   DAYS.forEach((day, di) => {
-    const sig = checklist.operator_signatures?.[day]
-    ws[XLSX.utils.encode_cell({ r: row, c: 3 + di * 2 })] = {
-      v: sig ? `✓ ${sig.user_name}\n${sig.signed_at ? new Date(sig.signed_at).toLocaleDateString('vi-VN') : ''}` : '',
-      t: 's', s: { alignment: { horizontal: 'center', wrapText: true }, font: { color: { rgb: '15803D' } } }
-    }
+    setCell(row, dayStatusCol(di), '', sigValueStyle)
+    merges.push({ s: { r: row, c: dayStatusCol(di) }, e: { r: row, c: dayDetailCol(di) } })
   })
   row++
 
-  ws[XLSX.utils.encode_cell({ r: row, c: 1 })] = { v: 'Giám sát – Supervisor', t: 's', s: { font: { bold: true } } }
-  DAYS.forEach((day, di) => {
-    const sig = checklist.supervisor_signatures?.[day]
-    ws[XLSX.utils.encode_cell({ r: row, c: 3 + di * 2 })] = {
-      v: sig ? `✓ ${sig.user_name}\n${sig.signed_at ? new Date(sig.signed_at).toLocaleDateString('vi-VN') : ''}` : '',
-      t: 's', s: { alignment: { horizontal: 'center', wrapText: true }, font: { color: { rgb: '1D4ED8' } } }
-    }
+  // Supervisor row
+  setCell(row, COL_CONTENT_START, 'Supervisor – Giám sát', sigNameStyle)
+  merges.push({ s: { r: row, c: COL_CONTENT_START }, e: { r: row, c: COL_CONTENT_END } })
+  DAYS.forEach((_day, di) => {
+    setCell(row, dayStatusCol(di), '', sigValueStyle)
+    merges.push({ s: { r: row, c: dayStatusCol(di) }, e: { r: row, c: dayDetailCol(di) } })
   })
   row++
 
-  row++ // blank
-  // Notes
-  ws[XLSX.utils.encode_cell({ r: row, c: 0 })] = { v: 'Ghi chú (Các mục cần sửa chữa hay căn chỉnh):', t: 's', s: { font: { bold: true } } }
-  row++
-  ws[XLSX.utils.encode_cell({ r: row, c: 0 })] = { v: checklist.notes || '', t: 's', s: { alignment: { wrapText: true } } }
+  // ── Notes section ─────────────────────────────────────────────────────────
+  const noteLabel = 'Ghi chú (Các mục cần sữa chữa hay căn chỉnh): '
+  setCell(row, COL_GROUP, noteLabel, noteLabelStyle)
+  merges.push({ s: { r: row, c: COL_GROUP }, e: { r: row, c: 17 } })
   row++
 
-  row++ // blank
-  ws[XLSX.utils.encode_cell({ r: row, c: 0 })] = {
-    v: 'Chú ý: Nếu xe nâng phát hiện cần phải sửa chữa hay không an toàn, cần phải dừng xe và báo cáo cho người phụ trách ngay. Không được vận hành cho tới khi đã được sửa chữa và đảm bảo an toàn.',
-    t: 's', s: { font: { italic: true, sz: 9, color: { rgb: '6B7280' } }, alignment: { wrapText: true } }
+  // 5 blank note lines (dotted lines like sample)
+  const dotLine = '…'.repeat(200)
+  for (let i = 0; i < 5; i++) {
+    setCell(row, COL_GROUP, dotLine, noteLineStyle)
+    merges.push({ s: { r: row, c: COL_GROUP }, e: { r: row, c: 17 } })
+    row++
   }
 
-  // Set column widths
+  // blank separator
+  row++
+
+  // ── Footer notes ──────────────────────────────────────────────────────────
+  const footerLines = [
+    'Chú ý: Nếu xe nâng phát hiện cần phải sữa chữa hay không an toàn hoặc bất kỳ một sự cố nào đó không an toàn cần phải dừng xe, báo cáo cho người phụ trách ngay. Không được vận hành xe nâng cho tới khi đã được sữa chữa và đảm bảo an toàn.',
+    'Nếu trong khi hoạt động mà xe có dấu hiệu không an toàn thì cần phải báo ngay với người phụ trách và không được vận hành cho tới khi xe được sữa chữa và vận hành an toàn.',
+    'Không được tự ý sữa chữa hay cân chỉnh xe nâng trừ khi bạn được cho phép.',
+  ]
+  for (const line of footerLines) {
+    setCell(row, COL_GROUP, line, footerStyle)
+    merges.push({ s: { r: row, c: COL_GROUP }, e: { r: row, c: 17 } })
+    row++
+  }
+
+  // ── Sheet range + merges ──────────────────────────────────────────────────
+  ws['!ref'] = XLSX.utils.encode_range({ r: 0, c: 0 }, { r: row, c: 17 })
+  ws['!merges'] = merges
+
+  // ── Column widths (matching XE_NANG_HANG.xlsx) ────────────────────────────
   ws['!cols'] = [
-    { wch: 12 }, // Group
-    { wch: 22 }, // Item label
-    { wch: 40 }, // Description
-    ...DAYS.flatMap(() => [{ wch: 10 }, { wch: 28 }]) // Status + Detail per day
+    { wch: 0.5 },   // A – spacer
+    { wch: 7 },     // B – group
+    { wch: 16 },    // C – sub_label part of merged content
+    { wch: 45 },    // D – content (merged C:D gives ~60 wide total)
+    ...DAYS.flatMap(() => [{ wch: 6 }, { wch: 11 }]),  // E..R status+detail pairs
   ]
 
-  // Set row heights
-  ws['!rows'] = Array(row + 1).fill({ hpt: 30 })
+  // ── Row heights ────────────────────────────────────────────────────────────
+  const rowHeights: Record<number, number> = {
+    0: 22, 1: 22, 2: 22,   // title block
+    3: 7,                   // thin separator
+    4: 31, 5: 22, 6: 24,   // info rows
+    7: 31,                  // legend
+    8: 6,                   // blank
+    9: 23, 10: 29,          // headers
+  }
+  const ws_rows: XLSX.RowInfo[] = []
+  for (let r = 0; r < row + 1; r++) {
+    ws_rows.push({ hpt: rowHeights[r] ?? 44 })
+  }
+  // signature rows
+  const sigRowStart = 11 + obsItems.length + opItems.length
+  ws_rows[sigRowStart] = { hpt: 37 }
+  ws_rows[sigRowStart + 1] = { hpt: 37 }
+  // note label row
+  ws_rows[sigRowStart + 2] = { hpt: 26 }
+  // note lines
+  for (let i = 0; i < 5; i++) ws_rows[sigRowStart + 3 + i] = { hpt: 25 }
+  // footer
+  for (let i = 0; i < 3; i++) ws_rows[sigRowStart + 9 + i] = { hpt: 17 }
 
-  // Merge cells for title
-  ws['!merges'] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: 11 } }, // Title
-    ...DAYS.flatMap((_, di) => [{ s: { r: 8, c: 3 + di * 2 }, e: { r: 8, c: 4 + di * 2 } }]) // Day headers
-  ]
+  ws['!rows'] = ws_rows
 
-  ws['!ref'] = XLSX.utils.encode_range({ r: 0, c: 0 }, { r: row, c: 16 })
+  // ── Print settings (landscape, fit to 1 page wide) ────────────────────────
+  ws['!pageSetup'] = { orientation: 'landscape', fitToWidth: 1, fitToHeight: 0 }
 
   XLSX.utils.book_append_sheet(wb, ws, 'Xe nâng hàng')
-
-  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
-  return buf
+  return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
 }
