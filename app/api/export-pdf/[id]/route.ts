@@ -136,14 +136,15 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const pdfDoc = printer.createPdfKitDocument(docDefinition)
 
   const chunks: Uint8Array[] = []
-  pdfDoc.on('data', chunk => chunks.push(chunk))
+  pdfDoc.on('data', (chunk: Uint8Array) => chunks.push(chunk))
   pdfDoc.on('end', () => {})
 
   pdfDoc.end()
 
-  const pdfBuffer = await new Promise<Buffer>(resolve => {
-    pdfDoc.on('end', () => resolve(Buffer.concat(chunks)))
-  })
+  const pdfBuffer = await new Promise<Buffer>((resolve) => {
+  pdfDoc.on("end", () => resolve(Buffer.concat(chunks)));
+  });
+
 
   return new NextResponse(pdfBuffer, {
     status: 200,
