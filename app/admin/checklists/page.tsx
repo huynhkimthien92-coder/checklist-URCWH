@@ -147,14 +147,7 @@ export default function AdminChecklistsPage() {
                             <Download className="w-4 h-4" />
                           </a>
 
-                          <a
-                            href={`/api/export-pdf/${cl.id}`}
-                            target="_blank"
-                            className="px-2 py-1 rounded hover:bg-gray-200"
-                            title="Xuất PDF"
-                          >
-                            <span>PDF</span>
-                          </a>
+        
 
                           <Link
                             href={`/supervisor/${cl.id}`}
