@@ -1,0 +1,20 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admin/checklists/page": "app/admin/checklists/page.js",
+  "/admin/users/page": "app/admin/users/page.js",
+  "/api/checklists/[id]/route": "app/api/checklists/[id]/route.js",
+  "/api/checklists/route": "app/api/checklists/route.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/reports/[id]/route": "app/api/reports/[id]/route.js",
+  "/admin/page": "app/admin/page.js",
+  "/api/upload/route": "app/api/upload/route.js",
+  "/api/users/[id]/route": "app/api/users/[id]/route.js",
+  "/api/users/route": "app/api/users/route.js",
+  "/checklist/[id]/page": "app/checklist/[id]/page.js",
+  "/checklist/page": "app/checklist/page.js",
+  "/page": "app/page.js",
+  "/supervisor/page": "app/supervisor/page.js",
+  "/supervisor/[id]/page": "app/supervisor/[id]/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/api/pdf/[id]/route": "app/api/pdf/[id]/route.js"
+}
