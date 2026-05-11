@@ -43,6 +43,11 @@ async function getBrowser() {
 }
 
 export async function generatePDFReport(checklists: Checklist[]): Promise<Buffer> {
+  
+  if (!checklists || checklists.length === 0) {
+    throw new Error('No checklist data to export')
+  }
+
   let browser
   let page
 
@@ -580,9 +585,10 @@ function mergeChecklists(checklists: Checklist[]): Checklist {
       if (!target) return
 
       Object.entries(item.days || {}).forEach(([day, value]) => {
-        const d = day as keyof typeof DAY_LABELS
-        if (value?.status) {
-          target.days[d] = value
+        if (!DAYS.includes(day as any)) return
+        const d = day as typeof DAYS[number]
+        if (value && typeof value === 'object' && 'status' in value) {
+          target.days[d] = value as any
         }
       })
     })
