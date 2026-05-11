@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     )
 
 
-   return new NextResponse(uint8, {
+   return new NextResponse(uint8 as unknown as BodyInit, {
      status: 200,
      headers: {
        'Content-Type': 'application/pdf',
