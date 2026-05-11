@@ -15,11 +15,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     .select('*')
     .eq('id', params.id)
     .single()
-
+  const { data: checklists } = await supabase
+    .from('checklists')
+    .select('*')
+    .eq('week_number', checklist.week_number)
+    .eq('year', checklist.year)
+    .order('created_at', { ascending: true })
   if (error || !checklist) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   try {
-    const buffer = await generatePDFReport(checklist)
+    const buffer = await generatePDFReport(checklists || [])
     const filename = `XeNang_Tuan${checklist.week_number}_${checklist.year}_${checklist.forklift_number || 'xe'}.pdf`
     
  
