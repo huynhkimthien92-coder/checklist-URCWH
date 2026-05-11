@@ -26,15 +26,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       buffer.byteOffset,
       buffer.byteLength
     )
-
-
-   return new NextResponse(uint8 as unknown as BodyInit, {
-     status: 200,
-     headers: {
-       'Content-Type': 'application/pdf',
-       'Content-Disposition': `attachment; filename="${filename}"`,
-     },
-   })
+    return new Response(uint8, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    })
 
   } catch (err) {
     console.error('PDF generation error:', err)
