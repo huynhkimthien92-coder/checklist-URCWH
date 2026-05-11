@@ -93,7 +93,7 @@ export async function generatePDFReport(checklist: Checklist): Promise<Buffer> {
     throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : String(error)}`)
   } finally {
     if (page) {
-      await page.close().catch(err => console.log('Page close error:', err))
+      await page.close().catch((err: unknown) => console.log('Page close error:', err))
     }
     // Note: Don't close browser here - keep it alive for reuse
   }
