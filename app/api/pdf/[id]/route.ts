@@ -1,3 +1,4 @@
+export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -20,15 +21,21 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   try {
     const buffer = await generatePDFReport(checklist)
     const filename = `XeNang_Tuan${checklist.week_number}_${checklist.year}_${checklist.forklift_number || 'xe'}.pdf`
+    const uint8 = new Uint8Array(
+      buffer.buffer,
+      buffer.byteOffset,
+      buffer.byteLength
+    )
 
-    return new NextResponse(buffer as unknown as ReadableStream, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
-        'Content-Length': String(buffer.length),
-      },
-    })
+
+   return new NextResponse(uint8, {
+     status: 200,
+     headers: {
+       'Content-Type': 'application/pdf',
+       'Content-Disposition': `attachment; filename="${filename}"`,
+     },
+   })
+
   } catch (err) {
     console.error('PDF generation error:', err)
     return NextResponse.json({ error: 'PDF generation failed', details: String(err) }, { status: 500 })
