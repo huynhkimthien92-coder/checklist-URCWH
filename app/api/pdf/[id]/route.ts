@@ -26,7 +26,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       buffer.byteOffset,
       buffer.byteLength
     )
-    return new Response(uint8, {
+    const blob = new Blob([uint8], { type: 'application/pdf' })
+    return new Response(blob, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
