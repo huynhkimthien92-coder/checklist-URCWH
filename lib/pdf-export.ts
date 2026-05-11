@@ -26,16 +26,13 @@ async function getBrowser() {
   }
 
   try {
-    const puppeteer = (await import('puppeteer')).default
+    const puppeteer = (await import('puppeteer-core')).default
+    const chromium = (await import('@sparticuz/chromium')).default
 
     browserInstance = await puppeteer.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
       headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-      ],
     })
 
     return browserInstance
