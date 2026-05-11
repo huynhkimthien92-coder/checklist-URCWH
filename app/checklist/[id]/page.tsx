@@ -19,7 +19,7 @@ export default async function ChecklistDetailPage({ params }: { params: { id: st
     .select('*')
     .eq('id', params.id)
     .single()
-' ghi'
+
   if (error || !checklist) notFound()
 
   return (
@@ -58,7 +58,10 @@ export default async function ChecklistDetailPage({ params }: { params: { id: st
           >
             <Download className="w-4 h-4" /> Xuất Excel
           </a>
-          <ExportPDFButton />
+          <ExportPDFButton
+            checklistId={checklist.id}
+            filename={`XeNang_Tuan${checklist.week_number}_${checklist.year}_${checklist.forklift_number || 'xe'}.pdf`}
+          />
 
           
         </div>
