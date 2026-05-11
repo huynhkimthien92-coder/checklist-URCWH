@@ -21,7 +21,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const buffer = await generatePDFReport(checklist)
     const filename = `XeNang_Tuan${checklist.week_number}_${checklist.year}_${checklist.forklift_number || 'xe'}.pdf`
 
-    return new Response(buffer, {
+    // Convert Node.js Buffer to Uint8Array for Web API Response (required by Next.js/Vercel)
+    const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+
+    return new Response(uint8, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
