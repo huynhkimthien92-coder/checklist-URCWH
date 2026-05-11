@@ -18,17 +18,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (error || !checklist) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const buffer = generateExcelReport(checklist)
-  const uint8 = new Uint8Array(
-    buffer.buffer,
-    buffer.byteOffset,
-    buffer.byteLength
-  )
   const filename = `XeNang_Tuan${checklist.week_number}_${checklist.year}_${checklist.forklift_number || 'xe'}.xlsx`
 
-  return new Response(uint8 as unknown as BodyInit, {
+  return new NextResponse(buffer as unknown as ReadableStream, {
+    status: 200,
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
-    }
+    },
   })
 }
