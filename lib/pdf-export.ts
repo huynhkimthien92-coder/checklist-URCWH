@@ -26,10 +26,7 @@ async function getBrowser() {
   }
 
   try {
-    const puppeteer = (await import('puppeteer-extra')).default
-    const StealthPlugin = (await import('puppeteer-extra-plugin-stealth')).default
-
-    puppeteer.use(StealthPlugin())
+    const puppeteer = (await import('puppeteer')).default
 
     browserInstance = await puppeteer.launch({
       headless: true,
