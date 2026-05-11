@@ -50,12 +50,15 @@ export async function generatePDFReport(checklist: Checklist): Promise<Buffer> {
     const obsItems = checklist.items.filter(i => i.category === 'observation')
     const opItems = checklist.items.filter(i => i.category === 'operation')
     const allItems = [...obsItems, ...opItems]
+    const operatorSignatures = typeof checklist.operator_signatures === 'string'? JSON.parse(checklist.operator_signatures): checklist.operator_signatures
+    const supervisorSignatures = typeof checklist.supervisor_signatures === 'string'? JSON.parse(checklist.supervisor_signatures): checklist.supervisor_signatures
+
 
     // Generate table rows HTML
     const tableRowsHtml = generateTableRows(allItems, obsItems.length)
 
     // Create HTML content
-    const htmlContent = createHtmlContent(checklist, tableRowsHtml)
+    const htmlContent = createHtmlContent(checklist, tableRowsHtml,operatorSignatures,supervisorSignatures)
 
     // Get or create browser instance
     browser = await getBrowser()
@@ -93,7 +96,7 @@ export async function generatePDFReport(checklist: Checklist): Promise<Buffer> {
   }
 }
 
-function createHtmlContent(checklist: Checklist, tableRowsHtml: string): string {
+function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operatorSignatures: any, supervisorSignatures: any): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -415,13 +418,38 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string): string 
           <td colspan="2" style="text-align: center; background: #1a3a6b; color: white; font-weight: bold;">
             Tài xế xe nâng / Forklift driver
           </td>
-          ${DAYS.map(() => '<td colspan="2" class="signature-cell">_______</td>').join('')}
+          
+          ${DAYS.map(day => {
+            const sig = operatorSignatures?.[day]?.data_url
+            return `
+              <td colspan="2" class="signature-cell">
+                ${sig
+                  ? `<img src="${sig}" style="height:35px; max-width:100%; object-fit:contain;" />`
+                  : '_______'
+                }
+              </td>
+            `
+          }).join('')}
+
+
         </tr>
         <tr>
           <td colspan="2" style="text-align: center; background: #1a3a6b; color: white; font-weight: bold;">
             Giám sát / Supervisor
           </td>
-          ${DAYS.map(() => '<td colspan="2" class="signature-cell">_______</td>').join('')}
+          
+          ${DAYS.map(day => {
+            const sig = supervisorSignatures?.[day]?.data_url
+            return `
+              <td colspan="2" class="signature-cell">
+                ${sig
+                  ? `<img src="${sig}" style="height:35px; max-width:100%; object-fit:contain;" />`
+                  : '_______'
+                }
+              </td>
+          `
+        }).join('')}
+
         </tr>
       </tbody>
     </table>
