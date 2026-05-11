@@ -59,6 +59,9 @@ export async function generatePDFReport(checklist: Checklist): Promise<Buffer> {
     if (!Array.isArray(items)) {
       items = []
     }
+    const obsItems = items.filter(i => i.category === 'observation')
+    const opItems = items.filter(i => i.category === 'operation')
+    const allItems = [...obsItems, ...opItems]
 
     const operatorSignatures = typeof checklist.operator_signatures === 'string'? JSON.parse(checklist.operator_signatures): checklist.operator_signatures
     const supervisorSignatures = typeof checklist.supervisor_signatures === 'string'? JSON.parse(checklist.supervisor_signatures): checklist.supervisor_signatures
