@@ -580,8 +580,9 @@ function mergeChecklists(checklists: Checklist[]): Checklist {
       if (!target) return
 
       Object.entries(item.days || {}).forEach(([day, value]) => {
+        const d = day as keyof typeof DAY_LABELS
         if (value?.status) {
-          target.days[day] = value
+          target.days[d] = value
         }
       })
     })
