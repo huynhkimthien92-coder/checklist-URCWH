@@ -1,16 +1,21 @@
 /**
- * PDF EXPORT FIX FOR VERCEL - CORRECTED VERSION
+ * PDF EXPORT FOR VERCEL - USING PUPPETEER
  * 
- * This replaces the pdfmake-based implementation with html2pdf
- * to avoid filesystem issues on Vercel's serverless environment.
+ * This implementation uses puppeteer-extra with stealth plugin
+ * to render HTML to PDF on the server-side (serverless-compatible).
  * 
  * Installation:
- * npm install html2pdf.js
+ * npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth
  * 
  * Usage: Same as before, no changes needed in the API route
  */
 
 import { Checklist, CheckItem } from '@/types'
+import puppeteer from 'puppeteer-extra'
+import StealthPlugin from 'puppeteer-extra-plugin-stealth'
+
+// Add stealth plugin to avoid detection
+puppeteer.use(StealthPlugin())
 
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 const DAY_LABELS: Record<string, string> = {
@@ -18,55 +23,79 @@ const DAY_LABELS: Record<string, string> = {
   thu: 'THỨ NĂM', fri: 'THỨ SÁU', sat: 'THỨ BẢY', sun: 'CHỦ NHẬT'
 }
 
-export async function generatePDFReport(checklist: Checklist): Promise<Buffer> {
-  // Dynamically import html2pdf to avoid build issues
-  let html2pdf: any
-  try {
-    html2pdf = require('html2pdf.js')
-  } catch (e) {
-    // Try alternative import
-    html2pdf = (await import('html2pdf.js')).default
+let browserInstance: any = null
+
+async function getBrowser() {
+  if (browserInstance) {
+    return browserInstance
   }
 
-  const obsItems = checklist.items.filter(i => i.category === 'observation')
-  const opItems = checklist.items.filter(i => i.category === 'operation')
-  const allItems = [...obsItems, ...opItems]
+  try {
+    browserInstance = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+      ],
+    })
+    return browserInstance
+  } catch (error) {
+    console.error('Failed to launch browser:', error)
+    throw new Error('Browser initialization failed')
+  }
+}
 
-  // Generate table rows HTML
-  const tableRowsHtml = generateTableRows(allItems, obsItems.length)
+export async function generatePDFReport(checklist: Checklist): Promise<Buffer> {
+  let browser
+  let page
 
-  // Create HTML content
-  const htmlContent = createHtmlContent(checklist, tableRowsHtml)
+  try {
+    const obsItems = checklist.items.filter(i => i.category === 'observation')
+    const opItems = checklist.items.filter(i => i.category === 'operation')
+    const allItems = [...obsItems, ...opItems]
 
-  return new Promise((resolve, reject) => {
-    try {
-      const instance = html2pdf()
-      
-      const filename = `XeNang_Tuan${checklist.week_number}_${checklist.year}_${checklist.forklift_number || 'xe'}.pdf`
-      
-      instance
-        .set({
-          margin: [5, 5, 5, 5],
-          filename: filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
-        })
-        .from(htmlContent)
-        .outputPdf('arraybuffer')
-        .then((pdf: ArrayBuffer) => {
-          console.log('PDF generated successfully')
-          resolve(Buffer.from(pdf))
-        })
-        .catch((error: any) => {
-          console.error('html2pdf error:', error)
-          reject(new Error(`PDF generation failed: ${error?.message || error}`))
-        })
-    } catch (error) {
-      console.error('Unexpected error in generatePDFReport:', error)
-      reject(error)
+    // Generate table rows HTML
+    const tableRowsHtml = generateTableRows(allItems, obsItems.length)
+
+    // Create HTML content
+    const htmlContent = createHtmlContent(checklist, tableRowsHtml)
+
+    // Get or create browser instance
+    browser = await getBrowser()
+    page = await browser.newPage()
+
+    // Set viewport
+    await page.setViewport({ width: 1200, height: 800 })
+
+    // Set content
+    await page.setContent(htmlContent, { waitUntil: 'networkidle2' })
+
+    // Generate PDF
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      landscape: true,
+      margin: {
+        top: '5mm',
+        right: '5mm',
+        bottom: '5mm',
+        left: '5mm',
+      },
+      displayHeaderFooter: false,
+    })
+
+    console.log('PDF generated successfully')
+    return Buffer.from(pdfBuffer)
+  } catch (error) {
+    console.error('PDF generation error:', error)
+    throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : String(error)}`)
+  } finally {
+    if (page) {
+      await page.close().catch(err => console.log('Page close error:', err))
     }
-  })
+    // Note: Don't close browser here - keep it alive for reuse
+  }
 }
 
 function createHtmlContent(checklist: Checklist, tableRowsHtml: string): string {
@@ -412,8 +441,8 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string): string 
     <div class="footer-text">
       <strong>Chú ý:</strong> Nếu xe nâng phát hiện cần phải sửa chữa hay không an toàn cần phải dừng xe, báo cáo cho người phụ trách ngay. 
       Không được vận hành xe nâng cho tới khi đã được sửa chữa và đảm bảo an toàn. 
-      Nếu trong khi hoạt động mà xe có dấu hiệu không an toàn thì cần phải báo ngay với người phụ trách và không được vận hành cho tới khi xe được sửa chữa và vận hành an toàn. 
-      Không được tự ý sửa chữa hay cân chỉnh xe nâng trừ khi bạn được cho phép.
+      Nếu trong khi hoạt động mà xe có dấu hiệu không an toàn thì cần phải báo ngay với người phụ trách và không được vận hành cho tới khi xe được sửa chữa.
+      Không được tự ý sửa chữa hay căn chỉnh xe nâng trừ khi bạn được cho phép.
     </div>
   </div>
 </body>
