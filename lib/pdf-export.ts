@@ -11,11 +11,6 @@
  */
 export const runtime = "nodejs";
 import { Checklist, CheckItem } from '@/types'
-import puppeteer from 'puppeteer-extra'
-import StealthPlugin from 'puppeteer-extra-plugin-stealth'
-
-// Add stealth plugin to avoid detection
-puppeteer.use(StealthPlugin())
 
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 const DAY_LABELS: Record<string, string> = {
@@ -31,6 +26,11 @@ async function getBrowser() {
   }
 
   try {
+    const puppeteer = (await import('puppeteer-extra')).default
+    const StealthPlugin = (await import('puppeteer-extra-plugin-stealth')).default
+
+    puppeteer.use(StealthPlugin())
+
     browserInstance = await puppeteer.launch({
       headless: true,
       args: [
@@ -40,6 +40,7 @@ async function getBrowser() {
         '--disable-gpu',
       ],
     })
+
     return browserInstance
   } catch (error) {
     console.error('Failed to launch browser:', error)
