@@ -9,7 +9,7 @@
  * 
  * Usage: Same as before, no changes needed in the API route
  */
-
+export const runtime = "nodejs";
 import { Checklist, CheckItem } from '@/types'
 import puppeteer from 'puppeteer-extra'
 import StealthPlugin from 'puppeteer-extra-plugin-stealth'
