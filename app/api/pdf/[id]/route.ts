@@ -21,15 +21,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const buffer = await generatePDFReport(checklist)
     const filename = `XeNang_Tuan${checklist.week_number}_${checklist.year}_${checklist.forklift_number || 'xe'}.pdf`
 
-    // Convert Node.js Buffer to Uint8Array for Web API Response (required by Next.js/Vercel)
-    const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
-
-    return new Response(uint8, {
+    return new NextResponse(buffer as unknown as ReadableStream, {
+      status: 200,
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
         'Content-Length': String(buffer.length),
-      }
+      },
     })
   } catch (err) {
     console.error('PDF generation error:', err)
