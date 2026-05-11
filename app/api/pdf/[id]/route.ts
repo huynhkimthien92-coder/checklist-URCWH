@@ -22,18 +22,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const buffer = await generatePDFReport(checklist)
     const filename = `XeNang_Tuan${checklist.week_number}_${checklist.year}_${checklist.forklift_number || 'xe'}.pdf`
     
-  const arrayBuffer = buffer.buffer.slice(
-    buffer.byteOffset,
-    buffer.byteOffset + buffer.byteLength
-  )
-
-  return new Response(arrayBuffer, {
+ 
+  return new Response(buffer as unknown as BodyInit, {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
     },
   })
-
   } catch (err) {
     console.error('PDF generation error:', err)
     return NextResponse.json({ error: 'PDF generation failed', details: String(err) }, { status: 500 })
