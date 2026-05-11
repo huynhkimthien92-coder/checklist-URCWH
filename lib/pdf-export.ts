@@ -26,17 +26,20 @@ const COLOR = {
   sigBg:       '#f8fafc',
 }
 
+
 function getFonts() {
   const fontsDir = path.join(process.cwd(), 'public', 'fonts')
+
   return {
     Roboto: {
-      normal:  fs.readFileSync(path.join(fontsDir, 'Roboto-Regular.ttf')),
-      bold:    fs.readFileSync(path.join(fontsDir, 'Roboto-Bold.ttf')),
-      italics: fs.readFileSync(path.join(fontsDir, 'Roboto-Regular.ttf')),
-      bolditalics: fs.readFileSync(path.join(fontsDir, 'Roboto-Bold.ttf')),
+      normal: path.join(fontsDir, 'Roboto-Regular.ttf'),
+      bold: path.join(fontsDir, 'Roboto-Bold.ttf'),
+      italics: path.join(fontsDir, 'Roboto-Regular.ttf'),
+      bolditalics: path.join(fontsDir, 'Roboto-Bold.ttf'),
     }
   }
 }
+
 
 function statusText(status: string): string {
   if (status === 'pass') return 'V'
