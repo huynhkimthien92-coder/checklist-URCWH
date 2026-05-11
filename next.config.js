@@ -1,11 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // ✅ THÊM ĐOẠN NÀY (quan trọng nhất)
   experimental: {
     serverComponentsExternalPackages: [
-      "puppeteer",
-      "puppeteer-extra",
-      "puppeteer-extra-plugin-stealth"
+      "puppeteer-core",
+      "@sparticuz/chromium"
     ],
   },
 
