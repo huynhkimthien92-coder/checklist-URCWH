@@ -1,13 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Cho phép import @/...
+  // ✅ THÊM ĐOẠN NÀY (quan trọng nhất)
+  experimental: {
+    serverComponentsExternalPackages: [
+      "puppeteer",
+      "puppeteer-extra",
+      "puppeteer-extra-plugin-stealth"
+    ],
+  },
+
   webpack: (config) => {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
       '@': __dirname,
     };
 
-    // Fix pdfmake not resolve on Vercel
     config.resolve.fallback = {
       fs: false,
       path: false,
