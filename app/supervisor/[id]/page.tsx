@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation'
 import { Navbar } from '@/components/layout/Navbar'
 import { ChecklistForm } from '@/components/forms/checklistForm'
 import { createServiceClient } from '@/lib/supabase'
+import { ExportPDFButton } from '@/components/ExportPDFButton'
 import Link from 'next/link'
 import { ArrowLeft, Download } from 'lucide-react'
 import { cn, checklistStatusColor, checklistStatusLabel } from '@/lib/utils'
@@ -50,9 +51,15 @@ export default async function SupervisorChecklistPage({ params }: { params: { id
               </p>
             </div>
           </div>
-          <a href={`/api/reports/${checklist.id}`} className="btn-secondary text-sm no-print">
-            <Download className="w-4 h-4" /> Xuất Excel
-          </a>
+          <div className="flex items-center gap-2 no-print">
+            <a href={`/api/reports/${checklist.id}`} className="btn-secondary text-sm">
+              <Download className="w-4 h-4" /> Xuất Excel
+            </a>
+            <ExportPDFButton
+              checklistId={checklist.id}
+              filename={`XeNang_Tuan${checklist.week_number}_${checklist.year}_${checklist.forklift_number || 'xe'}.pdf`}
+            />
+          </div>
         </div>
 
         {failCount > 0 && (
