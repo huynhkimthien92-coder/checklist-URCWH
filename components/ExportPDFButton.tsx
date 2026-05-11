@@ -1,34 +1,51 @@
 'use client'
 
-import html2pdf from 'html2pdf.js'
-import { Download } from 'lucide-react'
+import { useState } from 'react'
+import { FileDown, Loader2 } from 'lucide-react'
 
-export function ExportPDFButton() {
-  const exportPDF = () => {
-    const element = document.getElementById('report')
-    if (!element) return
+interface ExportPDFButtonProps {
+  checklistId: string
+  filename?: string
+}
 
-    html2pdf()
-      .set({
-        margin: 5,
-        filename: 'checklist.pdf',
-        html2canvas: {
-          scale: 2,
-          useCORS: true
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'landscape'
-        }
-      })
-      .from(element)
-      .save()
+export function ExportPDFButton({ checklistId, filename }: ExportPDFButtonProps) {
+  const [loading, setLoading] = useState(false)
+
+  const exportPDF = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/pdf/${checklistId}`)
+      if (!res.ok) throw new Error('Lỗi tạo PDF')
+
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename || `checklist_${checklistId}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert('Không thể xuất PDF. Vui lòng thử lại.')
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <button onClick={exportPDF} className="btn-secondary text-sm no-print">
-      <Download className="w-4 h-4" /> Xuất PDF
+    <button
+      onClick={exportPDF}
+      disabled={loading}
+      className="btn-secondary text-sm no-print disabled:opacity-60"
+      title="Xuất báo cáo PDF"
+    >
+      {loading
+        ? <Loader2 className="w-4 h-4 animate-spin" />
+        : <FileDown className="w-4 h-4" />
+      }
+      {loading ? 'Đang tạo PDF...' : 'Xuất PDF'}
     </button>
   )
 }
