@@ -42,37 +42,44 @@ async function getBrowser() {
   }
 }
 
-export async function generatePDFReport(checklist: Checklist): Promise<Buffer> {
+export async function generatePDFReport(checklists: Checklist[]): Promise<Buffer> {
   let browser
   let page
 
   try {
-    let items: CheckItem[] = checklist.items
+    // ✅ 1. GỘP DATA
+    const mergedChecklist = mergeChecklists(checklists)
+    // ✅ 2. parse items
+    
+    let items: CheckItem[] = mergedChecklist.items
     if (typeof items === 'string') {
       try {
         items = JSON.parse(items)
-      } catch (e) {
-        console.warn('Failed to parse items:', e)
+      } catch {
         items = []
       }
     }
-    if (!Array.isArray(items)) {
-      items = []
-    }
+
+    if (!Array.isArray(items)) items = []
+    
+    // ✅ 3. tách nhóm
     const obsItems = items.filter(i => i.category === 'observation')
     const opItems = items.filter(i => i.category === 'operation')
     const allItems = [...obsItems, ...opItems]
-
-    const operatorSignatures = typeof checklist.operator_signatures === 'string'? JSON.parse(checklist.operator_signatures): checklist.operator_signatures
-    const supervisorSignatures = typeof checklist.supervisor_signatures === 'string'? JSON.parse(checklist.supervisor_signatures): checklist.supervisor_signatures
-
-
-    // Generate table rows HTML
+    // ✅ 4. chữ ký
+    const operatorSignatures = mergedChecklist.operator_signatures
+    const supervisorSignatures = mergedChecklist.supervisor_signatures
+    
+    // Generate table 
     const tableRowsHtml = generateTableRows(allItems, obsItems.length)
-
-    // Create HTML content
-    const htmlContent = createHtmlContent(checklist, tableRowsHtml,operatorSignatures,supervisorSignatures)
-
+    
+    // ✅ 6. tạo HTML
+    const htmlContent = createHtmlContent(
+      mergedChecklist,
+      tableRowsHtml,
+      operatorSignatures,
+      supervisorSignatures
+    )    
     // Get or create browser instance
     browser = await getBrowser()
     page = await browser.newPage()
@@ -558,3 +565,49 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
 }
+
+function mergeChecklists(checklists: Checklist[]): Checklist {
+  const base = { ...checklists[0] }
+
+  const mergedItems = base.items.map(item => ({
+    ...item,
+    days: {}
+  }))
+
+  checklists.forEach(cl => {
+    cl.items.forEach(item => {
+      const target = mergedItems.find(i => i.id === item.id)
+      if (!target) return
+
+      Object.entries(item.days || {}).forEach(([day, value]) => {
+        if (value?.status) {
+          target.days[day] = value
+        }
+      })
+    })
+  })
+
+  const operator_signatures: any = {}
+  const supervisor_signatures: any = {}
+
+  checklists.forEach(cl => {
+    const op = typeof cl.operator_signatures === 'string'
+      ? JSON.parse(cl.operator_signatures)
+      : cl.operator_signatures
+
+    const sup = typeof cl.supervisor_signatures === 'string'
+      ? JSON.parse(cl.supervisor_signatures)
+      : cl.supervisor_signatures
+
+    Object.assign(operator_signatures, op)
+    Object.assign(supervisor_signatures, sup)
+  })
+
+  return {
+    ...base,
+    items: mergedItems,
+    operator_signatures,
+    supervisor_signatures
+  }
+}
+
