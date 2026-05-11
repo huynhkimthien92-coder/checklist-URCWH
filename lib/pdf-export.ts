@@ -47,39 +47,18 @@ export async function generatePDFReport(checklist: Checklist): Promise<Buffer> {
   let page
 
   try {
-    // 🔧 FIX: Parse items if it's a string (JSON from Supabase)
-    let items: CheckItem[] = checklist.items
-    if (typeof items === 'string') {
-      try {
-        items = JSON.parse(items)
-      } catch (e) {
-        console.warn('Failed to parse items:', e)
-        items = []
-      }
-    }
-    if (!Array.isArray(items)) {
-      items = []
-    }
-
-    const obsItems = items.filter(i => i.category === 'observation')
-    const opItems = items.filter(i => i.category === 'operation')
+    const obsItems = checklist.items.filter(i => i.category === 'observation')
+    const opItems = checklist.items.filter(i => i.category === 'operation')
     const allItems = [...obsItems, ...opItems]
+    const operatorSignatures = typeof checklist.operator_signatures === 'string'? JSON.parse(checklist.operator_signatures): checklist.operator_signatures
+    const supervisorSignatures = typeof checklist.supervisor_signatures === 'string'? JSON.parse(checklist.supervisor_signatures): checklist.supervisor_signatures
 
-    // Parse signatures (already handles JSON parsing)
-    const operatorSignatures = typeof checklist.operator_signatures === 'string'
-      ? JSON.parse(checklist.operator_signatures)
-      : checklist.operator_signatures
-    const supervisorSignatures = typeof checklist.supervisor_signatures === 'string'
-      ? JSON.parse(checklist.supervisor_signatures)
-      : checklist.supervisor_signatures
-
-    console.log(`PDF: Processing ${allItems.length} items (${obsItems.length} observation, ${opItems.length} operation)`)
 
     // Generate table rows HTML
     const tableRowsHtml = generateTableRows(allItems, obsItems.length)
 
     // Create HTML content
-    const htmlContent = createHtmlContent(checklist, tableRowsHtml, operatorSignatures, supervisorSignatures)
+    const htmlContent = createHtmlContent(checklist, tableRowsHtml,operatorSignatures,supervisorSignatures)
 
     // Get or create browser instance
     browser = await getBrowser()
@@ -336,16 +315,6 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
       text-align: center;
       background: #f8fafc;
       padding: 4px 2px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .signature-cell img {
-      max-height: 35px;
-      max-width: 100%;
-      object-fit: contain;
     }
     
     .notes-section {
@@ -449,33 +418,38 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
           <td colspan="2" style="text-align: center; background: #1a3a6b; color: white; font-weight: bold;">
             Tài xế xe nâng / Forklift driver
           </td>
+          
           ${DAYS.map(day => {
             const sig = operatorSignatures?.[day]?.data_url
             return `
               <td colspan="2" class="signature-cell">
                 ${sig
-                  ? `<img src="${sig}" alt="signature" />`
+                  ? `<img src="${sig}" style="height:35px; max-width:100%; object-fit:contain;" />`
                   : '_______'
                 }
               </td>
             `
           }).join('')}
+
+
         </tr>
         <tr>
           <td colspan="2" style="text-align: center; background: #1a3a6b; color: white; font-weight: bold;">
             Giám sát / Supervisor
           </td>
+          
           ${DAYS.map(day => {
             const sig = supervisorSignatures?.[day]?.data_url
             return `
               <td colspan="2" class="signature-cell">
                 ${sig
-                  ? `<img src="${sig}" alt="signature" />`
+                  ? `<img src="${sig}" style="height:35px; max-width:100%; object-fit:contain;" />`
                   : '_______'
                 }
               </td>
-            `
-          }).join('')}
+          `
+        }).join('')}
+
         </tr>
       </tbody>
     </table>
