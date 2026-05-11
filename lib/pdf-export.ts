@@ -571,7 +571,7 @@ function mergeChecklists(checklists: Checklist[]): Checklist {
 
   const mergedItems = base.items.map(item => ({
     ...item,
-    days: {}
+    days: {} as Partial<Record<typeof DAYS[number], any>>
   }))
 
   checklists.forEach(cl => {
