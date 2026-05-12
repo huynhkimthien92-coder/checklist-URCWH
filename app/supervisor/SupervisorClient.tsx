@@ -136,10 +136,6 @@ export default function SupervisorPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {/* BUG FIX: was "/api//${cl.id}" (double slash, missing 'reports') */}
-                      //<a href={`/api/reports/${cl.id}`} className="btn-secondary p-2" title="Xuất Excel">
-                        //<Download className="w-3.5 h-3.5" />
-                      //</a>
                       <Link href={`/supervisor/${cl.id}`} className="btn-primary text-sm py-1.5 px-3">
                         <Eye className="w-3.5 h-3.5" />
                         {cl.status === 'submitted' ? 'Xét duyệt' : 'Xem'}
