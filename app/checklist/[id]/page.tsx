@@ -63,7 +63,7 @@ export default async function ChecklistDetailPage({ params }: { params: { id: st
 
         {/* Info banner */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
-          <strong>Hướng dẫn:</strong> Đánh dấu <strong>"P"</strong> nếu tình trạng đạt,{" "}
+          <strong>Hướng dẫn:</strong> Đánh dấu <strong>✓</strong> nếu tình trạng đạt,{" "}
           <strong>"X"</strong> nếu không đạt. Có thể thêm ảnh và ghi chú chi tiết cho từng hạng mục. Ký tên sau khi hoàn thành mỗi ngày.
         </div>
 
