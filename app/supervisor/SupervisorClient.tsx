@@ -8,8 +8,20 @@ import { Navbar } from '@/components/layout/Navbar'
 
 export default function SupervisorPage() {
   const [checklists, setChecklists] = useState<Checklist[]>([])
+  const [allChecklists, setAllChecklists] = useState<Checklist[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('submitted')
+
+  useEffect(() => {
+    fetch('/api/checklists')
+      .then(r => {
+      if (!r.ok) throw new Error('Failed')
+      return r.json()
+      })
+      .then(d => setAllChecklists(Array.isArray(d) ? d : []))
+      .catch(() => setAllChecklists([]))
+  }, [])
+
 
   useEffect(() => {
     setLoading(true)
@@ -24,9 +36,9 @@ export default function SupervisorPage() {
   }, [filter])
 
   // Compute counts from ALL fetched (not filtered locally)
-  const submitted = checklists.filter(c => c.status === 'submitted').length
-  const approved  = checklists.filter(c => c.status === 'approved').length
-  const draft     = checklists.filter(c => c.status === 'draft').length
+  const submitted = allChecklists.filter(c => c.status === 'submitted').length
+  const approved  = allChecklists.filter(c => c.status === 'approved').length
+  const draft     = allChecklists.filter(c => c.status === 'draft').length
 
   return (
     <div className="min-h-screen bg-slate-50">
