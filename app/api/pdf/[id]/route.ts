@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (error || !checklist) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   try {
-    const buffer = await generatePDFReport(checklists || [])
+    const buffer = await generatePDFReport([checklist])
     const filename = `XeNang_Tuan${checklist.week_number}_${checklist.year}_${checklist.forklift_number || 'xe'}.pdf`
     
  
