@@ -3,7 +3,7 @@ import { useRef, useState, useEffect } from 'react'
 import { RotateCcw, Check, PenLine } from 'lucide-react'
 
 interface SignaturePadProps {
-  onSave: (dataUrl: string) => void
+  onSave: (dataUrl: string) => void | Promise<void>
   existingSignature?: string | null
   label?: string
   disabled?: boolean
