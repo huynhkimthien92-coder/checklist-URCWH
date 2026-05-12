@@ -52,12 +52,7 @@ export default async function ChecklistDetailPage({ params }: { params: { id: st
             </div>
           </div>
 
-          <a
-            href={`/api/reports/${checklist.id}`}
-            className="btn-secondary text-sm no-print"
-          >
-            <Download className="w-4 h-4" /> Xuất Excel
-          </a>
+          
           <ExportPDFButton
             checklistId={checklist.id}
             filename={`XeNang_Tuan${checklist.week_number}_${checklist.year}_${checklist.forklift_number || 'xe'}.pdf`}
