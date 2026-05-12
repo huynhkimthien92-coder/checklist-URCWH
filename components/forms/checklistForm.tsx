@@ -165,6 +165,7 @@ const isDayLocked = (day: string) => {
     }
     await save('approved')
     router.push('/supervisor')
+    router.refresh()
   }
 
   // Stats for active day
