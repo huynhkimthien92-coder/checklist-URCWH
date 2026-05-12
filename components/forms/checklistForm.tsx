@@ -352,7 +352,11 @@ const isDayLocked = (day: string) => {
         {/* Signature Pad Component */}
         <SignaturePad
           onSave={(dataUrl) => signDay(activeDay, dataUrl, isSupervisor)}
-          existingSignature={isSupervisor ? supSigs[activeDay] : opSigs[activeDay]}
+          existingSignature={
+            isSupervisor
+              ? supSigs[activeDay]?.data_url || null 
+              : opSigs[activeDay]?.data_url || null
+          }
           disabled={!canSignDay(activeDay, isSupervisor)}
           label={
             alreadySigned
