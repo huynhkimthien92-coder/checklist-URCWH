@@ -64,6 +64,57 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
     if (isSuper) setSupSigs(prev => ({ ...prev, [day]: sig }))
     else setOpSigs(prev => ({ ...prev, [day]: sig }))
   }
+  // Kiểm tra ngày nào đã được operator ký
+  const isDaySignedByOperator = (day: string): boolean => {
+    return !!opSigs[day]?.data_url
+  }
+  // Kiểm tra ngày nào đã được supervisor ký
+  const isDaySignedBySupervisor = (day: string): boolean => {
+    return !!supSigs[day]?.data_url
+  }
+  const canEdit = () => {
+    if (readOnly) return false
+    return checklist.status === 'draft'
+  }
+  const isDisabled = !canEdit()
+
+ /**
+ * Rules:
+ * - Operator: ký được nếu checklist ở trạng thái 'draft' hoặc 'submitted'
+ * - Supervisor: ký được nếu checklist ở trạng thái 'submitted'
+ * - Có thể ký lại (re-sign) ngay cả khi đã ký rồi
+ */
+  const canSignDay = (day: string, isSuper: boolean): boolean => {
+    if (readOnly) return false
+      if (isSuper) {
+        return checklist.status === 'submitted'
+      }
+    // operator
+    return checklist.status === 'draft'
+  }
+  
+  /**
+   * ✅ Trạng thái badge cho signature
+   */
+  const getSignatureBadgeColor = (day: string, isSuper: boolean): string => {
+  if (isSuper && isDaySignedBySupervisor(day)) {
+    return 'bg-green-100 text-green-700 border-green-300'
+  }
+  if (!isSuper && isDaySignedByOperator(day)) {
+    return 'bg-blue-100 text-blue-700 border-blue-300'
+  }
+  return ''
+}
+  
+const alreadySigned = isSupervisor
+  ? isDaySignedBySupervisor(activeDay)
+  : isDaySignedByOperator(activeDay)
+
+const isDayLocked = (day: string) => {
+  return isDaySignedByOperator(day)
+}
+
+
 
   const save = async (status?: string) => {
     setSaving(true)
@@ -96,6 +147,22 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
   }
 
   const approve = async () => {
+    // ✅ NEW: Kiểm tra xem tất cả ngày đã ký xong chưa
+    const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] // Import từ lib/checklist-data
+    const allDaysSigned = DAYS.every(day => {
+      const dayEntry = items.some(item => item.days[day]?.status !== undefined)
+      if (!dayEntry) return true // Ngày chưa có dữ liệu, bỏ qua
+    
+      return supSigs[day]?.data_url // Phải có chữ ký supervisor
+    })
+    if (!allDaysSigned) {
+      const unsigned = DAYS.filter(day => {
+        const dayEntry = items.some(item => item.days[day]?.status !== undefined)
+        return dayEntry && !supSigs[day]?.data_url
+      })
+      alert(`⚠️ Vui lòng ký xác nhận cho các ngày: ${unsigned.join(', ')}`)
+    return
+    }
     await save('approved')
     router.push('/supervisor')
   }
@@ -173,7 +240,6 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
           <div className="divide-y divide-slate-100">
             {group.items.map((item, idx) => {
               const entry = item.days[activeDay] || { status: '', detail: '', image_url: '' }
-              const isDisabled = readOnly || (isSupervisor && checklist.status !== 'submitted')
               return (
                 <div key={item.id} className={cn(
                   'p-4',
@@ -196,7 +262,7 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
                       {/* P / X buttons */}
                       <div className="flex gap-2 flex-shrink-0">
                         <button
-                          disabled={isDisabled}
+                          disabled={isDisabled || isDayLocked(activeDay)}
                           onClick={() => updateStatus(item.id, activeDay, entry.status === 'pass' ? '' : 'pass')}
                           className={cn(
                             'w-10 h-10 rounded-lg font-bold text-base border-2 transition-all',
@@ -204,9 +270,9 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
                               ? 'bg-green-600 border-green-600 text-white shadow'
                               : 'bg-white border-slate-200 text-slate-400 hover:border-green-400 hover:text-green-600 disabled:opacity-50'
                           )}
-                        >P</button>
+                        >✓</button>
                         <button
-                          disabled={isDisabled}
+                          disabled={isDisabled || isDayLocked(activeDay)}
                           onClick={() => updateStatus(item.id, activeDay, entry.status === 'fail' ? '' : 'fail')}
                           className={cn(
                             'w-10 h-10 rounded-lg font-bold text-base border-2 transition-all',
@@ -220,7 +286,7 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
                       {/* Detail input + image */}
                       <div className="flex-1 flex items-start gap-2">
                         <textarea
-                          disabled={isDisabled}
+                          disabled={isDisabled || isDayLocked(activeDay)}
                           value={entry.detail}
                           onChange={e => updateDetail(item.id, activeDay, e.target.value)}
                           placeholder={entry.status === 'fail' ? 'Mô tả sự cố cụ thể...' : 'Chi tiết (tùy chọn)'}
@@ -237,7 +303,7 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
                           <ImageUploader
                             value={entry.image_url}
                             onChange={url => updateImage(item.id, activeDay, url)}
-                            disabled={isDisabled}
+                            disabled={isDisabled || isDayLocked(activeDay)}
                             checklistId={checklist.id}
                             itemId={item.id}
                             day={activeDay}
@@ -258,51 +324,53 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
         </div>
       ))}
 
-      {/* Signatures section */}
-      <div className="card">
-        <div className="px-4 py-2.5 bg-slate-800">
-          <h3 className="text-white font-semibold text-sm">KÝ TÊN — {DAY_LABELS[activeDay]}</h3>
-        </div>
-        <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
-          {/* Operator signature */}
-          <div className="p-5 space-y-2">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Tài xế xe nâng</p>
-            <p className="text-sm text-slate-600">Forklift driver</p>
-            <div className="pt-2">
-              <SignaturePad
-                onSave={url => signDay(activeDay, url, false)}
-                existingSignature={opSigs[activeDay]?.data_url}
-                label="Tài xế ký tên"
-                disabled={readOnly || isSupervisor || !!opSigs[activeDay]}
-              />
-              {opSigs[activeDay] && (
-                <p className="text-xs text-slate-400 mt-1">
-                  Đã ký bởi {opSigs[activeDay].user_name} —{" "} {new Date(opSigs[activeDay].signed_at).toLocaleString('vi-VN')}
-                </p>
+      {/* Signature section */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-semibold text-slate-700">
+            {isSupervisor ? '🔏 Ký xác nhận Supervisor' : '✍️ Ký xác nhận Tài xế'}
+          </label>
+          {alreadySigned && (
+            <span
+              className={cn(
+                'text-xs font-medium px-2 py-0.5 rounded-full border',
+                getSignatureBadgeColor(activeDay, isSupervisor)
               )}
-            </div>
-          </div>
+            >
+              ✓ Đã ký
+            </span>
+          )}
 
-          {/* Supervisor signature */}
-          <div className="p-5 space-y-2">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Giám sát</p>
-            <p className="text-sm text-slate-600">Supervisor</p>
-            <div className="pt-2">
-              <SignaturePad
-                onSave={url => signDay(activeDay, url, true)}
-                existingSignature={supSigs[activeDay]?.data_url}
-                label="Giám sát ký tên"
-                disabled={readOnly || (!isSupervisor) || checklist.status !== 'submitted'}
-              />
-              {supSigs[activeDay] && (
-                <p className="text-xs text-slate-400 mt-1">
-                  Đã ký bởi {supSigs[activeDay].user_name} - {new Date(supSigs[activeDay].signed_at).toLocaleString('vi-VN')}
-                </p>
-              )}
-            </div>
-          </div>
         </div>
+        {/* Thông báo trạng thái signature */}
+        {isSupervisor && checklist.status !== 'submitted' && (
+          <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+            <span>ⓘ</span>
+            <span>Chỉ ký được khi checklist ở trạng thái "Đã nộp"</span>
+          </div>
+        )}
+        {/* Signature Pad Component */}
+        <SignaturePad
+          day={activeDay}
+          onSign={(dataUrl) => signDay(activeDay, dataUrl, isSupervisor)}
+          existingSig={isSupervisor ? supSigs[activeDay] : opSigs[activeDay]}
+          disabled={!canSignDay(activeDay, isSupervisor)}
+          label={
+            alreadySigned
+            ? (isSupervisor ? "Ký lại Supervisor" : "Ký lại Tài xế")
+            : (isSupervisor ? "Ký Supervisor" : "Ký Tài xế")
+          }
+          // Nếu supervisor đã ký, show "Ký lại" thay vì "Ký"
+          rerequestLabel={alreadySigned ? "Ký lại" : undefined}
+          />
+        {/* Hướng dẫn thêm */}
+        {!isSupervisor && (
+          <p className="text-xs text-slate-500">
+            💡 Ký tên để xác nhận đã kiểm tra xong hạng mục này
+          </p>
+        )}
       </div>
+      
 
       {/* Notes */}
       <div className="card p-4 space-y-2">
