@@ -105,13 +105,6 @@ export default function ChecklistListClient() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <a
-                      href={`/api/reports/${cl.id}`}
-                      className="btn-secondary text-xs py-1.5 px-2.5"
-                      title="Xuất Excel"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                    </a>
                     <Link href={`/checklist/${cl.id}`} className="btn-primary text-xs py-1.5 px-3">
                       {cl.status === 'draft' ? 'Tiếp tục' : 'Xem'}
                     </Link>
