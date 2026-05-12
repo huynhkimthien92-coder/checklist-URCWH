@@ -364,7 +364,7 @@ const isDayLocked = (day: string) => {
             : (isSupervisor ? "Ký Supervisor" : "Ký Tài xế")
           }
           // Nếu supervisor đã ký, show "Ký lại" thay vì "Ký"
-          rerequestLabel={alreadySigned ? "Ký lại" : undefined}
+          //rerequestLabel={alreadySigned ? "Ký lại" : undefined}
           />
         {/* Hướng dẫn thêm */}
         {!isSupervisor && (
