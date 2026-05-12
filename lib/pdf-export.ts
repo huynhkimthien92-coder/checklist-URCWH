@@ -152,6 +152,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
       padding: 8mm;
       background: white;
       page-break-after: always;
+      overflow: visible;
     }
     
     .header-container {
@@ -255,6 +256,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
       border-collapse: collapse;
       margin-bottom: 8px;
       font-size: 8px;
+      page-break-inside: auto;
     }
     
     th {
@@ -264,7 +266,17 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
       font-weight: bold;
       border: 0.5px solid #94a3b8;
     }
-    
+    tr {
+      page-break-inside: avoid;
+      page-break-after: auto;
+    }
+    thead {
+      display: table-header-group;
+    }
+    tfoot {
+      display: table-footer-group;
+    }
+
     th.day-header {
       background: #3a72c4;
       padding: 4px 2px;
