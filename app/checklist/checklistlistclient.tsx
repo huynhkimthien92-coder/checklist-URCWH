@@ -17,6 +17,13 @@ export default function ChecklistListClient() {
   const [showQR, setShowQR] = useState(false)
   const [form, setForm] = useState({ forklift_model: '', forklift_serial: '', forklift_number: '', shift: '1' })
 
+  const [filter, setFilter] = useState('')
+  
+  const filteredChecklists = checklists.filter(cl =>
+    cl.forklift_number?.toLowerCase().includes(filter.toLowerCase())
+  )
+
+
   useEffect(() => {
     fetch('/api/checklists')
       .then(r => {
@@ -54,6 +61,22 @@ export default function ChecklistListClient() {
   return (
     <div className="space-y-5">
       {/* Header */}
+      <div className="flex gap-2">
+        <input
+          className="input w-full"
+          placeholder="Lọc theo số xe (VD: XN-01)"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
+        {filter && (
+          <button
+            onClick={() => setFilter('')}
+            className="text-xs text-blue-500 hover:underline"
+          >Xóa
+          </button>
+        )}
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Checklist của tôi</h1>
@@ -65,7 +88,7 @@ export default function ChecklistListClient() {
       </div>
 
       {/* List */}
-      {checklists.length === 0 ? (
+      {filteredChecklists.length === 0 ? (
         <div className="card p-12 text-center">
           <ClipboardList className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <p className="text-slate-500 font-medium">Chưa có checklist nào</p>
@@ -76,7 +99,7 @@ export default function ChecklistListClient() {
         </div>
       ) : (
         <div className="space-y-3">
-          {checklists.map(cl => {
+          {filteredChecklists.map(cl => {
             const passCount = cl.items?.reduce((acc, item) =>
               acc + Object.values(item.days || {}).filter(d => d.status === 'pass').length, 0) || 0
             const failCount = cl.items?.reduce((acc, item) =>
