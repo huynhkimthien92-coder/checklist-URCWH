@@ -18,7 +18,25 @@ export default function ChecklistListClient() {
   const [form, setForm] = useState({ forklift_model: '', forklift_serial: '', forklift_number: '', shift: '1' })
 
   const [filter, setFilter] = useState('')
+  const [openDropdown, setOpenDropdown] = useState(false)
+  const [search, setSearch] = useState('')
+  const [selectedForklifts, setSelectedForklifts] = useState<string[]>([])
   
+  const forkliftOptions = Array.from(
+    new Set(checklists.map(c => c.forklift_number).filter(Boolean))
+  )
+  
+  const filteredOptions = forkliftOptions.filter(f =>
+    f.toLowerCase().includes(search.toLowerCase())
+  )
+  
+  const filteredChecklists =
+    selectedForklifts.length === 0
+      ? checklists
+      : checklists.filter(cl =>
+          selectedForklifts.includes(cl.forklift_number)
+        )
+
   const filteredChecklists = checklists.filter(cl =>
     cl.forklift_number?.toLowerCase().includes(filter.toLowerCase())
   )
@@ -31,6 +49,12 @@ export default function ChecklistListClient() {
         return r.json()
       })
       .then(d => { setChecklists(d); setLoading(false) })
+  }, [])
+
+  useEffect(() => {
+    const handleClick = () => setOpenDropdown(false)
+    window.addEventListener('click', handleClick)
+    return () => window.removeEventListener('click', handleClick)
   }, [])
 
   const create = async () => {
@@ -61,21 +85,68 @@ export default function ChecklistListClient() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex gap-2">
-        <input
-          className="input w-full"
-          placeholder="Lọc theo số xe (VD: XN-01)"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-        {filter && (
-          <button
-            onClick={() => setFilter('')}
-            className="text-xs text-blue-500 hover:underline"
-          >Xóa
-          </button>
-        )}
+      <div className="relative w-full max-w-sm">
+      {/* Box */}
+      <div
+        onClick={() => setOpenDropdown(prev => !prev)}
+        className="input cursor-pointer flex justify-between items-center"
+      >
+        <span className="text-sm text-slate-600">
+          {selectedForklifts.length > 0
+            ? selectedForklifts.join(', ')
+            : 'Chọn xe để lọc'}
+        </span>
+        <span>▼</span>
       </div>
+      {/* Dropdown */}
+      {openDropdown && (
+        <div className="absolute z-50 mt-2 w-full bg-white border rounded-lg shadow-lg p-2 max-h-60 overflow-auto">
+          {/* Search */}
+          <input
+            className="input mb-2 text-sm"
+            placeholder="Tìm xe..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+          />
+          {/* Options */}
+          {filteredOptions.map(fk => {
+            const active = selectedForklifts.includes(fk)
+            return (
+              <div
+                key={fk}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedForklifts(prev =>
+                    active
+                      ? prev.filter(x => x !== fk)
+                      : [...prev, fk]
+                  )
+                }}
+                className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100 rounded cursor-pointer"
+              >
+                <input type="checkbox" checked={active} readOnly />
+                <span className="text-sm">{fk}</span>
+              </div>
+            )
+          })}
+          {filteredOptions.length === 0 && (
+            <p className="text-xs text-slate-400 text-center py-2">
+              Không tìm thấy
+            </p>
+          )}
+        </div>
+      )}
+      {selectedForklifts.length > 0 && (
+        <button
+          onClick={() => setSelectedForklifts([])}
+          className="text-xs text-blue-500 mt-1"
+        >
+          Xóa bộ lọc
+        </button>
+      )}
+  
+    </div>
 
       <div className="flex items-center justify-between">
         <div>
