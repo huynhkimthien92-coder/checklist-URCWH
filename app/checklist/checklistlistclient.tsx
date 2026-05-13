@@ -83,7 +83,7 @@ export default function ChecklistListClient() {
       {/* Box */}
       <div
         onClick={(e) => {
-          e.stopPropagation() ✅ chặn bubble
+          e.stopPropagation()
           setOpenDropdown(prev => !prev)
         }}
         className="input cursor-pointer flex justify-between items-center"
