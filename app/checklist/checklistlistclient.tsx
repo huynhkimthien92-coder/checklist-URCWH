@@ -159,6 +159,10 @@ export default function ChecklistListClient() {
                   >
                     <QrCode className="w-5 h-5" />
                   </button>
+                </div>
+                <p className="mt-1 text-xs text-slate-400">
+                  Nhập tay hoặc nhấn nút QR để quét mã trên xe
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Ca làm việc</label>
