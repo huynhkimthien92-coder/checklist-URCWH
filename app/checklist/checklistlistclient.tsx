@@ -82,7 +82,10 @@ export default function ChecklistListClient() {
       <div className="relative w-full max-w-sm">
       {/* Box */}
       <div
-        onClick={() => setOpenDropdown(prev => !prev)}
+        onClick={(e) => {
+          e.stopPropagation() ✅ chặn bubble
+          setOpenDropdown(prev => !prev)
+        }}
         className="input cursor-pointer flex justify-between items-center"
       >
         <span className="text-sm text-slate-600">
