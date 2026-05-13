@@ -6,6 +6,7 @@ import { Checklist } from '@/types'
 import { cn, checklistStatusLabel, checklistStatusColor, formatDate } from '@/lib/utils'
 import { Plus, FileText, Download, Loader2, ClipboardList } from 'lucide-react'
 import { getCurrentWeek } from '@/lib/utils'
+import { QRScanner } from '@/components/forms/QRScanner'
 
 export default function ChecklistListClient() {
   const router = useRouter()
