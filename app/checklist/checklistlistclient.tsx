@@ -135,10 +135,29 @@ export default function ChecklistListClient() {
                 <input className="input" placeholder="Serial number" value={form.forklift_serial}
                   onChange={e => setForm(f => ({ ...f, forklift_serial: e.target.value }))} />
               </div>
+              
+              {/* Xe số — nhập tay hoặc quét QR */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Xe số</label>
-                <input className="input" placeholder="VD: XN-01" value={form.forklift_number}
-                  onChange={e => setForm(f => ({ ...f, forklift_number: e.target.value }))} />
+                <div className="flex gap-2">
+                  <input 
+                    className="input flex-1" placeholder="quét QR"
+                    value={form.forklift_number}
+                    onChange={e => setForm(f => ({ ...f, forklift_number: e.target.value }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowQR(true)}
+                    title="Quét mã QR"
+                    className={cn(
+                      'flex-shrink-0 w-10 h-10 rounded-lg border-2 flex items-center justify-center transition-all',
+                      form.forklift_number
+                        ? 'border-blue-500 bg-blue-50 text-blue-600'
+                        : 'border-slate-200 bg-white text-slate-400 hover:border-blue-400 hover:text-blue-600'
+                    )}
+                  >
+                    <QrCode className="w-5 h-5" />
+                  </button>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Ca làm việc</label>
