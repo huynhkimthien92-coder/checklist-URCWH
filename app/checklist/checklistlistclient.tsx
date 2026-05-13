@@ -17,7 +17,6 @@ export default function ChecklistListClient() {
   const [showQR, setShowQR] = useState(false)
   const [form, setForm] = useState({ forklift_model: '', forklift_serial: '', forklift_number: '', shift: '1' })
 
-  const [filter, setFilter] = useState('')
   const [openDropdown, setOpenDropdown] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedForklifts, setSelectedForklifts] = useState<string[]>([])
@@ -36,11 +35,6 @@ export default function ChecklistListClient() {
       : checklists.filter(cl =>
           selectedForklifts.includes(cl.forklift_number)
         )
-
-  const filteredChecklists = checklists.filter(cl =>
-    cl.forklift_number?.toLowerCase().includes(filter.toLowerCase())
-  )
-
 
   useEffect(() => {
     fetch('/api/checklists')
