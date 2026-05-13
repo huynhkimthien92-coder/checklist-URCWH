@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Checklist } from '@/types'
 import { cn, checklistStatusLabel, checklistStatusColor, formatDate } from '@/lib/utils'
-import { Plus, FileText, Download, Loader2, ClipboardList } from 'lucide-react'
+import { Plus, FileText, Download, Loader2, ClipboardList, QrCode } from 'lucide-react'
 import { getCurrentWeek } from '@/lib/utils'
 import { QRScanner } from '@/components/forms/QRScanner'
 
@@ -14,16 +14,16 @@ export default function ChecklistListClient() {
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [showModal, setShowModal] = useState(false)
+  const [showQR, setShowQR] = useState(false)
   const [form, setForm] = useState({ forklift_model: '', forklift_serial: '', forklift_number: '', shift: '1' })
 
   useEffect(() => {
     fetch('/api/checklists')
       .then(r => {
-        if (!r.ok) throw new Error('Failed')  // BUG FIX: was "if (r.ok)" - logic was inverted
+        if (!r.ok) throw new Error('Failed')
         return r.json()
       })
-      .then(d => { setChecklists(Array.isArray(d) ? d : []); setLoading(false) })
-      .catch(() => setLoading(false))
+      .then(d => { setChecklists(d); setLoading(false) })
   }, [])
 
   const create = async () => {
@@ -38,6 +38,11 @@ export default function ChecklistListClient() {
     setCreating(false)
     setShowModal(false)
     if (data.id) router.push(`/checklist/${data.id}`)
+  }
+
+  const handleQRScan = (value: string) => {
+    setForm(f => ({ ...f, forklift_number: value }))
+    setShowQR(false)
   }
 
   if (loading) return (
@@ -106,6 +111,13 @@ export default function ChecklistListClient() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <a
+                      href={`/api/reports/${cl.id}`}
+                      className="btn-secondary text-xs py-1.5 px-2.5"
+                      title="Xuất Excel"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </a>
                     <Link href={`/checklist/${cl.id}`} className="btn-primary text-xs py-1.5 px-3">
                       {cl.status === 'draft' ? 'Tiếp tục' : 'Xem'}
                     </Link>
@@ -136,13 +148,14 @@ export default function ChecklistListClient() {
                 <input className="input" placeholder="Serial number" value={form.forklift_serial}
                   onChange={e => setForm(f => ({ ...f, forklift_serial: e.target.value }))} />
               </div>
-              
+
               {/* Xe số — nhập tay hoặc quét QR */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Xe số</label>
                 <div className="flex gap-2">
-                  <input 
-                    className="input flex-1" placeholder="quét QR"
+                  <input
+                    className="input flex-1"
+                    placeholder="VD: XN-01 hoặc quét QR"
                     value={form.forklift_number}
                     onChange={e => setForm(f => ({ ...f, forklift_number: e.target.value }))}
                   />
@@ -164,6 +177,7 @@ export default function ChecklistListClient() {
                   Nhập tay hoặc nhấn nút QR để quét mã trên xe
                 </p>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Ca làm việc</label>
                 <select className="input" value={form.shift}
@@ -183,6 +197,14 @@ export default function ChecklistListClient() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* QR Scanner — renders on top of the modal */}
+      {showQR && (
+        <QRScanner
+          onScan={handleQRScan}
+          onClose={() => setShowQR(false)}
+        />
       )}
     </div>
   )
