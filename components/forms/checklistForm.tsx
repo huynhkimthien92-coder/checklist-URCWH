@@ -352,21 +352,22 @@ const isDayLocked = (day: string) => {
         )}
         {/* Signature Pad Component */}
         <SignaturePad
-          onSave={(dataUrl) => signDay(activeDay, dataUrl, isSupervisor)}
+          onSave={(url) => signDay(activeDay, url, isSupervisor)}
           existingSignature={
             isSupervisor
-              ? supSigs[activeDay]?.data_url || null 
+              ? supSigs[activeDay]?.data_url || null
               : opSigs[activeDay]?.data_url || null
           }
           disabled={!canSignDay(activeDay, isSupervisor)}
           label={
             alreadySigned
-            ? (isSupervisor ? "Ký lại Supervisor" : "Ký lại Tài xế")
-            : (isSupervisor ? "Ký Supervisor" : "Ký Tài xế")
+              ? (isSupervisor ? "Ký lại Supervisor" : "Ký lại Tài xế")
+              : (isSupervisor ? "Ký Supervisor" : "Ký Tài xế")
           }
-          // Nếu supervisor đã ký, show "Ký lại" thay vì "Ký"
-          //rerequestLabel={alreadySigned ? "Ký lại" : undefined}
-          />
+          checklistId={checklist.id}
+          day={activeDay}
+          role={isSupervisor ? "supervisor" : "operator"}
+        />
         {/* Hướng dẫn thêm */}
         {!isSupervisor && (
           <p className="text-xs text-slate-500">
