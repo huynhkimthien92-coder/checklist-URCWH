@@ -64,7 +64,7 @@ export async function uploadToCloudinary(
     // base64 dataURL — Cloudinary chấp nhận trực tiếp
     form.append('file', source)
   } else if (Buffer.isBuffer(source)) {
-    const blob = new Blob([source])
+    const blob = new Blob([new Uint8Array(source)])
     form.append('file', blob, 'upload')
   } else {
     form.append('file', source as Blob, 'upload')
