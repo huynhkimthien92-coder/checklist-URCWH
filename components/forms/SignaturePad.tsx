@@ -1,19 +1,33 @@
 'use client'
-import { useRef, useState, useEffect } from 'react'
-import { RotateCcw, Check, PenLine } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { RotateCcw, Check, PenLine, Loader2 } from 'lucide-react'
 
 interface SignaturePadProps {
-  onSave: (dataUrl: string) => void | Promise<void>
+  onSave: (url: string) => void | Promise<void>
   existingSignature?: string | null
   label?: string
   disabled?: boolean
+  /** Cần thiết để upload lên Cloudinary */
+  checklistId: string
+  day: string
+  role: 'operator' | 'supervisor'
 }
 
-export function SignaturePad({ onSave, existingSignature, label = 'Ký tên', disabled }: SignaturePadProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [isDrawing, setIsDrawing] = useState(false)
+export function SignaturePad({
+  onSave,
+  existingSignature,
+  label = 'Ký tên',
+  disabled,
+  checklistId,
+  day,
+  role,
+}: SignaturePadProps) {
+  const canvasRef  = useRef<HTMLCanvasElement>(null)
+  const [isDrawing, setIsDrawing]   = useState(false)
   const [hasContent, setHasContent] = useState(false)
-  const [showPad, setShowPad] = useState(false)
+  const [showPad, setShowPad]       = useState(false)
+  const [uploading, setUploading]   = useState(false)
+  const [error, setError]           = useState<string | null>(null)
 
   const getCtx = () => canvasRef.current?.getContext('2d')
 
@@ -21,8 +35,8 @@ export function SignaturePad({ onSave, existingSignature, label = 'Ký tên', di
     if (disabled) return
     setIsDrawing(true)
     const canvas = canvasRef.current!
-    const ctx = getCtx()!
-    const rect = canvas.getBoundingClientRect()
+    const ctx    = getCtx()!
+    const rect   = canvas.getBoundingClientRect()
     const { clientX, clientY } = 'touches' in e ? e.touches[0] : e
     ctx.beginPath()
     ctx.moveTo(clientX - rect.left, clientY - rect.top)
@@ -32,14 +46,14 @@ export function SignaturePad({ onSave, existingSignature, label = 'Ký tên', di
     if (!isDrawing || disabled) return
     e.preventDefault()
     const canvas = canvasRef.current!
-    const ctx = getCtx()!
-    const rect = canvas.getBoundingClientRect()
+    const ctx    = getCtx()!
+    const rect   = canvas.getBoundingClientRect()
     const { clientX, clientY } = 'touches' in e ? e.touches[0] : e
     ctx.lineTo(clientX - rect.left, clientY - rect.top)
     ctx.strokeStyle = '#1e40af'
-    ctx.lineWidth = 2
-    ctx.lineCap = 'round'
-    ctx.lineJoin = 'round'
+    ctx.lineWidth   = 2
+    ctx.lineCap     = 'round'
+    ctx.lineJoin    = 'round'
     ctx.stroke()
     setHasContent(true)
   }
@@ -48,24 +62,54 @@ export function SignaturePad({ onSave, existingSignature, label = 'Ký tên', di
 
   const clear = () => {
     const canvas = canvasRef.current!
-    const ctx = getCtx()!
+    const ctx    = getCtx()!
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     setHasContent(false)
+    setError(null)
   }
 
-  const save = () => {
-    const dataUrl = canvasRef.current!.toDataURL()
-    onSave(dataUrl)
-    setShowPad(false)
+  const save = async () => {
+    if (!hasContent) return
+    setUploading(true)
+    setError(null)
+    try {
+      const dataUrl = canvasRef.current!.toDataURL('image/png')
+
+      const res = await fetch('/api/upload-signature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl, checklistId, day, role }),
+      })
+
+      if (!res.ok) {
+        const msg = await res.text()
+        throw new Error(msg)
+      }
+
+      const data = await res.json()
+      onSave(data.url)
+      setShowPad(false)
+    } catch (err: any) {
+      console.error('[SignaturePad] upload error:', err)
+      setError('Upload thất bại, vui lòng thử lại.')
+    } finally {
+      setUploading(false)
+    }
   }
 
   if (existingSignature) {
     return (
       <div className="flex flex-col items-center gap-1">
-        <img src={existingSignature} alt="Chữ ký" className="h-12 w-auto border-b border-slate-300" />
+        <img
+          src={existingSignature}
+          alt="Chữ ký"
+          className="h-12 w-auto border-b border-slate-300"
+        />
         {!disabled && (
-          <button onClick={() => { onSave(''); setShowPad(true) }}
-            className="text-xs text-blue-600 hover:underline">
+          <button
+            onClick={() => { onSave(''); setShowPad(true) }}
+            className="text-xs text-blue-600 hover:underline"
+          >
             Ký lại
           </button>
         )}
@@ -91,8 +135,15 @@ export function SignaturePad({ onSave, existingSignature, label = 'Ký tên', di
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <h3 className="font-semibold text-slate-800">{label}</h3>
-          <button onClick={() => setShowPad(false)} className="text-slate-400 hover:text-slate-600 text-sm">Huỷ</button>
+          <button
+            onClick={() => setShowPad(false)}
+            className="text-slate-400 hover:text-slate-600 text-sm"
+            disabled={uploading}
+          >
+            Huỷ
+          </button>
         </div>
+
         <div className="p-4">
           <p className="text-xs text-slate-400 text-center mb-2">Ký tên vào ô bên dưới</p>
           <canvas
@@ -108,17 +159,28 @@ export function SignaturePad({ onSave, existingSignature, label = 'Ký tên', di
             onTouchMove={draw}
             onTouchEnd={endDraw}
           />
+          {error && (
+            <p className="text-xs text-red-500 mt-2 text-center">{error}</p>
+          )}
         </div>
+
         <div className="flex items-center gap-3 px-5 pb-5">
-          <button onClick={clear} className="btn-secondary flex-1 justify-center">
+          <button
+            onClick={clear}
+            disabled={uploading}
+            className="btn-secondary flex-1 justify-center"
+          >
             <RotateCcw className="w-4 h-4" /> Xoá
           </button>
           <button
             onClick={save}
-            disabled={!hasContent}
+            disabled={!hasContent || uploading}
             className="btn-primary flex-1 justify-center"
           >
-            <Check className="w-4 h-4" /> Xác nhận
+            {uploading
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Đang lưu...</>
+              : <><Check className="w-4 h-4" /> Xác nhận</>
+            }
           </button>
         </div>
       </div>
