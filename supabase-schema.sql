@@ -19,7 +19,7 @@ create table if not exists users (
 
 -- Seed admin user (password: Admin@123)
 insert into users (name, email, password_hash, role) values
-  ('Admin', 'admin@company.com', '$2b$10$somehashedpassword', 'admin')
+  ('Admin', 'admin@company.com', '$2a$12$eWL4pGRxAh9QNGrM4y1uJuNJRV5ICAcHcq7.d0VjEA2bMUt.xyz7C', 'admin')
 on conflict do nothing;
 
 -- ── CHECKLISTS ───────────────────────────────────────────────
@@ -79,12 +79,53 @@ create policy "checklists_all" on checklists for all
 -- File size limit: 5 MB
 -- Allowed MIME types: image/jpeg, image/png, image/webp
 
--- ── THÊM ADMIN USER ──────────────────────────────────────────
--- Chạy lệnh này trong Supabase SQL Editor để tạo admin đầu tiên.
--- Mật khẩu được hash bằng bcrypt với password: Admin@2025
--- Thay bằng hash thực bằng cách chạy: node -e "const b=require('bcryptjs');console.log(b.hashSync('YourPassword',10))"
--- Hoặc dùng API endpoint POST /api/users từ tài khoản admin đầu tiên.
+create policy "Allow read images"
+on storage.objects
+for select
+using (bucket_id = 'checklist-images');
 
--- Tạm thời seed 1 admin (đổi password sau khi deploy):
--- INSERT INTO users (name, email, password_hash, role) VALUES
---   ('Admin', 'admin@company.com', '$2b$10$...hash_here...', 'admin');
+-- ✅ STEP 1: Thêm UNIQUE constraint
+-- Đảm bảo 1 xe chỉ có 1 checklist/tuần/tài xế
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 
+    FROM pg_constraint 
+    WHERE conname = 'unique_checklist_per_forklift_week'
+  ) THEN
+
+    ALTER TABLE checklists
+    ADD CONSTRAINT unique_checklist_per_forklift_week UNIQUE(
+    forklift_number,
+    week_number,
+    year
+    );
+  END IF;
+END$$;
+
+-- ✅ STEP 2: Thêm index để tối ưu query
+-- Khi kiểm tra duplicate, query sẽ nhanh hơn
+CREATE INDEX IF NOT EXISTS idx_checklists_forklift_week_year
+  ON checklists(forklift_number, week_number, year);
+
+-- ✅ STEP 3: (Optional) Thêm trường tracking cho supervisor review
+-- Nếu muốn track xem supervisor đã review ngày nào
+ALTER TABLE checklists
+ADD COLUMN IF NOT EXISTS supervisor_reviewed_days JSONB DEFAULT '[]'::jsonb;
+-- Cách dùng: supervisor_reviewed_days = '["mon", "tue", "wed"]'
+
+-- ✅ STEP 4: (Optional) Thêm trường last_supervisor_edit
+-- Để biết supervisor sửa/duyệt lần cuối khi nào
+ALTER TABLE checklists
+ADD COLUMN IF NOT EXISTS supervisor_reviewed_at TIMESTAMPTZ;
+
+
+-- JSON check
+ALTER TABLE checklists
+ADD CONSTRAINT check_reviewed_days_format
+CHECK (jsonb_typeof(supervisor_reviewed_days) = 'array');
+
+-- GIN index
+CREATE INDEX IF NOT EXISTS idx_checklists_reviewed_days
+ON checklists USING GIN (supervisor_reviewed_days);
