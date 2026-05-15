@@ -12,6 +12,9 @@
 export const runtime = "nodejs";
 import { Checklist, CheckItem } from '@/types'
 
+import { readFileSync } from 'fs'
+import { join } from 'path'
+
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 const DAY_LABELS: Record<string, string> = {
   mon: 'THỨ HAI', tue: 'THỨ BA', wed: 'THỨ TƯ',
@@ -42,6 +45,15 @@ async function getBrowser() {
   }
 }
 
+function getLogoBase64(): string {
+  try {
+    const logoPath = join(process.cwd(), 'public', 'logo.png')
+    const logoBuffer = readFileSync(logoPath)
+    return logoBuffer.toString('base64')
+  } catch {
+    return '' // fallback nếu không đọc được
+  }
+}
 export async function generatePDFReport(checklists: Checklist[]): Promise<Buffer> {
   
   if (!checklists || checklists.length === 0) {
@@ -122,6 +134,7 @@ export async function generatePDFReport(checklists: Checklist[]): Promise<Buffer
 }
 
 function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operatorSignatures: any, supervisorSignatures: any): string {
+  const logoBase64 = getLogoBase64()
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -380,8 +393,10 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
   <div class="page">
     <!-- Header -->
     <div class="header-container">
-      <div class="logo-box">
-        <img src="data:image/png;base64,${logoBase64}" style="width:100%; height:auto; object-fit:contain;" />
+      <div class="logo-box" style="width:55px; padding:4px; background:white; flex-shrink:0;">
+        ${logoBase64 
+          ?<img src="data:image/png;base64,${logoBase64}" style="width:100%; height:auto; object-fit:contain;" />
+        }
       </div>
       <div class="title-section">
         <h1>BIỂU MẪU KIỂM TRA AN TOÀN HÀNG NGÀY</h1>
