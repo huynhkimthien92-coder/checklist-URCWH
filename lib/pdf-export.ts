@@ -242,7 +242,8 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     
     .info-table td {
       padding: 3px;
-      border: 0.5px solid #94a3b8;
+      border: 0.5px
+      solid #94a3b8;
       font-size: 8px;
     }
     
@@ -287,6 +288,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     tr {
       page-break-inside: avoid;
       page-break-after: auto;
+      height: 30px;
     }
     thead {
       display: table-header-group;
