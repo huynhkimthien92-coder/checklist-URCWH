@@ -395,7 +395,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
   <div class="page">
     <!-- Header -->
     <div class="header-container">
-      <div class="logo-box" style="width:55px; padding:4px; background:white; flex-shrink:0;">
+      <div class="logo-box" style="width:117px; padding:4px; background:white; flex-shrink:0;">
         ${logoBase64 
           ? `<img src="${logoBase64}" style="width:100%; height:auto; object-fit:contain;" />`
           : ''
