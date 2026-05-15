@@ -325,6 +325,8 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
       text-align: left;
       background: white;
       padding: 2px;
+      width: 180px;
+      max-width: 180px;
     }
     
     .item-cell.alt {
@@ -466,8 +468,8 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
         </tr>
         <tr>
           <th style="width: 20px; font-size: 7px;">NHÓM</th>
-          <th style="font-size: 8px;">CHI TIẾT</th>
-          ${DAYS.map(() => '<th style="width: 18px; font-size: 7px;">T.T</th><th style="width: 42px; font-size: 7px;">Ghi chú</th>').join('')}
+          <th style="width: 180px; font-size: 8px;">CHI TIẾT</th>
+          ${DAYS.map(() => '<th style="width: 18px; font-size: 7px;">Tình trạng</th><th style="width: 60px; font-size: 7px;">Ghi chú</th>').join('')}
         </tr>
       </thead>
       <tbody>
