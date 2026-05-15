@@ -112,7 +112,8 @@ export async function generatePDFReport(checklists: Checklist[]): Promise<Buffer
     // Generate PDF
     const pdfBuffer = await page.pdf({
       format: 'A4',
-      landscape: true,
+      //landscape: true,
+      landscape: false,
       margin: {
         top: '3mm',
         right: '3mm',
