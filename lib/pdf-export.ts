@@ -49,9 +49,11 @@ function getLogoBase64(): string {
   try {
     const logoPath = join(process.cwd(), 'public', 'logo.png')
     const logoBuffer = readFileSync(logoPath)
-    return logoBuffer.toString('base64')
-  } catch {
-    return '' // fallback nếu không đọc được
+    const base64 = logoBuffer.toString('base64')
+    return `data:image/png;base64,${base64}`  // ← trả về full data URL
+  } catch (e) {
+    console.error('Logo load error:', e)
+    return ''
   }
 }
 export async function generatePDFReport(checklists: Checklist[]): Promise<Buffer> {
@@ -105,7 +107,7 @@ export async function generatePDFReport(checklists: Checklist[]): Promise<Buffer
     await page.setViewport({ width: 1200, height: 800 })
 
     // Set content
-    await page.setContent(htmlContent, { waitUntil: 'networkidle2' })
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' })
 
     // Generate PDF
     const pdfBuffer = await page.pdf({
@@ -395,7 +397,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     <div class="header-container">
       <div class="logo-box" style="width:55px; padding:4px; background:white; flex-shrink:0;">
         ${logoBase64 
-          ?'<img src="data:image/png;base64,${logoBase64}" style="width:100%; height:auto; object-fit:contain;" />'
+          ? `<img src="${logoBase64}" style="width:100%; height:auto; object-fit:contain;" />`
           : ''
         }
       </div>
