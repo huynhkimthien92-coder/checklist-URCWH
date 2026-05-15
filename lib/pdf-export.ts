@@ -114,10 +114,10 @@ export async function generatePDFReport(checklists: Checklist[]): Promise<Buffer
       format: 'A4',
       landscape: true,
       margin: {
-        top: '5mm',
-        right: '5mm',
-        bottom: '5mm',
-        left: '5mm',
+        top: '3mm',
+        right: '3mm',
+        bottom: '3mm',
+        left: '3mm',
       },
       displayHeaderFooter: false,
     })
@@ -164,7 +164,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     .page {
       width: 297mm;
       min-height: 210mm;
-      padding: 8mm;
+      padding: 4mm;
       background: white;
       page-break-after: always;
       overflow: visible;
@@ -174,7 +174,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 12px;
+      margin-bottom: 6px;
       gap: 10px;
     }
     
@@ -233,7 +233,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     
     .info-table {
       width: 100%;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
       border-collapse: collapse;
     }
     
@@ -252,8 +252,8 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     .instructions {
       background: #f9f9f9;
       border-left: 2px solid #1a3a6b;
-      padding: 4px 6px;
-      margin-bottom: 8px;
+      padding: 2px 6px;
+      margin-bottom: 4px;
       font-size: 8px;
       line-height: 1.3;
     }
@@ -269,15 +269,15 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 8px;
-      font-size: 8px;
+      margin-bottom: 4px;
+      font-size: 7px;
       page-break-inside: auto;
     }
     
     th {
       background: #1a3a6b;
       color: white;
-      padding: 3px;
+      padding: 2px;
       font-weight: bold;
       border: 0.5px solid #94a3b8;
     }
@@ -300,7 +300,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     
     td {
       border: 0.5px solid #94a3b8;
-      padding: 2px;
+      padding: 1px 2px;
     }
     
     .group-obs {
@@ -321,7 +321,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     .item-cell {
       text-align: left;
       background: white;
-      padding: 3px;
+      padding: 2px;
     }
     
     .item-cell.alt {
@@ -366,13 +366,13 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     .signature-cell {
       text-align: center;
       background: #f8fafc;
-      padding: 4px 2px;
+      padding: 2px 1px;
     }
     
     .notes-section {
       background: #f8fafc;
-      padding: 6px;
-      margin-top: 8px;
+      padding: 3px;
+      margin-top: 4px;
       border: 0.5px solid #e2e8f0;
       font-size: 8px;
     }
@@ -384,10 +384,10 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     .footer-text {
       font-size: 7px;
       color: #64748b;
-      margin-top: 8px;
+      margin-top: 4px;
       line-height: 1.4;
       border-top: 0.5px solid #e2e8f0;
-      padding-top: 4px;
+      padding-top: 2px;
     }
   </style>
 </head>
@@ -479,7 +479,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
             return `
               <td colspan="2" class="signature-cell">
                 ${sig
-                  ? `<img src="${sig}" style="height:35px; max-width:100%; object-fit:contain;" />`
+                  ? `<img src="${sig}" style="height:28px; max-width:100%; object-fit:contain;" />`
                   : '_______'
                 }
               </td>
