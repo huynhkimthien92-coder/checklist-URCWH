@@ -396,6 +396,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
       <div class="logo-box" style="width:55px; padding:4px; background:white; flex-shrink:0;">
         ${logoBase64 
           ?<img src="data:image/png;base64,${logoBase64}" style="width:100%; height:auto; object-fit:contain;" />
+          : ''
         }
       </div>
       <div class="title-section">
