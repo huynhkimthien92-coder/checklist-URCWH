@@ -165,9 +165,9 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     
     .logo-box {
       width: 55px;
-      background: #1a3a6b;
+      background: white;
       color: white;
-      padding: 8px;
+      padding: 4px;
       border-radius: 3px;
       text-align: center;
       font-weight: bold;
@@ -381,7 +381,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     <!-- Header -->
     <div class="header-container">
       <div class="logo-box">
-        Universal<br/>Robina
+        <img src="data:image/png;base64,${logoBase64}" style="width:100%; height:auto; object-fit:contain;" />
       </div>
       <div class="title-section">
         <h1>BIỂU MẪU KIỂM TRA AN TOÀN HÀNG NGÀY</h1>
