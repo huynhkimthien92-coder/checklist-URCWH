@@ -254,7 +254,7 @@ const isDayLocked = (day: string) => {
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-slate-800 leading-snug">{item.sub_label}</p>
-                        <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{item.label_vi}</p>
+                        <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{item.label_en} - {item.label_vi}</p>
                       </div>
                     </div>
 
