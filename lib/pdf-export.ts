@@ -288,7 +288,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
     tr {
       page-break-inside: avoid;
       page-break-after: auto;
-      height: 50px;
+      height: 40px;
     }
     thead {
       display: table-header-group;
