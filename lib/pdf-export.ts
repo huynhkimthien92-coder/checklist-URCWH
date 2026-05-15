@@ -552,11 +552,11 @@ function generateTableRows(items: CheckItem[], obsCount: number): string {
     }
 
     // Item description
-    const label = item.sub_label || item.label_vi
+    //const label = item.sub_label || item.label_vi
     html += `
       <td class="item-cell ${bgColor !== 'white' ? 'alt' : ''}">
-        <div class="item-name">${escapeHtml(label)}</div>
-        <div class="item-desc">${escapeHtml(item.label_en)}</div>
+          <div class="item-name">${escapeHtml(item.sub_label ||'')}</div>
+        <div class="item-desc">${escapeHtml(item.label_en - item.label_vi)}</div>
       </td>
     `
 
