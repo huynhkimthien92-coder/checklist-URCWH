@@ -114,6 +114,8 @@ export async function generatePDFReport(checklists: Checklist[]): Promise<Buffer
       format: 'A4',
       //landscape: true,
       landscape: false,
+      printBackground: true,
+      scale: 0.8,
       margin: {
         top: '3mm',
         right: '3mm',
@@ -160,8 +162,6 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
       font-family: 'Arial', sans-serif;
       font-size: 9px;
       color: #0f172a;
-      transform: scale(0.8);
-      transform-origin: top left;
     }
     
     .page {
@@ -382,7 +382,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
       margin-top: 4px;
       border: 0.5px solid #e2e8f0;
       font-size: 8px;
-      height: 80px;
+      height: 100px;
     }
     
     .notes-section strong {
