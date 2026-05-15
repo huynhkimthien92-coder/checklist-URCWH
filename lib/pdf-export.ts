@@ -159,6 +159,8 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
       font-family: 'Arial', sans-serif;
       font-size: 9px;
       color: #0f172a;
+      transform: scale(0.97);
+      transform-origin: top left;
     }
     
     .page {
