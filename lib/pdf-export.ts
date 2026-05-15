@@ -552,7 +552,7 @@ function generateTableRows(items: CheckItem[], obsCount: number): string {
     // Group column with rowspan
     if (isFirstInGroup) {
       const groupClass = !isObservation ? 'group-op' : ''
-      const groupText = isObservation ? 'Q.S' : 'V.H'
+      const groupText = isObservation ? 'OBSERVATION CHECK/ KIỂM TRA QUAN SÁT' : 'OPERATION CHECK/ KIỂM TRA VÂN HÀNH'
       html += `<td rowspan="${groupRowSpan}" class="group-obs ${groupClass}">${groupText}</td>`
     }
 
