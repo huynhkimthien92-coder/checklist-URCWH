@@ -382,6 +382,7 @@ function createHtmlContent(checklist: Checklist, tableRowsHtml: string, operator
       margin-top: 4px;
       border: 0.5px solid #e2e8f0;
       font-size: 8px;
+      height: 100px;
     }
     
     .notes-section strong {
