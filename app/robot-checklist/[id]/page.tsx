@@ -7,12 +7,16 @@ export default async function RobotChecklistDetailPage({ params }: any) {
   const supabase = createServiceClient()
 
   const { data: checklist, error } = await supabase
-    .from('robot_checklists')   // ✅ nhớ đúng tên table
+    .from('robot_checklists')
     .select('*')
     .eq('id', params.id)
-    .single()
+    .maybeSingle() // ✅ tránh crash nếu không có data
 
-  if (error || !checklist) {
+  if (error) {
+    console.error(error)
+  }
+
+  if (!checklist) {
     notFound()
   }
 
@@ -21,8 +25,6 @@ export default async function RobotChecklistDetailPage({ params }: any) {
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 py-5 space-y-4">
-
-        {/* Header */}
         <div>
           <h1 className="text-xl font-bold text-slate-900">
             Robot: {checklist.robot_number}
@@ -32,7 +34,6 @@ export default async function RobotChecklistDetailPage({ params }: any) {
           </p>
         </div>
 
-        {/* Form */}
         <div className="bg-white border border-slate-200 rounded-xl p-4">
           <RobotChecklistForm
             checklist={checklist}
@@ -40,7 +41,6 @@ export default async function RobotChecklistDetailPage({ params }: any) {
             readOnly={checklist.status === 'approved'}
           />
         </div>
-
       </main>
     </div>
   )
