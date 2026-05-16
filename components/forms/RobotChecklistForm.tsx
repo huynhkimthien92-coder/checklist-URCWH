@@ -12,8 +12,7 @@ interface Props {
   readOnly?: boolean
 }
 
-const [opSigs, setOpSigs] = useState(checklist.operator_signatures || {})
-const [supSigs, setSupSigs] = useState(checklist.supervisor_signatures || {})
+
 const signDay = async (day: number, dataUrl: string, isSuper: boolean) => {
   const sig = {
     data_url: dataUrl,
@@ -74,6 +73,8 @@ const STATUS_CYCLE = ['', 'pass', 'fail'] as const
 
 export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const { data: session } = useSession()
+  const [opSigs, setOpSigs] = useState(checklist.operator_signatures || {})
+  const [supSigs, setSupSigs] = useState(checklist.supervisor_signatures || {})
   const role = (session?.user as any)?.role
   const isSupervisor = role === 'supervisor' || role === 'admin'
 
