@@ -1,25 +1,19 @@
-import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
 import { Navbar } from '@/components/layout/Navbar'
-
-async function getChecklist(id: string) {
-  try {
-    const res = await fetch(`${process.env.NEXTAUTH_URL}/api/robot-checklist/${id}`, {
-      cache: 'no-store',
-    })
-
-    if (!res.ok) return null
-    return res.json()
-  } catch (e) {
-    console.error(e)
-    return null
-  }
-}
+import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
+import { createServiceClient } from '@/lib/supabase'
+import { notFound } from 'next/navigation'
 
 export default async function RobotChecklistDetailPage({ params }: any) {
-  const checklist = await getChecklist(params.id)
+  const supabase = createServiceClient()
 
-  if (!checklist) {
-    return <div className="p-6">Không tìm thấy checklist</div>
+  const { data: checklist, error } = await supabase
+    .from('robot_checklists')   // ✅ nhớ đúng tên table
+    .select('*')
+    .eq('id', params.id)
+    .single()
+
+  if (error || !checklist) {
+    notFound()
   }
 
   return (
