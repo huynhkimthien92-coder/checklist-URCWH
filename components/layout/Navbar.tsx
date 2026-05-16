@@ -2,7 +2,7 @@
 import { signOut, useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LogOut, ClipboardCheck, Users, BarChart3, ShieldCheck, Menu, X } from 'lucide-react'
+import { LogOut, ClipboardCheck, Users, BarChart3, ShieldCheck, Menu, X, Bot } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -19,11 +19,13 @@ export function Navbar() {
       { href: '/admin/checklists', label: 'Checklists', icon: ClipboardCheck },
     ] : []),
     ...(role === 'operator' ? [
-      { href: '/checklist', label: 'Checklist của tôi', icon: ClipboardCheck },
+      { href: '/checklist', label: 'Checklist Xe Nâng', icon: ClipboardCheck },
     ] : []),
     ...(role === 'supervisor' ? [
       { href: '/supervisor', label: 'Kiểm tra & Xét duyệt', icon: ShieldCheck },
     ] : []),
+    // Robot checklist hiển thị cho tất cả role
+    { href: '/robot-checklist', label: 'Checklist Robot', icon: Bot },
   ]
 
   const roleLabel: Record<string, string> = {
@@ -45,7 +47,7 @@ export function Navbar() {
               <ClipboardCheck className="w-4.5 h-4.5 text-white" size={18} />
             </div>
             <span className="font-semibold text-slate-800 text-sm hidden sm:block">
-              Checklist Xe Nâng
+              Checklist URCWH
             </span>
           </Link>
 
