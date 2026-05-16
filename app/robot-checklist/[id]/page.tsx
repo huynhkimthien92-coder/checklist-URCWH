@@ -1,4 +1,5 @@
 import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
+import { Navbar } from '@/components/layout/Navbar'
 
 async function getChecklist(id: string) {
   try {
@@ -22,27 +23,31 @@ export default async function RobotChecklistDetailPage({ params }: any) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-5 space-y-4">
+    <div className="min-h-screen bg-slate-50">
+      <Navbar />
 
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">
-          Robot: {checklist.robot_number}
-        </h1>
-        <p className="text-sm text-slate-500 mt-0.5">
-          Tháng {checklist.month}/{checklist.year} · {checklist.area}
-        </p>
-      </div>
+      <main className="max-w-7xl mx-auto px-4 py-5 space-y-4">
 
-      {/* Form */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4">
-        <RobotChecklistForm
-          checklist={checklist}
-          onUpdate={() => {}}
-          readOnly={checklist.status === 'approved'}
-        />
-      </div>
+        {/* Header */}
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">
+            Robot: {checklist.robot_number}
+          </h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Tháng {checklist.month}/{checklist.year} · {checklist.area}
+          </p>
+        </div>
 
+        {/* Form */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4">
+          <RobotChecklistForm
+            checklist={checklist}
+            onUpdate={() => {}}
+            readOnly={checklist.status === 'approved'}
+          />
+        </div>
+
+      </main>
     </div>
   )
 }
