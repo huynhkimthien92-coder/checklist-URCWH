@@ -2,7 +2,8 @@ import { Navbar } from '@/components/layout/Navbar'
 import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
 import { createServiceClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
-import RobotChecklistClient from '@/robot-checklist/RobotChecklistClient.tsx'
+import RobotChecklistClient from '@/app/robot-checklist/RobotChecklistClient'
+
 
 export default async function RobotChecklistDetailPage({ params }: any) {
   const supabase = createServiceClient()
