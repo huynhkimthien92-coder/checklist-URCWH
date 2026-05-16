@@ -5,9 +5,12 @@ import { useSession } from 'next-auth/react'
 import { Plus, Bot, FileDown } from 'lucide-react'
 import { RobotChecklist } from '@/lib/robot-checklist-data'
 import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
+import { useRouter } from 'next/navigation'
 
 export default function RobotChecklistPage() {
+  
   const { data: session } = useSession()
+  const router = useRouter()
   const [checklists, setChecklists]   = useState<RobotChecklist[]>([])
   const [selected, setSelected]       = useState<RobotChecklist | null>(null)
   const [loading, setLoading]         = useState(true)
@@ -65,6 +68,15 @@ export default function RobotChecklistPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bot className="w-6 h-6 text-blue-600" />
+
+          
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-blue-600"
+          >
+            ← Quay lại
+          </button>
+          
           <h1 className="text-xl font-bold text-slate-800">Checklist Robot</h1>
         </div>
         {(role === 'operator' || role === 'admin') && (
