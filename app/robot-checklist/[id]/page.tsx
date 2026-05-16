@@ -20,10 +20,9 @@ export default async function RobotChecklistDetailPage({ params }: any) {
   if (!checklist) {
     return <div className="p-6">Không tìm thấy checklist</div>
   }
-
   return (
-    
-      {/* Header giống forklift */}
+    {/* Header giống forklift */}
+    <div className="max-w-7xl mx-auto px-4 py-5 space-y-4">
       <div>
         <h1 className="text-xl font-bold text-slate-900">
           Robot: {checklist.robot_number}
@@ -41,6 +40,6 @@ export default async function RobotChecklistDetailPage({ params }: any) {
           readOnly={checklist.status === 'approved'}
         />
       </div>
-
+    </div>
   )
 }
