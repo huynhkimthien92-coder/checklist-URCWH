@@ -2,17 +2,17 @@ import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
 
 async function getChecklist(id: string) {
   try {
-    const res = await fetch(`/api/robot-checklist/${id}`, {
+    const res = await fetch(`${process.env.NEXTAUTH_URL}/api/robot-checklist/${id}`, {
       cache: 'no-store',
     })
+
     if (!res.ok) return null
     return res.json()
-  }catch (e) {
+  } catch (e) {
     console.error(e)
     return null
   }
 }
-
 
 export default async function RobotChecklistDetailPage({ params }: any) {
   const checklist = await getChecklist(params.id)
@@ -20,9 +20,11 @@ export default async function RobotChecklistDetailPage({ params }: any) {
   if (!checklist) {
     return <div className="p-6">Không tìm thấy checklist</div>
   }
+
   return (
-    {/* Header giống forklift */}
     <div className="max-w-7xl mx-auto px-4 py-5 space-y-4">
+
+      {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-slate-900">
           Robot: {checklist.robot_number}
@@ -40,6 +42,7 @@ export default async function RobotChecklistDetailPage({ params }: any) {
           readOnly={checklist.status === 'approved'}
         />
       </div>
+
     </div>
   )
 }
