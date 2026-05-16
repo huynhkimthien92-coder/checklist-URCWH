@@ -6,8 +6,8 @@ import { Providers } from './providers'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
-  title: 'Checklist Xe Nâng | Forklift Safety Checklist',
-  description: 'Hệ thống kiểm tra an toàn xe nâng hàng ngày',
+  title: 'Checklist FGWH | Forklift Safety Checklist',
+  description: 'Hệ thống kiểm tra an toàn hàng ngày',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
