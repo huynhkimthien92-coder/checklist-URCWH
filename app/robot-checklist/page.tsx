@@ -142,11 +142,8 @@ export default function RobotChecklistPage() {
             <button
               key={cl.id}
               onClick={() => router.push(`/robot-checklist/${cl.id}`)}
-              className={`w-full text-left p-3 rounded-xl border transition-colors ${
-                selected?.id === cl.id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-slate-200 hover:border-slate-300 bg-white'
-              }`}
+              className="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-white transition-colors"
+
             >
               <div className="font-medium text-slate-800">{cl.robot_number}</div>
               <div className="text-xs text-slate-500">Tháng {cl.month}/{cl.year}</div>
