@@ -4,11 +4,70 @@ import { useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { CheckCircle, XCircle, Minus, Download, Plus, Trash2, Loader2 } from 'lucide-react'
 import { RobotChecklist, RobotCheckItem, getDaysInMonth } from '@/lib/robot-checklist-data'
+import { SignaturePad } from '@/components/forms/SignaturePad'
 
 interface Props {
   checklist: RobotChecklist
   onUpdate: (updated: RobotChecklist) => void
   readOnly?: boolean
+}
+
+const [opSigs, setOpSigs] = useState(checklist.operator_signatures || {})
+const [supSigs, setSupSigs] = useState(checklist.supervisor_signatures || {})
+const signDay = async (day: number, dataUrl: string, isSuper: boolean) => {
+  const sig = {
+    data_url: dataUrl,
+    signed_at: new Date().toISOString(),
+    user_id: (session?.user as any)?.id,
+    user_name: (session?.user as any)?.name,
+  }
+
+  let updated
+
+  if (isSuper) {
+    updated = {
+      ...checklist,
+      supervisor_signatures: { ...supSigs, [day]: sig },
+    }
+    setSupSigs(updated.supervisor_signatures)
+  } else {
+    updated = {
+      ...checklist,
+      operator_signatures: { ...opSigs, [day]: sig },
+    }
+    setOpSigs(updated.operator_signatures)
+  }
+
+  onUpdate(updated)
+
+  await fetch(`/api/robot-checklist/${checklist.id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      operator_signatures: updated.operator_signatures,
+      supervisor_signatures: updated.supervisor_signatures,
+    }),
+  })
+}
+
+const isDaySignedByOperator = (day: number) =>
+  !!opSigs?.[day]?.data_url
+
+const isDaySignedBySupervisor = (day: number) =>
+  !!supSigs?.[day]?.data_url
+
+const canSignDay = (day: number, isSuper: boolean) => {
+  if (readOnly) return false
+
+  if (isSuper) {
+    return checklist.status === 'submitted'
+  }
+
+  return checklist.status === 'draft'
+}
+
+const isDayLocked = (day: number) => {
+  return isDaySignedByOperator(day)
 }
 
 const STATUS_CYCLE = ['', 'pass', 'fail'] as const
@@ -76,6 +135,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     })
   }
 
+
   const removeIncident = async (idx: number) => {
     const incidents = checklist.incidents.filter((_, i) => i !== idx)
     const updated = { ...checklist, incidents }
@@ -98,6 +158,40 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     a.click()
   }
 
+  const submit = async () => {
+  // ✅ check signature trước khi submit
+  const daysWithData = Object.keys(checklist.day_entries || {})
+
+  const unsignedDays = daysWithData.filter(day => !opSigs?.[day]?.data_url)
+
+  if (daysWithData.length === 0) {
+    alert('⚠️ Bạn chưa nhập dữ liệu checklist')
+    return
+  }
+
+  if (unsignedDays.length > 0) {
+    alert(`⚠️ Bạn chưa ký các ngày: ${unsignedDays.join(', ')}`)
+    return
+  }
+
+  setSaving(true)
+
+  try {
+    await fetch(`/api/robot-checklist/${checklist.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'submitted',
+        operator_signatures: opSigs,
+      }),
+    })
+
+    alert('✅ Đã nộp checklist')
+  } finally {
+    setSaving(false)
+  }
+}
+  
   // Group items by category
   const categories = Array.from(new Set(checklist.items.map(i => i.category)))
 
@@ -180,7 +274,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
                     <td className="px-3 py-2 text-center">
                       <button
                         onClick={() => cycleStatus(item.id, activeDay)}
-                        disabled={readOnly}
+                        disabled={readOnly || isDayLocked(activeDay)}
                         className="p-1 rounded-full hover:bg-slate-100 transition-colors"
                       >
                         {status === 'pass' && <CheckCircle className="w-6 h-6 text-green-600" />}
@@ -195,7 +289,86 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
           </tbody>
         </table>
       </div>
+      
+{/* Signature */}
+<div className="space-y-2 mt-4">
+  <div className="flex items-center justify-between">
+    <label className="text-sm font-semibold text-slate-700">
+      {isSupervisor ? '🔏 Ký Supervisor' : '✍️ Ký Operator'}
+    </label>
 
+    {(isSupervisor
+      ? isDaySignedBySupervisor(activeDay)
+      : isDaySignedByOperator(activeDay)
+    ) && (
+      <span className="text-xs px-2 py-0.5 rounded-full border bg-green-100 text-green-700">
+        ✓ Đã ký
+      </span>
+    )}
+  </div>
+
+  {isSupervisor && checklist.status !== 'submitted' && (
+    <div className="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border">
+      Chỉ ký được khi checklist đã submit
+    </div>
+  )}
+
+  <SignaturePad
+    onSave={(url) => signDay(activeDay, url, isSupervisor)}
+    existingSignature={
+      isSupervisor
+        ? supSigs?.[activeDay]?.data_url || null
+        : opSigs?.[activeDay]?.data_url || null
+    }
+    disabled={!canSignDay(activeDay, isSupervisor)}
+    label={
+      isSupervisor
+        ? (isDaySignedBySupervisor(activeDay) ? 'Ký lại Supervisor' : 'Ký Supervisor')
+        : (isDaySignedByOperator(activeDay) ? 'Ký lại Operator' : 'Ký Operator')
+    }
+    checklistId={checklist.id}
+    day={String(activeDay)}
+    role={isSupervisor ? 'supervisor' : 'operator'}
+  />
+</div>
+      
+{/* Actions */}
+{!readOnly && (
+  <div className="flex gap-3 mt-4">
+    
+    {/* Submit cho Operator */}
+    {!isSupervisor && checklist.status === 'draft' && (
+      <button
+        onClick={submit}
+        className="btn-primary"
+      >
+        🚀 Nộp checklist
+      </button>
+    )}
+
+    {/* Approve cho Supervisor (optional) */}
+    {isSupervisor && checklist.status === 'submitted' && (
+      <button
+        onClick={async () => {
+          await fetch(`/api/robot-checklist/${checklist.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: 'approved',
+              supervisor_signatures: supSigs,
+            }),
+          })
+          alert('✅ Đã duyệt checklist')
+        }}
+        className="btn-success"
+      >
+        ✅ Duyệt checklist
+      </button>
+    )}
+
+  </div>
+)}
+  
       {/* Incidents */}
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -217,7 +390,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
                     value={inc.incident}
                     onChange={e => updateIncident(idx, 'incident', e.target.value)}
                     placeholder="Mô tả sự cố"
-                    disabled={readOnly}
+                    disabled={readOnly || isDayLocked(activeDay)}
                     className="input-field text-xs col-span-1"
                   />
                   <input
@@ -225,14 +398,14 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
                     onChange={e => updateIncident(idx, 'date', e.target.value)}
                     placeholder="Ngày"
                     type="date"
-                    disabled={readOnly}
+                    disabled={readOnly || isDayLocked(activeDay)}
                     className="input-field text-xs"
                   />
                   <input
                     value={inc.receiver}
                     onChange={e => updateIncident(idx, 'receiver', e.target.value)}
                     placeholder="Người nhận"
-                    disabled={readOnly}
+                    disabled={readOnly || isDayLocked(activeDay)}
                     className="input-field text-xs"
                   />
                 </div>
