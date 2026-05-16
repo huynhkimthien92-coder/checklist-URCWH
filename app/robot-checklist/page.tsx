@@ -14,7 +14,7 @@ export default function RobotChecklistPage() {
   const [checklists, setChecklists]   = useState<RobotChecklist[]>([])
   const [loading, setLoading]         = useState(true)
   const [showCreate, setShowCreate]   = useState(false)
-
+  const router = useRouter()
   const now = new Date()
   const [filterMonth, setFilterMonth] = useState(now.getMonth() + 1)
   const [filterYear, setFilterYear]   = useState(now.getFullYear())
