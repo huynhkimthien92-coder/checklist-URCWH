@@ -59,7 +59,7 @@ export function Navbar() {
                 href={href}
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                  pathname.startsWith(href)
+                  pathname === href || pathname.startsWith(href + '/')
                     ? 'bg-blue-50 text-blue-700'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 )}
@@ -109,7 +109,7 @@ export function Navbar() {
               onClick={() => setMobileOpen(false)}
               className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium',
-                pathname.startsWith(href)
+                pathname === href || pathname.startsWith(href + '/')
                   ? 'bg-blue-50 text-blue-700'
                   : 'text-slate-700 hover:bg-slate-100'
               )}
