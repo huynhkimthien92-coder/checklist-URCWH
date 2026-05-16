@@ -51,9 +51,9 @@ export default function RobotChecklistPage() {
     if (res.ok) {
       const data = await res.json()
       setChecklists(prev => [data, ...prev])
-      setSelected(data)
       setShowCreate(false)
       setNewRobotNumber('')
+      router.push(`/robot-checklist/${data.id}`)
     } else {
       const err = await res.json()
       alert(err.error)
