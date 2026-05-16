@@ -23,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   try {
     const pdfBuffer = await generateRobotPDFReport(data)
-    return new NextResponse(pdfBuffer, {
+    return new Response(pdfBuffer as unknown as BodyInit, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="robot-checklist-${data.robot_number}-${data.month}-${data.year}.pdf"`,
