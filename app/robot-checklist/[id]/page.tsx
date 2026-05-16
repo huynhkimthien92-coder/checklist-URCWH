@@ -2,6 +2,7 @@ import { Navbar } from '@/components/layout/Navbar'
 import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
 import { createServiceClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
+import RobotChecklistClient from '@/robot-checklist/RobotChecklistClient.tsx'
 
 export default async function RobotChecklistDetailPage({ params }: any) {
   const supabase = createServiceClient()
@@ -35,11 +36,7 @@ export default async function RobotChecklistDetailPage({ params }: any) {
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <RobotChecklistForm
-            checklist={checklist}
-            onUpdate={() => {}}
-            readOnly={checklist.status === 'approved'}
-          />
+          <RobotChecklistClient checklist={checklist} />
         </div>
       </main>
     </div>
