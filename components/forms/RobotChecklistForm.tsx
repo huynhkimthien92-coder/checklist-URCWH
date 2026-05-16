@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { CheckCircle, XCircle, Minus, Download, Plus, Trash2, Loader2 } from 'lucide-react'
 import { RobotChecklist, RobotCheckItem, getDaysInMonth } from '@/lib/robot-checklist-data'
 import { SignaturePad } from '@/components/forms/SignaturePad'
+import { useRouter } from 'next/navigation'
 
 interface Props {
   checklist: RobotChecklist
@@ -20,6 +21,7 @@ const STATUS_CYCLE = ['', 'pass', 'fail'] as const
 
 export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const { data: session } = useSession()
+  const router = useRouter()
   const [opSigs, setOpSigs] = useState(checklist.operator_signatures || {})
   const [supSigs, setSupSigs] = useState(checklist.supervisor_signatures || {})
   const signDay = async (day: number, dataUrl: string, isSuper: boolean) => {
@@ -203,6 +205,14 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       {/* Header info */}
       <div className="flex items-center justify-between">
         <div>
+          
+          <button
+            onClick={() => router.push('/')}
+            className="text-sm text-blue-600 hover:underline"
+          >
+          ← Quay lại
+          </button>
+
           <h2 className="text-lg font-bold text-slate-800">
             Robot: {checklist.robot_number}
           </h2>
