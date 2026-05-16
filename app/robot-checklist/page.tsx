@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 export default function RobotChecklistPage() {
   
   const { data: session } = useSession()
-  const router = useRouter()
+  
   const [checklists, setChecklists]   = useState<RobotChecklist[]>([])
   const [selected, setSelected]       = useState<RobotChecklist | null>(null)
   const [loading, setLoading]         = useState(true)
@@ -65,29 +65,22 @@ export default function RobotChecklistPage() {
   return (
     <div className="p-4 max-w-screen-xl mx-auto space-y-4">
       {/* Page header */}
+      
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Bot className="w-6 h-6 text-blue-600" />
+        <h1 className="text-xl font-bold text-slate-800">
+          Checklist Robot
+        </h1>
 
-          
-          <button
-            onClick={() => router.push('/')}
-            className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-blue-600"
-          >
-            ← Quay lại
-          </button>
-          
-          <h1 className="text-xl font-bold text-slate-800">Checklist Robot</h1>
-        </div>
         {(role === 'operator' || role === 'admin') && (
           <button
             onClick={() => setShowCreate(true)}
-            className="btn-primary flex items-center gap-1.5"
+            className="btn-primary"
           >
-            <Plus className="w-4 h-4" /> Tạo checklist
+            + Tạo checklist
           </button>
         )}
       </div>
+
 
       {/* Filter */}
       <div className="flex gap-3 items-center">
