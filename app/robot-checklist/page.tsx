@@ -12,7 +12,6 @@ export default function RobotChecklistPage() {
   const { data: session } = useSession()
   
   const [checklists, setChecklists]   = useState<RobotChecklist[]>([])
-  const [selected, setSelected]       = useState<RobotChecklist | null>(null)
   const [loading, setLoading]         = useState(true)
   const [showCreate, setShowCreate]   = useState(false)
 
@@ -142,7 +141,7 @@ export default function RobotChecklistPage() {
           ) : checklists.map(cl => (
             <button
               key={cl.id}
-              onClick={() => setSelected(cl)}
+              onClick={() => router.push(`/robot-checklist/${cl.id}`)}
               className={`w-full text-left p-3 rounded-xl border transition-colors ${
                 selected?.id === cl.id
                   ? 'border-blue-500 bg-blue-50'
@@ -162,26 +161,6 @@ export default function RobotChecklistPage() {
           ))}
         </div>
 
-        {/* Detail */}
-        <div className="lg:col-span-3">
-          {selected ? (
-            <div className="bg-white border border-slate-200 rounded-xl p-4">
-              <RobotChecklistForm
-                checklist={selected}
-                onUpdate={updated => {
-                  setSelected(updated)
-                  setChecklists(prev => prev.map(cl => cl.id === updated.id ? updated : cl))
-                }}
-                readOnly={role === 'supervisor' && selected.status === 'reviewed'}
-              />
-            </div>
-          ) : (
-            <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-12 text-center text-slate-400">
-              <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>Chọn checklist để xem chi tiết</p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   )
