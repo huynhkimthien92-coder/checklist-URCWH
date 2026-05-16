@@ -13,61 +13,8 @@ interface Props {
 }
 
 
-const signDay = async (day: number, dataUrl: string, isSuper: boolean) => {
-  const sig = {
-    data_url: dataUrl,
-    signed_at: new Date().toISOString(),
-    user_id: (session?.user as any)?.id,
-    user_name: (session?.user as any)?.name,
-  }
 
-  let updated
 
-  if (isSuper) {
-    updated = {
-      ...checklist,
-      supervisor_signatures: { ...supSigs, [day]: sig },
-    }
-    setSupSigs(updated.supervisor_signatures)
-  } else {
-    updated = {
-      ...checklist,
-      operator_signatures: { ...opSigs, [day]: sig },
-    }
-    setOpSigs(updated.operator_signatures)
-  }
-
-  onUpdate(updated)
-
-  await fetch(`/api/robot-checklist/${checklist.id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      operator_signatures: updated.operator_signatures,
-      supervisor_signatures: updated.supervisor_signatures,
-    }),
-  })
-}
-
-const isDaySignedByOperator = (day: number) =>
-  !!opSigs?.[day]?.data_url
-
-const isDaySignedBySupervisor = (day: number) =>
-  !!supSigs?.[day]?.data_url
-
-const canSignDay = (day: number, isSuper: boolean) => {
-  if (readOnly) return false
-
-  if (isSuper) {
-    return checklist.status === 'submitted'
-  }
-
-  return checklist.status === 'draft'
-}
-
-const isDayLocked = (day: number) => {
-  return isDaySignedByOperator(day)
-}
 
 const STATUS_CYCLE = ['', 'pass', 'fail'] as const
 
@@ -75,6 +22,61 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const { data: session } = useSession()
   const [opSigs, setOpSigs] = useState(checklist.operator_signatures || {})
   const [supSigs, setSupSigs] = useState(checklist.supervisor_signatures || {})
+  const signDay = async (day: number, dataUrl: string, isSuper: boolean) => {
+    const sig = {
+      data_url: dataUrl,
+      signed_at: new Date().toISOString(),
+      user_id: (session?.user as any)?.id,
+      user_name: (session?.user as any)?.name,
+    }
+
+    let updated
+
+    if (isSuper) {
+      updated = {
+        ...checklist,
+        supervisor_signatures: { ...supSigs, [day]: sig },
+      }
+      setSupSigs(updated.supervisor_signatures)
+    } else {
+      updated = {
+        ...checklist,
+        operator_signatures: { ...opSigs, [day]: sig },
+      }
+      setOpSigs(updated.operator_signatures)
+    }
+
+    onUpdate(updated)
+
+    await fetch(`/api/robot-checklist/${checklist.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        operator_signatures: updated.operator_signatures,
+        supervisor_signatures: updated.supervisor_signatures,
+      }),
+    })
+  }
+  const isDaySignedByOperator = (day: number) =>
+    !!opSigs?.[day]?.data_url
+
+  const isDaySignedBySupervisor = (day: number) =>
+    !!supSigs?.[day]?.data_url
+
+  const canSignDay = (day: number, isSuper: boolean) => {
+    if (readOnly) return false
+
+    if (isSuper) {
+    return checklist.status === 'submitted'
+    }
+
+    return checklist.status === 'draft'
+  }
+
+  const isDayLocked = (day: number) => {
+    return isDaySignedByOperator(day)
+  }
+
   const role = (session?.user as any)?.role
   const isSupervisor = role === 'supervisor' || role === 'admin'
 
