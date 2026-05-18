@@ -68,12 +68,14 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     const current = dayEntriesRef.current?.[String(day)]?.[itemId]?.status || ''
     const next = (current === '' ? 'pass' : current === 'pass' ? 'fail' : '') as '' | 'pass' | 'fail'
 
-    const updated: Record<string, Record<string, RobotDayEntry>> = {
+    const updated: Record<string, Record<string, import('@/lib/robot-checklist-data').RobotDayEntry>> = {
       ...dayEntriesRef.current,
       [String(day)]: {
         ...dayEntriesRef.current?.[String(day)],
         [itemId]: {
-          ...(dayEntriesRef.current?.[String(day)]?.[itemId] || { note: '', image_url: '' }),
+          note: '',
+          image_url: '',
+          ...dayEntriesRef.current?.[String(day)]?.[itemId],
           status: next,
         },
       },
