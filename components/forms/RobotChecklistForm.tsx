@@ -13,17 +13,29 @@ import { SignaturePad } from '@/components/forms/SignaturePad'
 
 type RichItem = RobotCheckItem & { days: Record<string, RobotDayEntry> }
 
-function buildItems(template: RobotCheckItem[], day_entries: RobotChecklist['day_entries']): RichItem[] {
+function buildItems(
+  template: RobotCheckItem[],
+  day_entries: RobotChecklist['day_entries'],
+  month: number,
+  year: number
+): RichItem[] {
+
+  const totalDays = getDaysInMonth(month, year)
+
   return template.map(item => {
     const days: Record<string, RobotDayEntry> = {}
-    Object.keys(day_entries || {}).forEach(day => {
-      const entry = (day_entries || {})[day]?.[item.id]
-      days[day] = entry?? {
+
+    for (let d = 1; d <= totalDays; d++) {
+      const day = String(d)
+      const entry = (day_entries || {})?.[day]?.[item.id]
+
+      days[day] = entry ?? {
         status: '',
         note: '',
         image_url: '',
       }
-    })
+    }
+
     return { ...item, days }
   })
 }
@@ -54,7 +66,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       : checklist.day_entries || {}
 
   const [items, setItems] = useState<RichItem[]>(
-    () => buildItems(checklist.items, parsedDayEntries)
+    () => buildItems(checklist.items, parsedDayEntries,checklist.month,checklist.year)
   )
   useEffect(() => {
     const allDays = new Set<string>()
