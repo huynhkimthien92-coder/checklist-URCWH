@@ -37,8 +37,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       ...(body.status                !== undefined && { status: body.status }),
       ...(body.robot_number          !== undefined && { robot_number: body.robot_number }),
       ...(body.area                  !== undefined && { area: body.area }),
+      updated_at: new Date().toISOString(),
     })
-    .eq('id', params.id)
+    .eq('id',String(params.id))
     .select()
     .single()
 
