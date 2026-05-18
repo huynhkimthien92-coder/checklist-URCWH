@@ -26,7 +26,6 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const { data: session } = useSession()
 
   // ── Local state — source of truth, KHÔNG bị ghi đè bởi server response ──
-  const [dayEntries, setDayEntries] = useState(checklist.day_entries || {})
   
   const [dayEntries, setDayEntries] = useState<
     Record<string, Record<string, RobotDayEntry>>
