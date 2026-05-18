@@ -73,13 +73,21 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
     return checklist.status === 'draft'
   }
-
-  const isDayLocked = (day: number) => {
-    return isDaySignedByOperator(day)
-  }
-
   const role = (session?.user as any)?.role
   const isSupervisor = role === 'supervisor' || role === 'admin'
+
+  const isDayLocked = (day: number) => {
+    // Approved: khóa toàn bộ
+    if (checklist.status === 'approved') return true
+ 
+    // Supervisor đang xem: khóa với operator
+    if (checklist.status === 'submitted' && !isSupervisor) return true
+ 
+    // Draft: operator có thể tự do nhập liệu kể cả sau khi đã ký
+    // (chữ ký sẽ cần ký lại nếu data thay đổi — handled bởi UI)
+    return false
+  }
+  
 
   const [saving, setSaving] = useState(false)
   const [activeDay, setActiveDay] = useState<number>(new Date().getDate())
