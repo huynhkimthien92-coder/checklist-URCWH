@@ -71,15 +71,15 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     const updated: Record<string, Record<string, import('@/lib/robot-checklist-data').RobotDayEntry>> = {
       ...dayEntriesRef.current,
       [String(day)]: {
-        ...(dayEntriesRef.current?.[String(day)]?.[itemId] ?? {
+        ...dayEntriesRef.current?.[String(day)],
+        [itemId]: {
           note: '',
           image_url: '',
-        }),
-        status: next,
+          ...(dayEntriesRef.current?.[String(day)]?.[itemId] ?? {}),
+          status: next,
+        } as import('@/lib/robot-checklist-data').RobotDayEntry,
       },
-    },
-  }
-    
+    }
 
     syncRef(updated)
     setDirty(true)
