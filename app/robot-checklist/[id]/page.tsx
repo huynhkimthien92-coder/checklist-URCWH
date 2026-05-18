@@ -44,31 +44,6 @@ export default async function RobotChecklistDetailPage({
         : checklist.supervisor_signatures || {}
   }
 
-  if (checklist) {
-    const parsed =
-      typeof checklist.day_entries === 'string'
-        ? JSON.parse(checklist.day_entries)
-        : checklist.day_entries || {}
-
-    const fixed: any = {}
-
-    for (const day in parsed) {
-      fixed[day] = {}
-
-      const dayData = parsed[day]
-
-      // ✅ map KEY → item.id theo thứ tự
-      Object.keys(dayData).forEach((key, index) => {
-        const item = checklist.items[index]
-
-        if (item) {
-          fixed[day][item.id] = dayData[key]
-        }
-      })
-    }
-
-    checklist.day_entries = fixed
-  }
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
