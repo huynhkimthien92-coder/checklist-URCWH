@@ -64,9 +64,15 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     typeof checklist.day_entries === 'string'
       ? JSON.parse(checklist.day_entries)
       : checklist.day_entries || {}
+  
+  const parsedItems =
+    typeof checklist.items === 'string'
+      ? JSON.parse(checklist.items)
+      : checklist.items || []
+
 
   const [items, setItems] = useState<RichItem[]>(
-    () => buildItems(checklist.items, parsedDayEntries,checklist.month,checklist.year)
+    () => buildItems(parsedItems, parsedDayEntries, checklist.month, checklist.year)
   )
   useEffect(() => {
     const allDays = new Set<string>()
