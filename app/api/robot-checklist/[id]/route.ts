@@ -24,6 +24,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
+  console.log('PATCH ID:', params.id)
+  console.log('BODY day_entries:', body.day_entries)
   const supabase = createServiceClient()
 
   const { data, error } = await supabase
@@ -42,6 +44,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     .eq('id',String(params.id))
     .select()
     .single()
+  console.log('UPDATE RESULT:', data)
+  console.log('UPDATE ERROR:', error)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
