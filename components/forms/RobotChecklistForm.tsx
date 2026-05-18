@@ -159,7 +159,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const save = async () => {
     setSaving(true)
     try {
-      await fetch(`/api/robot-checklist/${checklist.id}`, {
+      const res = await fetch(`/api/robot-checklist/${checklist.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
