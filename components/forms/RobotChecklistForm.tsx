@@ -71,9 +71,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       : checklist.items || []
 
 
-  const [items, setItems] = useState<RichItem[]>(
-    () => buildItems(parsedItems, parsedDayEntries, checklist.month, checklist.year)
-  )
+  const [items, setItems] = useState<RichItem[]>([])
   useEffect(() => {
     const allDays = new Set<string>()
 
@@ -85,6 +83,20 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
     console.log('Loaded days:', Array.from(allDays))
   }, [items])
+  useEffect(() => {
+   if (!parsedItems.length) return
+
+   const built = buildItems(
+    parsedItems,
+    parsedDayEntries,
+    checklist.month,
+    checklist.year
+   )
+
+   console.log('REBUILD ITEMS DAY 5:', built[0].days["5"])
+
+   setItems(built)
+  }, [checklist])
 
   const updateNote = (itemId: string, day: number, note: string) => {
     setItems(prev => prev.map(item => {
