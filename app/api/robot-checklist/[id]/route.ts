@@ -32,7 +32,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })
-  return NextResponse.json(data)
+
+  
+  const cleaned = {
+    ...data,
+    items: safeParse(data.items),
+    day_entries: safeParse(data.day_entries),
+    operator_signatures: safeParse(data.operator_signatures),
+    supervisor_signatures: safeParse(data.supervisor_signatures),
+    incidents: safeParse(data.incidents),
+  }
+
+  return NextResponse.json(cleaned)
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
