@@ -48,7 +48,14 @@ interface Props {
 export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const { data: session } = useSession()
 
-  const [items,     setItems]     = useState<RichItem[]>(() => buildItems(checklist.items, checklist.day_entries || {}))
+  const parsedDayEntries =
+    typeof checklist.day_entries === 'string'
+      ? JSON.parse(checklist.day_entries)
+      : checklist.day_entries || {}
+
+  const [items, setItems] = useState<RichItem[]>(
+    () => buildItems(checklist.items, parsedDayEntries)
+  )
   useEffect(() => {
     const allDays = new Set<string>()
 
