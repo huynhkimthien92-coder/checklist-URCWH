@@ -65,10 +65,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       ? JSON.parse(checklist.day_entries)
       : checklist.day_entries || {}
   
-  const parsedItems =
-    typeof checklist.items === 'string'
-      ? JSON.parse(checklist.items)
-      : checklist.items || []
+
 
 
   const [items, setItems] = useState<RichItem[]>([])
@@ -186,7 +183,10 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const isSupervisor = role === 'supervisor' || role === 'admin'
   const daysCount    = getDaysInMonth(checklist.month, checklist.year)
   const days         = Array.from({ length: daysCount }, (_, i) => i + 1)
-  const categories: string[] = Array.from(new Set(parsedItems.map((i: RobotCheckItem) => i.category)))
+  
+  const categories = Array.from(
+   new Set(items.map(i => i.category))
+  )
   const isDaySignedByOperator   = (day: number) => !!opSigs?.[day]?.data_url
   const isDaySignedBySupervisor = (day: number) => !!supSigs?.[day]?.data_url
   const isDayLocked             = (day: number) => isDaySignedByOperator(day)
@@ -304,7 +304,9 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     setIncidents(p => { const n = [...p]; n[idx] = { ...n[idx], [field]: value }; return n }); setDirty(true)
   }
   const removeIncident = (idx: number) => { setIncidents(p => p.filter((_, i) => i !== idx)); setDirty(true) }
-
+  if (items.length === 0) {
+   return <div className="p-4 text-sm text-slate-500">Đang tải dữ liệu...</div>
+  }
   return (
     <div className="space-y-4">
       {/* Header */}
