@@ -18,6 +18,7 @@ import { useSession } from 'next-auth/react'
 import { CheckCircle, XCircle, Minus, Download, Plus, Trash2, Loader2 } from 'lucide-react'
 import { RobotChecklist, RobotCheckItem, getDaysInMonth } from '@/lib/robot-checklist-data'
 import { SignaturePad } from '@/components/forms/SignaturePad'
+import { useEffect } from 'react'
 
 interface Props {
   checklist: RobotChecklist
@@ -48,6 +49,17 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     checklist.day_entries || {}
   )
 
+  useEffect(() => {
+    if (!checklist.day_entries) return
+
+    // ✅ chỉ sync khi ref đang empty (lúc load lần đầu)
+    if (Object.keys(dayEntriesRef.current || {}).length === 0) {
+      dayEntriesRef.current = checklist.day_entries
+      setDisplayEntries(checklist.day_entries)
+    }
+  }, [checklist.id])
+
+
   // ── Helpers ───────────────────────────────────────────────────────────────
   const role         = (session?.user as any)?.role
   const isSupervisor = role === 'supervisor' || role === 'admin'
@@ -75,12 +87,20 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     const next    = current === '' ? 'pass' : current === 'pass' ? 'fail' : ''
 
     // 2. Ghi vào ref NGAY LẬP TỨC (đồng bộ, trước khi async)
+    
+    const existing =
+      dayEntriesRef.current?.[String(day)]?.[itemId] || {
+      status: '',
+      note: '',
+      image_url: '',
+      }
+
     dayEntriesRef.current = {
       ...dayEntriesRef.current,
       [String(day)]: {
         ...dayEntriesRef.current?.[String(day)],
         [itemId]: {
-          ...dayEntriesRef.current?.[String(day)]?.[itemId],
+          ...existing,
           status: next,
         },
       },
@@ -92,17 +112,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     // 4. Notify parent
     onUpdate({ ...checklist, day_entries: dayEntriesRef.current })
 
-    // 5. PATCH với data từ ref — luôn có đủ tất cả thay đổi trước đó
-    setSaving(true)
-    try {
-      await fetch(`/api/robot-checklist/${checklist.id}`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ day_entries: dayEntriesRef.current }),
-      })
-    } finally {
-      setSaving(false)
-    }
+  
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checklist.id, readOnly, onUpdate])
   // NOTE: không đưa `checklist` vào deps — đây là chủ ý để tránh stale closure.
@@ -137,6 +147,26 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       })
     }
   }
+  const save = async () => {
+    setSaving(true)
+    try {
+      await fetch(`/api/robot-checklist/${checklist.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          day_entries: dayEntriesRef.current,
+          operator_signatures: opSigs,
+          supervisor_signatures: supSigs,
+        }),
+      })
+      alert('✅ Đã lưu checklist')
+    } catch (err) {
+      alert('❌ Lưu thất bại')
+    } finally {
+      setSaving(false)
+    }
+  }
+
 
   // ── Incidents ─────────────────────────────────────────────────────────────
   const addIncident = () => {
@@ -370,6 +400,11 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       {/* Actions */}
       {!readOnly && (
         <div className="flex gap-3 mt-4">
+          {/* ✅ NEW */}
+          <button onClick={save} disabled={saving} className="btn-secondary">
+            💾 Lưu tạm
+          </button>
+
           {!isSupervisor && checklist.status === 'draft' && (
             <button onClick={submit} disabled={saving} className="btn-primary">
               🚀 Nộp checklist
