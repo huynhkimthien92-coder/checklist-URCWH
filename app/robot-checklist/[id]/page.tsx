@@ -25,6 +25,26 @@ export default async function RobotChecklistDetailPage({
     notFound()
   }
 
+  
+  // ✅ FIX PARSE JSON
+  if (checklist) {
+    checklist.day_entries =
+      typeof checklist.day_entries === 'string'
+        ? JSON.parse(checklist.day_entries)
+        : checklist.day_entries || {}
+
+    checklist.operator_signatures =
+      typeof checklist.operator_signatures === 'string'
+        ? JSON.parse(checklist.operator_signatures)
+        : checklist.operator_signatures || {}
+
+    checklist.supervisor_signatures =
+      typeof checklist.supervisor_signatures === 'string'
+        ? JSON.parse(checklist.supervisor_signatures)
+        : checklist.supervisor_signatures || {}
+  }
+
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
