@@ -164,8 +164,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const isSupervisor = role === 'supervisor' || role === 'admin'
   const daysCount    = getDaysInMonth(checklist.month, checklist.year)
   const days         = Array.from({ length: daysCount }, (_, i) => i + 1)
-  const categories   = Array.from(new Set(checklist.items.map(i => i.category)))
-
+  const categories = Array.from(new Set(parsedItems.map(i => i.category)))
   const isDaySignedByOperator   = (day: number) => !!opSigs?.[day]?.data_url
   const isDaySignedBySupervisor = (day: number) => !!supSigs?.[day]?.data_url
   const isDayLocked             = (day: number) => isDaySignedByOperator(day)
