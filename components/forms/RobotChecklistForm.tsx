@@ -19,6 +19,9 @@ import { CheckCircle, XCircle, Minus, Download, Plus, Trash2, Loader2 } from 'lu
 import { RobotChecklist, RobotCheckItem, getDaysInMonth } from '@/lib/robot-checklist-data'
 import { SignaturePad } from '@/components/forms/SignaturePad'
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+const router = useRouter()
 
 
 interface Props {
@@ -165,6 +168,10 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
           supervisor_signatures: supSigs,
         }),
       })
+      const updated = await res.json()
+      onUpdate(updated)
+      router.refresh()
+      
       setDirty(false) // ✅ RESET
       alert('✅ Đã lưu checklist')
     } catch (err) {
