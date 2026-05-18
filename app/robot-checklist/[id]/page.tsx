@@ -63,6 +63,8 @@ export default async function RobotChecklistDetailPage({
         ? JSON.parse(checklist.supervisor_signatures)
         : checklist.supervisor_signatures || {}
   }
+  console.log('ITEMS TYPE:', typeof checklist.items)
+  console.log('ITEMS:', checklist.items)
 
 
   return (
