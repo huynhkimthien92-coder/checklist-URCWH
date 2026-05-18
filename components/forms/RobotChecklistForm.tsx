@@ -5,7 +5,7 @@
 //   - cycleStatus chỉ setItems (local), không PATCH
 //   - Chỉ PATCH khi bấm "Lưu tạm" / ký / submit
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { CheckCircle, XCircle, Minus, Download, Plus, Trash2, Loader2, Save } from 'lucide-react'
 import { RobotChecklist, RobotCheckItem, RobotDayEntry, getDaysInMonth } from '@/lib/robot-checklist-data'
@@ -18,7 +18,11 @@ function buildItems(template: RobotCheckItem[], day_entries: RobotChecklist['day
     const days: Record<string, RobotDayEntry> = {}
     Object.keys(day_entries || {}).forEach(day => {
       const entry = (day_entries || {})[day]?.[item.id]
-      if (entry) days[day] = entry
+      days[day] = entry?? {
+        status: '',
+        note: '',
+        image_url: '',
+      }
     })
     return { ...item, days }
   })
@@ -45,6 +49,77 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const { data: session } = useSession()
 
   const [items,     setItems]     = useState<RichItem[]>(() => buildItems(checklist.items, checklist.day_entries || {}))
+  useEffect(() => {
+    const allDays = new Set<string>()
+
+    items.forEach(item => {
+      Object.keys(item.days).forEach(day => {
+        allDays.add(day)
+      })
+    })
+
+    console.log('Loaded days:', Array.from(allDays))
+  }, [items])
+
+  const updateNote = (itemId: string, day: number, note: string) => {
+    setItems(prev => prev.map(item => {
+      if (item.id !== itemId) return item
+
+      const dayStr = String(day)
+
+      return {
+        ...item,
+        days: {
+          ...item.days,
+          [dayStr]: {
+            ...(item.days[dayStr] ?? { status: '', image_url: '' }),
+            note,
+          },
+        },
+      }
+    }))
+
+    setDirty(true)
+  }
+
+  const uploadImage = async (itemId: string, day: number, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_PRESET!)
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    )
+
+    const { secure_url } = await res.json()
+
+    setItems(prev => prev.map(item => {
+      if (item.id !== itemId) return item
+
+      const dayStr = String(day)
+
+      return {
+        ...item,
+        days: {
+          ...item.days,
+          [dayStr]: {
+            ...(item.days[dayStr] ?? { status: '', note: '' }),
+            image_url: secure_url,
+          },
+        },
+      }
+    }))
+
+    setDirty(true)
+  }
+
+
+
+  
   const [opSigs,    setOpSigs]    = useState(checklist.operator_signatures   || {})
   const [supSigs,   setSupSigs]   = useState(checklist.supervisor_signatures || {})
   const [incidents, setIncidents] = useState(checklist.incidents || [])
@@ -248,7 +323,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
                       </td>
                     )}
                     <td className="px-3 py-2 text-slate-700">{item.label_vi}</td>
-                    <td className="px-3 py-2 text-center">
+                    <td className="px-3 py-2 text-center space-y-1">
                       <button
                         onClick={() => cycleStatus(item.id, activeDay)}
                         disabled={readOnly || isDayLocked(activeDay)}
@@ -258,6 +333,30 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
                         {status === 'fail' && <XCircle className="w-6 h-6 text-red-600" />}
                         {status === '' && <Minus className="w-6 h-6 text-slate-300" />}
                       </button>
+                      <input
+                        type="text"
+                          placeholder="Ghi chú..."
+                          value={item.days[String(activeDay)]?.note || ''}
+                          onChange={(e) => updateNote(item.id, activeDay, e.target.value)}
+                          className="w-full text-xs border rounded px-1 py-0.5"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                            if (file) uploadImage(item.id, activeDay, file)
+                        }}
+                        className="text-xs w-full"
+                      />
+                      {item.days[String(activeDay)]?.image_url && (
+                        <img
+                        src={item.days[String(activeDay)].image_url}
+                        alt="preview"
+                        className="w-12 h-12 object-cover rounded border mx-auto"
+                        />
+                      )}
+
                     </td>
                   </tr>
                 )
