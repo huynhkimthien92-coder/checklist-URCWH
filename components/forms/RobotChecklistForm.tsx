@@ -214,6 +214,19 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
         </div>
         <div className="flex items-center gap-2">
           {saving && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+
+          {/* Nút Lưu tạm — giống xe nâng */}
+          {!readOnly && checklist.status === 'draft' && (
+            <button
+              onClick={() => save()}
+              disabled={saving || !dirty}
+              className="btn-secondary flex items-center gap-1.5"
+            >
+              <Save className="w-4 h-4" />
+              {saving ? 'Đang lưu...' : saved ? '✓ Đã lưu' : 'Lưu tạm'}
+            </button>
+          )}
+
           <button onClick={exportPDF} disabled={saving} className="btn-secondary flex items-center gap-1.5">
             <Download className="w-4 h-4" /> Xuất PDF
           </button>
@@ -323,19 +336,6 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       </div>
 
       {/* Actions */}
-       {/* Nút Lưu tạm — giống xe nâng */}
-          {!readOnly && checklist.status === 'draft' && (
-            <button
-              onClick={() => save()}
-              disabled={saving || !dirty}
-              className="btn-secondary flex items-center gap-1.5"
-            >
-              <Save className="w-4 h-4" />
-              {saving ? 'Đang lưu...' : saved ? '✓ Đã lưu' : 'Lưu tạm'}
-            </button>
-          )}
-
-      
       {!readOnly && (
         <div className="flex gap-3">
           {!isSupervisor && checklist.status === 'draft' && (
