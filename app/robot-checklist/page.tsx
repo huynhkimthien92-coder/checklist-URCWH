@@ -4,7 +4,7 @@
 //      Client Component tự fetch /api/robot-checklist nên có filter, tạo mới và re-fetch được.
 
 import { Navbar } from '@/components/layout/Navbar'
-import RobotChecklistListClient from '.RobotChecklistClient'
+import RobotChecklistListClient from './RobotChecklistClient'
 
 export default function RobotChecklistPage() {
   return (
