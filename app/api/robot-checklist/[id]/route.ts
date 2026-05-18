@@ -56,7 +56,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data, error } = await supabase
     .from('robot_checklists')
     .update({
-      ...(body.day_entries           !== undefined && { day_entries: body.day_entries }),
+      ...(body.day_entries           !== undefined && { day_entries: day_entries: JSON.stringify(body.day_entries) }),
       ...(body.operator_signatures   !== undefined && { operator_signatures: body.operator_signatures }),
       ...(body.supervisor_signatures !== undefined && { supervisor_signatures: body.supervisor_signatures }),
       ...(body.incidents             !== undefined && { incidents: body.incidents }),
