@@ -76,9 +76,9 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
           image_url: '',
         }),
         status: next,
-        } as import('@/lib/robot-checklist-data').RobotDayEntry,
-      },
-    }
+      } as import('@/lib/robot-checklist-data').RobotDayEntry,
+    },
+    
 
     syncRef(updated)
     setDirty(true)
