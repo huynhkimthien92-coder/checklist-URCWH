@@ -21,7 +21,7 @@ import { SignaturePad } from '@/components/forms/SignaturePad'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-const router = useRouter()
+
 
 
 interface Props {
@@ -31,6 +31,7 @@ interface Props {
 }
 
 export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
+  const router = useRouter()
   const { data: session } = useSession()
   const [dirty, setDirty] = useState(false)
 
