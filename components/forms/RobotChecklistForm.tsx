@@ -84,16 +84,26 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     console.log('Loaded days:', Array.from(allDays))
   }, [items])
   useEffect(() => {
-   if (!parsedItems.length) return
+   if (!checklist) return
+
+   const parsedItems: RobotCheckItem[] =
+     typeof checklist.items === 'string'
+      ? JSON.parse(checklist.items)
+      : checklist.items || []
+
+   const parsedDayEntries =
+     typeof checklist.day_entries === 'string'
+      ? JSON.parse(checklist.day_entries)
+      : checklist.day_entries || {}
 
    const built = buildItems(
-    parsedItems,
-    parsedDayEntries,
-    checklist.month,
-    checklist.year
+     parsedItems,
+     parsedDayEntries,
+     checklist.month,
+     checklist.year
    )
 
-   console.log('REBUILD ITEMS DAY 5:', built[0].days["5"])
+   console.log('FIX DAY 5:', built[0].days["5"])
 
    setItems(built)
   }, [checklist])
