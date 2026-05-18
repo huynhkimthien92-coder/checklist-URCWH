@@ -3,7 +3,7 @@ import { Navbar } from '@/components/layout/Navbar'
 import { createServiceClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import RobotChecklistClient from './RobotChecklistClient'
-
+export const dynamic = 'force-dynamic'
 
 function safeParse(value: any) {
   if (!value) return value
