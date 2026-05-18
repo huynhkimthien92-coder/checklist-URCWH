@@ -4,6 +4,20 @@ import { createServiceClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import RobotChecklistClient from './RobotChecklistClient'
 
+
+function safeParse(value: any) {
+  if (!value) return value
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value)
+    } catch {
+      return value
+    }
+  }
+  return value
+}
+
+
 export default async function RobotChecklistDetailPage({
   params,
 }: {
@@ -28,6 +42,7 @@ export default async function RobotChecklistDetailPage({
   
   // ✅ FIX PARSE JSON
   if (checklist) {
+    checklist.items = safeParse(checklist.items)
     checklist.items =
       typeof checklist.items === 'string'
         ? JSON.parse(checklist.items)
