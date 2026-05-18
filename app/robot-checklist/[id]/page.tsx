@@ -1,45 +1,25 @@
-import { Navbar } from '@/components/layout/Navbar'
+'use client'
+// app/robot-checklist/[id]/RobotChecklistClient.tsx
+// FIX: Dùng useState để giữ local state — onUpdate={() => {}} là bug gốc khiến
+//      click check không cập nhật UI dù PATCH API thành công
+
+import { useState } from 'react'
 import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
-import { createServiceClient } from '@/lib/supabase'
-import { notFound } from 'next/navigation'
-import RobotChecklistClient from '@/app/robot-checklist/RobotChecklistClient'
+import { RobotChecklist } from '@/lib/robot-checklist-data'
 
+interface Props {
+  checklist: RobotChecklist
+}
 
-export default async function RobotChecklistDetailPage({ params }: any) {
-  const supabase = createServiceClient()
-
-  const { data: checklist, error } = await supabase
-    .from('robot_checklists')
-    .select('*')
-    .eq('id', params.id)
-    .maybeSingle() // ✅ tránh crash nếu không có data
-
-  if (error) {
-    console.error(error)
-  }
-
-  if (!checklist) {
-    notFound()
-  }
+export default function RobotChecklistClient({ checklist: initial }: Props) {
+  // ✅ Local state — cập nhật ngay khi user click check/sign
+  const [checklist, setChecklist] = useState<RobotChecklist>(initial)
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Navbar />
-
-      <main className="max-w-7xl mx-auto px-4 py-5 space-y-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">
-            Robot: {checklist.robot_number}
-          </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Tháng {checklist.month}/{checklist.year} · {checklist.area}
-          </p>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <RobotChecklistClient checklist={checklist} />
-        </div>
-      </main>
-    </div>
+    <RobotChecklistForm
+      checklist={checklist}
+      onUpdate={setChecklist}                              // ✅ không còn () => {}
+      readOnly={checklist.status === 'approved'}
+    />
   )
 }
