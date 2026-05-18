@@ -88,7 +88,11 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
         ...item,
         days: {
           ...item.days,
-          [dayStr]: { note: '', image_url: '', ...item.days[dayStr], status: next },
+          
+          [dayStr]: { 
+            ...(item.days[dayStr] ?? { note: '', image_url: '' }), 
+            status: next 
+          },
         },
       }
     }))
