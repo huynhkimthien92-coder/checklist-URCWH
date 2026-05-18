@@ -115,17 +115,23 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   useEffect(() => {
    if (!items.length) return
 
-   const daysWithData = Object.keys(items[0].days)
-    .map(Number)
-    .filter(day =>
-      items.some(item => item.days[String(day)]?.status !== '')
-    )
-    .sort((a, b) => b - a)
+   const daysSet = new Set<number>()
 
-   if (daysWithData.length > 0) {
-    setActiveDay(daysWithData[0])
+   items.forEach(item => {
+    Object.entries(item.days).forEach(([day, entry]) => {
+      if (entry?.status !== '') {
+        daysSet.add(Number(day))
+      }
+    })
+   })
+
+   const sortedDays = Array.from(daysSet).sort((a, b) => b - a)
+
+   if (sortedDays.length > 0) {
+    setActiveDay(sortedDays[0])
    }
   }, [items])
+  
   const updateNote = (itemId: string, day: number, note: string) => {
     setItems(prev => prev.map(item => {
       if (item.id !== itemId) return item
