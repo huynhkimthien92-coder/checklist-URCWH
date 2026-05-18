@@ -112,7 +112,20 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
    setItems(built)
   }, [checklist])
+  useEffect(() => {
+   if (!items.length) return
 
+   const daysWithData = Object.keys(items[0].days)
+    .map(Number)
+    .filter(day =>
+      items.some(item => item.days[String(day)]?.status !== '')
+    )
+    .sort((a, b) => b - a)
+
+   if (daysWithData.length > 0) {
+    setActiveDay(daysWithData[0])
+   }
+  }, [items])
   const updateNote = (itemId: string, day: number, note: string) => {
     setItems(prev => prev.map(item => {
       if (item.id !== itemId) return item
