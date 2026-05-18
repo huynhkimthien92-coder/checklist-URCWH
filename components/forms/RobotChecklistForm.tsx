@@ -86,24 +86,29 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   useEffect(() => {
    if (!checklist) return
 
-   const parsedItems: RobotCheckItem[] =
-     typeof checklist.items === 'string'
+   let parsedItems: RobotCheckItem[] =
+    typeof checklist.items === 'string'
       ? JSON.parse(checklist.items)
       : checklist.items || []
 
-   const parsedDayEntries =
-     typeof checklist.day_entries === 'string'
+   let parsedDayEntries: any =
+    typeof checklist.day_entries === 'string'
       ? JSON.parse(checklist.day_entries)
       : checklist.day_entries || {}
 
+   // ✅ FIX DOUBLE JSON
+   if (typeof parsedDayEntries === 'string') {
+    parsedDayEntries = JSON.parse(parsedDayEntries)
+   }
+
    const built = buildItems(
-     parsedItems,
-     parsedDayEntries,
-     checklist.month,
-     checklist.year
+    parsedItems,
+    parsedDayEntries,
+    checklist.month,
+    checklist.year
    )
 
-   console.log('FIX DAY 5:', built[0].days["5"])
+   console.log('DAY 5 FINAL:', built[0].days["5"])
 
    setItems(built)
   }, [checklist])
