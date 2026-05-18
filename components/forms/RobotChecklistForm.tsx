@@ -10,6 +10,7 @@ import { useSession } from 'next-auth/react'
 import { CheckCircle, XCircle, Minus, Download, Plus, Trash2, Loader2, Save } from 'lucide-react'
 import { RobotChecklist, RobotCheckItem, RobotDayEntry, getDaysInMonth } from '@/lib/robot-checklist-data'
 import { SignaturePad } from '@/components/forms/SignaturePad'
+import { useRouter } from 'next/navigation'
 
 type RichItem = RobotCheckItem & { days: Record<string, RobotDayEntry> }
 
@@ -62,7 +63,7 @@ interface Props {
 
 export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const { data: session } = useSession()
-
+  const router = useRouter()
   const parsedDayEntries =
     typeof checklist.day_entries === 'string'
       ? JSON.parse(checklist.day_entries)
@@ -262,6 +263,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
           ...extraPayload,
         }),
       })
+      router.refresh()
       setDirty(false)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
