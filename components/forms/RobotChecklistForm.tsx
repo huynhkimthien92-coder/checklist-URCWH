@@ -20,6 +20,7 @@ import { RobotChecklist, RobotCheckItem, getDaysInMonth } from '@/lib/robot-chec
 import { SignaturePad } from '@/components/forms/SignaturePad'
 import { useEffect } from 'react'
 
+
 interface Props {
   checklist: RobotChecklist
   onUpdate: (updated: RobotChecklist) => void
@@ -28,6 +29,7 @@ interface Props {
 
 export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const { data: session } = useSession()
+  const [dirty, setDirty] = useState(false)
 
   // ── Signatures ──────────────────────────────────────────────────────────
   const [opSigs,  setOpSigs]  = useState(checklist.operator_signatures   || {})
@@ -79,7 +81,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const categories = Array.from(new Set(checklist.items.map(i => i.category)))
 
   // ── cycleStatus — FIX CHÍNH ───────────────────────────────────────────────
-  const cycleStatus = useCallback(async (itemId: string, day: number) => {
+  const cycleStatus = useCallback((itemId: string, day: number) => {
     if (readOnly) return
 
     // 1. Đọc từ ref (luôn mới nhất, không bao giờ stale)
@@ -111,6 +113,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
     // 4. Notify parent
     onUpdate({ ...checklist, day_entries: dayEntriesRef.current })
+    setDirty(true)
 
   
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -119,34 +122,37 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   // dayEntriesRef.current luôn là source of truth thay thế.
 
   // ── signDay ───────────────────────────────────────────────────────────────
-  const signDay = async (day: number, dataUrl: string, isSuper: boolean) => {
+   const signDay = (day: number, dataUrl: string, isSuper: boolean) => {
     const sig = {
-      data_url:  dataUrl,
+      data_url: dataUrl,
       signed_at: new Date().toISOString(),
-      user_id:   (session?.user as any)?.id,
+      user_id: (session?.user as any)?.id,
       user_name: (session?.user as any)?.name,
     }
 
     if (isSuper) {
       const next = { ...supSigs, [day]: sig }
       setSupSigs(next)
-      onUpdate({ ...checklist, day_entries: dayEntriesRef.current, supervisor_signatures: next })
-      await fetch(`/api/robot-checklist/${checklist.id}`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ supervisor_signatures: next }),
+
+      onUpdate({
+        ...checklist,
+        day_entries: dayEntriesRef.current,
+        supervisor_signatures: next,
       })
+      setDirty(true)
     } else {
       const next = { ...opSigs, [day]: sig }
       setOpSigs(next)
-      onUpdate({ ...checklist, day_entries: dayEntriesRef.current, operator_signatures: next })
-      await fetch(`/api/robot-checklist/${checklist.id}`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ operator_signatures: next }),
+
+      onUpdate({
+        ...checklist,
+        day_entries: dayEntriesRef.current,
+        operator_signatures: next,
       })
+      setDirty(true)
     }
   }
+
   const save = async () => {
     setSaving(true)
     try {
@@ -159,6 +165,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
           supervisor_signatures: supSigs,
         }),
       })
+      setDirty(false) // ✅ RESET
       alert('✅ Đã lưu checklist')
     } catch (err) {
       alert('❌ Lưu thất bại')
@@ -175,27 +182,21 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       day_entries: dayEntriesRef.current,
       incidents: [...(checklist.incidents || []), { incident: '', date: '', receiver: '' }],
     })
+    setDirty(true)
+
   }
 
   const updateIncident = async (idx: number, field: string, value: string) => {
     const incidents = [...(checklist.incidents || [])]
     incidents[idx]  = { ...incidents[idx], [field]: value }
     onUpdate({ ...checklist, day_entries: dayEntriesRef.current, incidents })
-    await fetch(`/api/robot-checklist/${checklist.id}`, {
-      method:  'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ incidents }),
-    })
+    setDirty(true)
   }
 
   const removeIncident = async (idx: number) => {
     const incidents = checklist.incidents.filter((_, i) => i !== idx)
     onUpdate({ ...checklist, day_entries: dayEntriesRef.current, incidents })
-    await fetch(`/api/robot-checklist/${checklist.id}`, {
-      method:  'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ incidents }),
-    })
+    setDirty(true)
   }
 
   // ── Submit / Approve ──────────────────────────────────────────────────────
@@ -401,8 +402,13 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       {!readOnly && (
         <div className="flex gap-3 mt-4">
           {/* ✅ NEW */}
-          <button onClick={save} disabled={saving} className="btn-secondary">
-            💾 Lưu tạm
+          <button onClick={save} disabled={!dirty || saving} className="btn-secondary">
+            {saving
+              ? 'Đang lưu...'
+              : dirty
+              ? '💾 Lưu tạm'
+              : '✅ Đã lưu'
+            }
           </button>
 
           {!isSupervisor && checklist.status === 'draft' && (
