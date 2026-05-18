@@ -14,6 +14,7 @@ interface Props {
 export default function RobotChecklistClient({ checklist: initial }: Props) {
   // ✅ Local state — cập nhật ngay khi user click check/sign
   const [checklist, setChecklist] = useState<RobotChecklist>(initial)
+  console.log('CHECKLIST ID:', checklist.id)
 
   return (
     <RobotChecklistForm
