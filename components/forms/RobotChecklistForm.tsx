@@ -14,7 +14,6 @@ import { useSession } from 'next-auth/react'
 import { CheckCircle, XCircle, Minus, Download, Plus, Trash2, Loader2, Save } from 'lucide-react'
 import { RobotChecklist, getDaysInMonth } from '@/lib/robot-checklist-data'
 import { SignaturePad } from '@/components/forms/SignaturePad'
-import type { RobotDayEntry } from '@/lib/robot-checklist-data'
 
 interface Props {
   checklist: RobotChecklist
@@ -26,21 +25,13 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const { data: session } = useSession()
 
   // ── Local state — source of truth, KHÔNG bị ghi đè bởi server response ──
-  
-  const [dayEntries, setDayEntries] = useState<
-    Record<string, Record<string, RobotDayEntry>>
-  >(checklist.day_entries || {})
-
+  const [dayEntries, setDayEntries] = useState(checklist.day_entries || {})
   const [opSigs,     setOpSigs]     = useState(checklist.operator_signatures   || {})
   const [supSigs,    setSupSigs]    = useState(checklist.supervisor_signatures || {})
   const [incidents,  setIncidents]  = useState(checklist.incidents || [])
 
   // dùng ref để cycleStatus luôn đọc đúng state mới nhất (tránh stale closure)
-  
-  const dayEntriesRef = useRef<
-    Record<string, Record<string, RobotDayEntry>>
-  >(dayEntries)
-
+  const dayEntriesRef = useRef(dayEntries)
   const syncRef = (next: typeof dayEntries) => {
     dayEntriesRef.current = next
     setDayEntries(next)
@@ -50,7 +41,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const [saving,    setSaving]    = useState(false)
   const [saved,     setSaved]     = useState(false)
   const [dirty,     setDirty]     = useState(false)
-  const [activeDay, setActiveDay] = useState<number>(new Date().getDate())
+  const initDay = (() => { const e = checklist.day_entries || {}; const d = Object.keys(e).map(Number).filter(n => Object.values(e[String(n)] || {}).some((x: any) => x.status !== "")).sort((a,b)=>b-a); return d[0] ?? new Date().getDate(); })(); const [activeDay, setActiveDay] = useState<number>(initDay)
 
   const role         = (session?.user as any)?.role
   const isSupervisor = role === 'supervisor' || role === 'admin'
@@ -82,10 +73,9 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       [String(day)]: {
         ...dayEntriesRef.current?.[String(day)],
         [itemId]: {
-          ...(dayEntriesRef.current?.[String(day)]?.[itemId] ?? {
-            note: '',
-            image_url: ''
-          }),
+          note: '',
+          image_url: '',
+          ...(dayEntriesRef.current?.[String(day)]?.[itemId] ?? {}),
           status: next,
         } as import('@/lib/robot-checklist-data').RobotDayEntry,
       },
