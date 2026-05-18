@@ -66,9 +66,9 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
     // đọc từ ref — không bao giờ stale dù click nhanh
     const current = dayEntriesRef.current?.[String(day)]?.[itemId]?.status || ''
-    const next    = current === '' ? 'pass' : current === 'pass' ? 'fail' : ''
+    const next = (current === '' ? 'pass' : current === 'pass' ? 'fail' : '') as '' | 'pass' | 'fail'
 
-    const updated = {
+    const updated: Record<string, Record<string, RobotDayEntry>> = {
       ...dayEntriesRef.current,
       [String(day)]: {
         ...dayEntriesRef.current?.[String(day)],
