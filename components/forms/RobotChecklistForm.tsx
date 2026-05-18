@@ -27,8 +27,11 @@ function buildItems(
 
     for (let d = 1; d <= totalDays; d++) {
       const day = String(d)
-      const entry = (day_entries || {})?.[day]?.[item.id]
-
+      
+      const dayData = (day_entries || {})?.[day] || {}
+      const entry = Object.entries(dayData).find(
+       ([key]) => key.trim() === String(item.id).trim()
+       )?.[1]
       days[day] = entry ?? {
         status: '',
         note: '',
