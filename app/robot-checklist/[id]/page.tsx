@@ -28,6 +28,11 @@ export default async function RobotChecklistDetailPage({
   
   // ✅ FIX PARSE JSON
   if (checklist) {
+    checklist.items =
+      typeof checklist.items === 'string'
+        ? JSON.parse(checklist.items)
+        : checklist.items || []
+
     checklist.day_entries =
       typeof checklist.day_entries === 'string'
         ? JSON.parse(checklist.day_entries)
@@ -43,6 +48,7 @@ export default async function RobotChecklistDetailPage({
         ? JSON.parse(checklist.supervisor_signatures)
         : checklist.supervisor_signatures || {}
   }
+
 
   return (
     <div className="min-h-screen bg-slate-50">
