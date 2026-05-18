@@ -1,19 +1,39 @@
 'use client'
 // components/forms/RobotChecklistForm.tsx
-//
-// FIXES trong version này:
-// 1. Bỏ router.refresh() sau save — gây Server Component re-render → props mới
-//    nhưng useState trong RobotChecklistClient không reset → UI trắng/lệch
-// 2. Bỏ onUpdate(serverData) sau save — server trả về items dạng string JSON
-//    → checklist.items.map() crash → màn hình trắng
-// 3. Pattern giống xe nâng: local state làm source of truth, save chỉ PATCH DB,
-//    không dùng response để override state
+// Pattern GIỐNG XE NÂNG (checklistForm.tsx):
+//   - useState(buildItems) với mỗi item chứa days data nhúng vào
+//   - cycleStatus chỉ setItems (local), không PATCH
+//   - Chỉ PATCH khi bấm "Lưu tạm" / ký / submit
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { CheckCircle, XCircle, Minus, Download, Plus, Trash2, Loader2, Save } from 'lucide-react'
-import { RobotChecklist, getDaysInMonth } from '@/lib/robot-checklist-data'
+import { RobotChecklist, RobotCheckItem, RobotDayEntry, getDaysInMonth } from '@/lib/robot-checklist-data'
 import { SignaturePad } from '@/components/forms/SignaturePad'
+
+type RichItem = RobotCheckItem & { days: Record<string, RobotDayEntry> }
+
+function buildItems(template: RobotCheckItem[], day_entries: RobotChecklist['day_entries']): RichItem[] {
+  return template.map(item => {
+    const days: Record<string, RobotDayEntry> = {}
+    Object.keys(day_entries || {}).forEach(day => {
+      const entry = (day_entries || {})[day]?.[item.id]
+      if (entry) days[day] = entry
+    })
+    return { ...item, days }
+  })
+}
+
+function toDayEntries(items: RichItem[]): RobotChecklist['day_entries'] {
+  const result: RobotChecklist['day_entries'] = {}
+  items.forEach(item => {
+    Object.entries(item.days).forEach(([day, entry]) => {
+      if (!result[day]) result[day] = {}
+      result[day][item.id] = entry
+    })
+  })
+  return result
+}
 
 interface Props {
   checklist: RobotChecklist
@@ -24,31 +44,27 @@ interface Props {
 export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const { data: session } = useSession()
 
-  // ── Local state — source of truth, KHÔNG bị ghi đè bởi server response ──
-  const [dayEntries, setDayEntries] = useState(checklist.day_entries || {})
-  const [opSigs,     setOpSigs]     = useState(checklist.operator_signatures   || {})
-  const [supSigs,    setSupSigs]    = useState(checklist.supervisor_signatures || {})
-  const [incidents,  setIncidents]  = useState(checklist.incidents || [])
-
-  // dùng ref để cycleStatus luôn đọc đúng state mới nhất (tránh stale closure)
-  const dayEntriesRef = useRef(dayEntries)
-  const syncRef = (next: typeof dayEntries) => {
-    dayEntriesRef.current = next
-    setDayEntries(next)
-  }
-
-  // ── UI state ───────────────────────────────────────────────────────────────
+  const [items,     setItems]     = useState<RichItem[]>(() => buildItems(checklist.items, checklist.day_entries || {}))
+  const [opSigs,    setOpSigs]    = useState(checklist.operator_signatures   || {})
+  const [supSigs,   setSupSigs]   = useState(checklist.supervisor_signatures || {})
+  const [incidents, setIncidents] = useState(checklist.incidents || [])
   const [saving,    setSaving]    = useState(false)
   const [saved,     setSaved]     = useState(false)
   const [dirty,     setDirty]     = useState(false)
-  const initDay = (() => { const e = checklist.day_entries || {}; const d = Object.keys(e).map(Number).filter(n => Object.values(e[String(n)] || {}).some((x: any) => x.status !== "")).sort((a,b)=>b-a); return d[0] ?? new Date().getDate(); })(); const [activeDay, setActiveDay] = useState<number>(initDay)
+
+  const [activeDay, setActiveDay] = useState<number>(() => {
+    const e = checklist.day_entries || {}
+    const d = Object.keys(e).map(Number)
+      .filter(n => Object.values(e[String(n)] || {}).some((x: any) => x.status !== ''))
+      .sort((a, b) => b - a)
+    return d[0] ?? new Date().getDate()
+  })
 
   const role         = (session?.user as any)?.role
   const isSupervisor = role === 'supervisor' || role === 'admin'
-
-  const daysCount  = getDaysInMonth(checklist.month, checklist.year)
-  const days       = Array.from({ length: daysCount }, (_, i) => i + 1)
-  const categories = Array.from(new Set(checklist.items.map(i => i.category)))
+  const daysCount    = getDaysInMonth(checklist.month, checklist.year)
+  const days         = Array.from({ length: daysCount }, (_, i) => i + 1)
+  const categories   = Array.from(new Set(checklist.items.map(i => i.category)))
 
   const isDaySignedByOperator   = (day: number) => !!opSigs?.[day]?.data_url
   const isDaySignedBySupervisor = (day: number) => !!supSigs?.[day]?.data_url
@@ -60,32 +76,26 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     return checklist.status === 'draft'
   }
 
-  // ── cycleStatus: chỉ update local state, KHÔNG PATCH ─────────────────────
+  // Giống xe nâng updateStatus() — chỉ setItems, KHÔNG PATCH
   const cycleStatus = useCallback((itemId: string, day: number) => {
     if (readOnly) return
-
-    // đọc từ ref — không bao giờ stale dù click nhanh
-    const current = dayEntriesRef.current?.[String(day)]?.[itemId]?.status || ''
-    const next = (current === '' ? 'pass' : current === 'pass' ? 'fail' : '') as '' | 'pass' | 'fail'
-
-    const updated: Record<string, Record<string, import('@/lib/robot-checklist-data').RobotDayEntry>> = {
-      ...dayEntriesRef.current,
-      [String(day)]: {
-        ...dayEntriesRef.current?.[String(day)],
-        [itemId]: Object.assign(
-          { note: '', image_url: '' },
-          dayEntriesRef.current?.[String(day)]?.[itemId] ?? {},
-          { status: next }
-        ) as import('@/lib/robot-checklist-data').RobotDayEntry,
-      },
-    }
-
-    syncRef(updated)
+    setItems(prev => prev.map(item => {
+      if (item.id !== itemId) return item
+      const dayStr  = String(day)
+      const current = item.days[dayStr]?.status || ''
+      const next    = (current === '' ? 'pass' : current === 'pass' ? 'fail' : '') as '' | 'pass' | 'fail'
+      return {
+        ...item,
+        days: {
+          ...item.days,
+          [dayStr]: { note: '', image_url: '', ...item.days[dayStr], status: next },
+        },
+      }
+    }))
     setDirty(true)
     setSaved(false)
   }, [readOnly])
 
-  // ── save: PATCH lên DB, KHÔNG dùng response để override state ─────────────
   const save = async (extraPayload?: Record<string, unknown>) => {
     setSaving(true)
     try {
@@ -93,15 +103,13 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          day_entries:           dayEntriesRef.current,
+          day_entries:           toDayEntries(items),
           operator_signatures:   opSigs,
           supervisor_signatures: supSigs,
           incidents,
           ...extraPayload,
         }),
       })
-      // ✅ KHÔNG gọi onUpdate(serverData) — tránh items bị parse thành string
-      // ✅ KHÔNG gọi router.refresh() — tránh props reset làm trắng trang
       setDirty(false)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
@@ -112,7 +120,6 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     }
   }
 
-  // ── signDay: lưu chữ ký local rồi PATCH ngay (chữ ký cần persist tức thì) ─
   const signDay = async (day: number, dataUrl: string, isSuper: boolean) => {
     const sig = {
       data_url:  dataUrl,
@@ -124,88 +131,57 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       const next = { ...supSigs, [day]: sig }
       setSupSigs(next)
       await fetch(`/api/robot-checklist/${checklist.id}`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ supervisor_signatures: next }),
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ supervisor_signatures: next }),
       })
     } else {
       const next = { ...opSigs, [day]: sig }
       setOpSigs(next)
-      // lưu kèm day_entries để đảm bảo đồng bộ
       await fetch(`/api/robot-checklist/${checklist.id}`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          operator_signatures: next,
-          day_entries: dayEntriesRef.current,
-        }),
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operator_signatures: next, day_entries: toDayEntries(items) }),
       })
-      setDirty(false)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000)
     }
   }
 
-  // ── submit ────────────────────────────────────────────────────────────────
   const submit = async () => {
-    const daysWithData = Object.keys(dayEntriesRef.current).filter(day =>
-      Object.values(dayEntriesRef.current[day] || {}).some((e: any) => e.status !== '')
-    )
-    if (daysWithData.length === 0) {
-      alert('⚠️ Bạn chưa nhập dữ liệu checklist')
-      return
-    }
-    const unsignedDays = daysWithData.filter(day => !opSigs?.[Number(day)]?.data_url)
-    if (unsignedDays.length > 0) {
-      alert(`⚠️ Bạn chưa ký các ngày: ${unsignedDays.join(', ')}`)
-      return
-    }
+    const de = toDayEntries(items)
+    const daysWithData = Object.keys(de).filter(d => Object.values(de[d] || {}).some((e: any) => e.status !== ''))
+    if (daysWithData.length === 0) { alert('⚠️ Bạn chưa nhập dữ liệu checklist'); return }
+    const unsigned = daysWithData.filter(d => !opSigs?.[Number(d)]?.data_url)
+    if (unsigned.length > 0) { alert(`⚠️ Bạn chưa ký các ngày: ${unsigned.join(', ')}`); return }
     await save({ status: 'submitted' })
     alert('✅ Đã nộp checklist')
     onUpdate({ ...checklist, status: 'submitted' })
   }
 
-  // ── approve ───────────────────────────────────────────────────────────────
   const approve = async () => {
     await save({ status: 'approved' })
     alert('✅ Đã duyệt checklist')
     onUpdate({ ...checklist, status: 'approved' })
   }
 
-  // ── exportPDF ─────────────────────────────────────────────────────────────
   const exportPDF = async () => {
-    // lưu trước để PDF có data mới nhất
     if (dirty) await save()
     const res = await fetch(`/api/robot-checklist/${checklist.id}/pdf`)
     if (!res.ok) return alert('Xuất PDF thất bại')
     const blob = await res.blob()
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement('a')
-    a.href     = url
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
     a.download = `robot-checklist-${checklist.robot_number}-${checklist.month}-${checklist.year}.pdf`
     a.click()
   }
 
-  // ── incidents ─────────────────────────────────────────────────────────────
-  const addIncident = () => {
-    setIncidents(p => [...p, { incident: '', date: '', receiver: '' }])
-    setDirty(true)
-  }
+  const addIncident    = () => { setIncidents(p => [...p, { incident: '', date: '', receiver: '' }]); setDirty(true) }
   const updateIncident = (idx: number, field: string, value: string) => {
-    setIncidents(p => {
-      const n = [...p]; n[idx] = { ...n[idx], [field]: value }; return n
-    })
-    setDirty(true)
+    setIncidents(p => { const n = [...p]; n[idx] = { ...n[idx], [field]: value }; return n }); setDirty(true)
   }
-  const removeIncident = (idx: number) => {
-    setIncidents(p => p.filter((_, i) => i !== idx))
-    setDirty(true)
-  }
+  const removeIncident = (idx: number) => { setIncidents(p => p.filter((_, i) => i !== idx)); setDirty(true) }
 
-  // ── render ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
@@ -214,19 +190,12 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
         </div>
         <div className="flex items-center gap-2">
           {saving && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
-
-          {/* Nút Lưu tạm — giống xe nâng */}
           {!readOnly && checklist.status === 'draft' && (
-            <button
-              onClick={() => save()}
-              disabled={saving || !dirty}
-              className="btn-secondary flex items-center gap-1.5"
-            >
+            <button onClick={() => save()} disabled={saving || !dirty} className="btn-secondary flex items-center gap-1.5">
               <Save className="w-4 h-4" />
               {saving ? 'Đang lưu...' : saved ? '✓ Đã lưu' : 'Lưu tạm'}
             </button>
           )}
-
           <button onClick={exportPDF} disabled={saving} className="btn-secondary flex items-center gap-1.5">
             <Download className="w-4 h-4" /> Xuất PDF
           </button>
@@ -236,21 +205,15 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       {/* Day selector */}
       <div className="flex gap-1 flex-wrap">
         {days.map(d => {
-          const hasAny = checklist.items.some(item => dayEntries?.[String(d)]?.[item.id]?.status)
+          const hasAny = items.some(item => item.days[String(d)]?.status)
           return (
-            <button
-              key={d}
-              onClick={() => setActiveDay(d)}
+            <button key={d} onClick={() => setActiveDay(d)}
               className={`w-8 h-8 text-xs rounded font-medium transition-colors ${
-                activeDay === d
-                  ? 'bg-blue-600 text-white'
-                  : hasAny
-                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                activeDay === d ? 'bg-blue-600 text-white'
+                  : hasAny ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
-            >
-              {d}
-            </button>
+            >{d}</button>
           )
         })}
       </div>
@@ -268,18 +231,15 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
           </thead>
           <tbody>
             {categories.map(cat => {
-              const catItems = checklist.items.filter(i => i.category === cat)
+              const catItems = items.filter(i => i.category === cat)
               return catItems.map((item, idx) => {
-                const status = dayEntries?.[String(activeDay)]?.[item.id]?.status || ''
-                const bg     = status === 'pass' ? 'bg-green-50' : status === 'fail' ? 'bg-red-50' : ''
+                const status = item.days[String(activeDay)]?.status || ''
+                const bg = status === 'pass' ? 'bg-green-50' : status === 'fail' ? 'bg-red-50' : ''
                 return (
                   <tr key={item.id} className={`border-t ${bg}`}>
-                    <td className="px-3 py-2 text-slate-500 text-xs">{checklist.items.indexOf(item) + 1}</td>
+                    <td className="px-3 py-2 text-slate-500 text-xs">{items.indexOf(item) + 1}</td>
                     {idx === 0 && (
-                      <td
-                        rowSpan={catItems.length}
-                        className="px-3 py-2 font-semibold text-xs text-slate-700 bg-slate-50 border-r align-middle"
-                      >
+                      <td rowSpan={catItems.length} className="px-3 py-2 font-semibold text-xs text-slate-700 bg-slate-50 border-r align-middle">
                         {cat}
                       </td>
                     )}
@@ -291,8 +251,8 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
                         className="p-1 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {status === 'pass' && <CheckCircle className="w-6 h-6 text-green-600" />}
-                        {status === 'fail' && <XCircle    className="w-6 h-6 text-red-600"   />}
-                        {status === ''    && <Minus       className="w-6 h-6 text-slate-300" />}
+                        {status === 'fail' && <XCircle className="w-6 h-6 text-red-600" />}
+                        {status === '' && <Minus className="w-6 h-6 text-slate-300" />}
                       </button>
                     </td>
                   </tr>
@@ -314,20 +274,16 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
           )}
         </div>
         {isSupervisor && checklist.status !== 'submitted' && (
-          <p className="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border">
-            Chỉ ký được khi checklist đã submit
-          </p>
+          <p className="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border">Chỉ ký được khi checklist đã submit</p>
         )}
         <SignaturePad
           onSave={(url) => signDay(activeDay, url, isSupervisor)}
-          existingSignature={
-            isSupervisor ? supSigs?.[activeDay]?.data_url || null : opSigs?.[activeDay]?.data_url || null
-          }
+          existingSignature={isSupervisor ? supSigs?.[activeDay]?.data_url || null : opSigs?.[activeDay]?.data_url || null}
           disabled={!canSignDay(activeDay, isSupervisor)}
           label={
             isSupervisor
               ? (isDaySignedBySupervisor(activeDay) ? 'Ký lại Supervisor' : 'Ký Supervisor')
-              : (isDaySignedByOperator(activeDay)   ? 'Ký lại Operator'   : 'Ký Operator')
+              : (isDaySignedByOperator(activeDay) ? 'Ký lại Operator' : 'Ký Operator')
           }
           checklistId={checklist.id}
           day={String(activeDay)}
@@ -339,14 +295,10 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       {!readOnly && (
         <div className="flex gap-3">
           {!isSupervisor && checklist.status === 'draft' && (
-            <button onClick={submit} disabled={saving} className="btn-primary">
-              🚀 Nộp checklist
-            </button>
+            <button onClick={submit} disabled={saving} className="btn-primary">🚀 Nộp checklist</button>
           )}
           {isSupervisor && checklist.status === 'submitted' && (
-            <button onClick={approve} disabled={saving} className="btn-success">
-              ✅ Duyệt checklist
-            </button>
+            <button onClick={approve} disabled={saving} className="btn-success">✅ Duyệt checklist</button>
           )}
         </div>
       )}
@@ -368,12 +320,9 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
             {incidents.map((inc, idx) => (
               <div key={idx} className="flex gap-2 items-start border rounded-lg p-2 bg-slate-50">
                 <div className="flex-1 grid grid-cols-3 gap-2">
-                  <input value={inc.incident} onChange={e => updateIncident(idx, 'incident', e.target.value)}
-                    placeholder="Mô tả sự cố" disabled={readOnly} className="input-field text-xs" />
-                  <input value={inc.date} onChange={e => updateIncident(idx, 'date', e.target.value)}
-                    type="date" disabled={readOnly} className="input-field text-xs" />
-                  <input value={inc.receiver} onChange={e => updateIncident(idx, 'receiver', e.target.value)}
-                    placeholder="Người nhận" disabled={readOnly} className="input-field text-xs" />
+                  <input value={inc.incident} onChange={e => updateIncident(idx, 'incident', e.target.value)} placeholder="Mô tả sự cố" disabled={readOnly} className="input-field text-xs" />
+                  <input value={inc.date} onChange={e => updateIncident(idx, 'date', e.target.value)} type="date" disabled={readOnly} className="input-field text-xs" />
+                  <input value={inc.receiver} onChange={e => updateIncident(idx, 'receiver', e.target.value)} placeholder="Người nhận" disabled={readOnly} className="input-field text-xs" />
                 </div>
                 {!readOnly && (
                   <button onClick={() => removeIncident(idx)} className="text-red-400 hover:text-red-600">
@@ -385,7 +334,6 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
           </div>
         )}
       </div>
-
     </div>
   )
 }
