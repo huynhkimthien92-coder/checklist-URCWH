@@ -83,7 +83,7 @@ export default async function RobotChecklistDetailPage({
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <RobotChecklistClient checklist={checklist} />
+          <RobotChecklistClient key={checklist.updated_at} checklist={checklist} />
         </div>
       </main>
     </div>
