@@ -186,7 +186,8 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
   const [activeDay, setActiveDay] = useState<number>(() => {
     const e = checklist.day_entries || {}
-    // Chỉ tính ngày có ít nhất 1 item pass/fail thực sự
+  
+    // Tìm tất cả ngày có dữ liệu pass/fail
     const daysWithData = Object.entries(e)
       .filter(([, dayMap]) =>
         Object.values(dayMap || {}).some((entry: any) => {
@@ -195,14 +196,36 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
         })
       )
       .map(([day]) => Number(day))
-      .sort((a, b) => b - a)
-
-    // Ưu tiên: ngày mới nhất có data → ngày hôm nay → ngày 1
-    if (daysWithData.length > 0) return daysWithData[0]
+  
+    // ✅ Lấy ngày lớn nhất (ngày cuối cùng)
+    if (daysWithData.length > 0) {
+      return Math.max(...daysWithData)
+    }
+  
     const today = new Date().getDate()
     const daysInMonth = getDaysInMonth(checklist.month, checklist.year)
     return today <= daysInMonth ? today : 1
   })
+
+  // ✅ Thêm: Đồng bộ activeDay khi dữ liệu thay đổi
+  useEffect(() => {
+    if (!checklist.day_entries) return
+  
+    const e = checklist.day_entries
+    const daysWithData = Object.entries(e)
+      .filter(([, dayMap]) =>
+        Object.values(dayMap || {}).some((entry: any) => {
+          const s = normalizeStatus(entry?.status)
+          return s === 'pass' || s === 'fail'
+        })
+      )
+      .map(([day]) => Number(day))
+  
+    if (daysWithData.length > 0) {
+      const maxDay = Math.max(...daysWithData)
+      setActiveDay(maxDay)
+    }
+  }, [checklist.day_entries])
 
   const lastActiveSyncRef = useRef<string | null>(null)
 
