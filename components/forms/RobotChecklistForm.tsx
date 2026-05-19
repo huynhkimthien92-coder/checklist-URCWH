@@ -4,14 +4,28 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { RobotChecklist, RobotCheckItem } from '@/lib/robot-checklist-data'
 
-// ===== TYPES =====
+// ================= TYPE =================
 type Props = {
   checklist: RobotChecklist
   readOnly?: boolean
   isSupervisor?: boolean
 }
 
-// ===== COMPONENT =====
+// ================= HELPER =================
+function groupByCategory(items: RobotCheckItem[]) {
+  const map: Record<string, RobotCheckItem[]> = {}
+
+  items.forEach(item => {
+    if (!map[item.category]) {
+      map[item.category] = []
+    }
+    map[item.category].push(item)
+  })
+
+  return map
+}
+
+// ================= COMPONENT =================
 export function RobotChecklistForm({
   checklist,
   readOnly = false,
@@ -21,8 +35,6 @@ export function RobotChecklistForm({
   const router = useRouter()
 
   const [items, setItems] = useState<RobotCheckItem[]>(checklist.items)
-  const [opSigs, setOpSigs] = useState(checklist.operator_signatures || {})
-  const [supSigs, setSupSigs] = useState(checklist.supervisor_signatures || {})
   const [notes, setNotes] = useState(checklist.notes || '')
   const [saving, setSaving] = useState(false)
 
@@ -32,7 +44,7 @@ export function RobotChecklistForm({
   const daysInMonth = new Date(checklist.year, checklist.month, 0).getDate()
   const days = Array.from({ length: daysInMonth }, (_, i) => String(i + 1))
 
-  // ===================== UPDATE =====================
+  // ================= UPDATE =================
   const updateStatus = (itemId: string) => {
     if (readOnly) return
 
@@ -43,9 +55,9 @@ export function RobotChecklistForm({
         const current = item.days?.[activeDay]?.status || ''
 
         const next =
-          current === '' ? 'pass'
-            : current === 'pass' ? 'fail'
-            : ''
+          current === '' ? 'pass' :
+          current === 'pass' ? 'fail' :
+          ''
 
         return {
           ...item,
@@ -61,29 +73,7 @@ export function RobotChecklistForm({
     )
   }
 
-  // ===================== HELPERS =====================
-  const hasData = (day: string) =>
-    items.some(i => {
-      const s = i.days?.[day]?.status
-      return s === 'pass' || s === 'fail'
-    })
-
-  const isSigned = (day: string, sigs: any) =>
-    !!sigs?.[day]?.data_url
-
-  const getDaysWithData = () => {
-    const d = new Set<string>()
-    items.forEach(item => {
-      Object.entries(item.days).forEach(([day, val]) => {
-        if (val.status === 'pass' || val.status === 'fail') {
-          d.add(day)
-        }
-      })
-    })
-    return Array.from(d)
-  }
-
-  // ===================== SAVE =====================
+  // ================= SAVE =================
   const save = async (extra?: any) => {
     setSaving(true)
 
@@ -92,8 +82,6 @@ export function RobotChecklistForm({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         items,
-        operator_signatures: opSigs,
-        supervisor_signatures: supSigs,
         notes,
         ...extra
       })
@@ -103,119 +91,86 @@ export function RobotChecklistForm({
     router.refresh()
   }
 
-  // ===================== SUBMIT =====================
-  const submit = async () => {
-    const days = getDaysWithData()
+  // ================= GROUP =================
+  const grouped = groupByCategory(items)
 
-    if (days.length === 0) {
-      alert('⚠️ Chưa có dữ liệu')
-      return
-    }
-
-    const unsigned = days.filter(d => !opSigs[d]?.data_url)
-
-    if (unsigned.length > 0) {
-      alert(`⚠️ Chưa ký ngày: ${unsigned.join(', ')}`)
-      return
-    }
-
-    await save({ status: 'submitted' })
-    alert('✅ Đã nộp')
-  }
-
-  // ===================== APPROVE =====================
-  const approve = async () => {
-    const days = getDaysWithData()
-
-    const unsigned = days.filter(d => !supSigs[d]?.data_url)
-
-    if (unsigned.length > 0) {
-      alert(`⚠️ Supervisor chưa ký: ${unsigned.join(', ')}`)
-      return
-    }
-
-    await save({ status: 'approved' })
-    alert('✅ Đã duyệt')
-  }
-
-  // ===================== SIGN =====================
-  const sign = (day: string) => {
-    const fakeSignature = {
-      data_url: 'signed',
-      signed_at: new Date().toISOString(),
-      user_name: 'User'
-    }
-
-    if (isSupervisor) {
-      setSupSigs(prev => ({ ...prev, [day]: fakeSignature }))
-    } else {
-      setOpSigs(prev => ({ ...prev, [day]: fakeSignature }))
-    }
-  }
-
-  // ===================== UI =====================
+  // ================= UI =================
   return (
     <div className="space-y-4">
 
-      {/* DAY PICKER */}
+      {/* ===== DAY PICKER ===== */}
       <div className="flex flex-wrap gap-1">
-        {days.map(day => {
-          const data = hasData(day)
-          const signed = isSigned(day, isSupervisor ? supSigs : opSigs)
-          const active = day === activeDay
-
-          let style = 'bg-gray-100 text-gray-500'
-
-          if (data && !signed) style = 'bg-red-100 text-red-600'
-          if (data && signed) style = 'bg-green-100 text-green-700'
-          if (active) style = 'bg-blue-600 text-white'
-
-          return (
-            <button
-              key={day}
-              onClick={() => setActiveDay(day)}
-              className={`w-8 h-8 text-xs rounded ${style}`}
-            >
-              {day}
-            </button>
-          )
-        })}
+        {days.map(day => (
+          <button
+            key={day}
+            onClick={() => setActiveDay(day)}
+            className={`
+              w-8 h-8 text-xs rounded
+              ${day === activeDay ? 'bg-blue-600 text-white' : 'bg-gray-100'}
+            `}
+          >
+            {day}
+          </button>
+        ))}
       </div>
 
-      {/* ITEMS */}
+      {/* ===== TABLE ===== */}
       <table className="w-full border text-sm">
+
         <tbody>
-          {items.map((item, i) => {
-            const entry = item.days?.[activeDay] || {}
+          {Object.entries(grouped).map(([category, list]) => {
+
+            let index = 1
 
             return (
-              <tr key={item.id} className="border-t">
-                <td className="px-2">{i + 1}</td>
-                <td className="px-2">{item.label_vi}</td>
+              <>
+                {/* CATEGORY HEADER */}
+                <tr key={category}>
+                  <td
+                    colSpan={3}
+                    className="bg-indigo-600 text-white font-semibold px-2 py-1"
+                  >
+                    {category}
+                  </td>
+                </tr>
 
-                <td className="px-2 text-center">
-                  <button onClick={() => updateStatus(item.id)}>
-                    {entry.status === 'pass' ? '✓' :
-                      entry.status === 'fail' ? 'X' : '-'}
-                  </button>
-                </td>
-              </tr>
+                {/* ITEMS */}
+                {list.map(item => {
+                  const entry = item.days?.[activeDay]
+
+                  return (
+                    <tr key={item.id} className="border-t">
+                      <td className="w-10 text-center">{index++}</td>
+
+                      <td className="px-2">
+                        {item.label_vi}
+                      </td>
+
+                      <td className="w-16 text-center">
+                        <button
+                          onClick={() => updateStatus(item.id)}
+                          className="
+                            w-8 h-8 rounded border
+                            hover:bg-gray-100
+                          "
+                        >
+                          {entry?.status === 'pass'
+                            ? '✓'
+                            : entry?.status === 'fail'
+                            ? 'X'
+                            : '-'}
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </>
             )
           })}
         </tbody>
       </table>
 
-      {/* SIGN */}
-      <div>
-        <button
-          onClick={() => sign(activeDay)}
-          className="bg-black text-white px-3 py-1 rounded"
-        >
-          Ký ngày {activeDay}
-        </button>
-      </div>
-
-      {/* NOTES */}
+      {/* ===== NOTES ===== */}
       <textarea
         value={notes}
         onChange={e => setNotes(e.target.value)}
@@ -223,34 +178,24 @@ export function RobotChecklistForm({
         placeholder="Ghi chú..."
       />
 
-      {/* ACTIONS */}
+      {/* ===== ACTION ===== */}
       {!readOnly && (
         <div className="flex gap-2">
 
           <button
             onClick={() => save()}
-            className="bg-gray-500 text-white px-3 py-1 rounded"
+            className="bg-gray-600 text-white px-3 py-1 rounded"
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
 
-          {!isSupervisor && checklist.status === 'draft' && (
-            <button
-              onClick={submit}
-              className="bg-blue-600 text-white px-3 py-1 rounded"
-            >
-              Submit
-            </button>
-          )}
+          <button
+            onClick={() => save({ status: 'submitted' })}
+            className="bg-blue-600 text-white px-3 py-1 rounded"
+          >
+            Submit
+          </button>
 
-          {isSupervisor && checklist.status === 'submitted' && (
-            <button
-              onClick={approve}
-              className="bg-green-600 text-white px-3 py-1 rounded"
-            >
-              Approve
-            </button>
-          )}
         </div>
       )}
     </div>
