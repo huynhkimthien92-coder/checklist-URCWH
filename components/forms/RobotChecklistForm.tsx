@@ -177,7 +177,7 @@ export function RobotChecklistForm({
       </div>
 
       {/* ===== TABLE ===== */}
-      <table className="w-full border text-sm">
+      <table className="w-full border text-sm table-fixed">
 
         <tbody>
           {Object.entries(grouped).map(([category, list]) => (
@@ -185,7 +185,7 @@ export function RobotChecklistForm({
 
               {/* CATEGORY */}
               <tr>
-                <td colSpan={3} className="bg-indigo-600 text-white px-2 py-1">
+                <td colSpan={3} className="w-full bg-indigo-600 text-white px-2 py-1">
                   {category}
                 </td>
               </tr>
@@ -207,8 +207,8 @@ export function RobotChecklistForm({
                   >
                     <td className="w-10 text-center">{idx + 1}</td>
 
-                    <td className="px-2">
-                      <div>{item.label_vi}</div>
+                    <td className="px-2 w-full">
+                      <div className="break-words">{item.label_vi}</div>
 
                       {/* FAIL DETAIL */}
                       {isFail && (
