@@ -1,11 +1,13 @@
 // app/robot-checklist/[id]/page.tsx
-export const dynamic = 'force-dynamic'  // ✅ Không cache — luôn fetch DB mới nhất khi mở trang
+
+export const dynamic = 'force-dynamic'
+
 import { Navbar } from '@/components/layout/Navbar'
 import { createServiceClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
-import RobotChecklistClient from './RobotChecklistClient'
+import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
 
-
+// ✅ helper parse JSON
 function safeParse(value: any) {
   if (!value) return value
   if (typeof value === 'string') {
@@ -17,7 +19,6 @@ function safeParse(value: any) {
   }
   return value
 }
-
 
 export default async function RobotChecklistDetailPage({
   params,
@@ -40,20 +41,15 @@ export default async function RobotChecklistDetailPage({
     notFound()
   }
 
-  
-  // ✅ FIX PARSE JSON
-
+  // ✅ parse JSON giống trước
   const cleaned = {
     ...checklist,
     items: safeParse(checklist.items) || [],
     day_entries: safeParse(checklist.day_entries) || {},
     operator_signatures: safeParse(checklist.operator_signatures) || {},
     supervisor_signatures: safeParse(checklist.supervisor_signatures) || {},
+    incidents: safeParse(checklist.incidents) || [],
   }
-
-  console.log('ITEMS TYPE:', typeof checklist.items)
-  console.log('ITEMS:', checklist.items)
-
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -62,17 +58,19 @@ export default async function RobotChecklistDetailPage({
       <main className="max-w-7xl mx-auto px-4 py-5 space-y-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900">
-            Robot: {checklist.robot_number}
+            Robot: {cleaned.robot_number}
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Tháng {checklist.month}/{checklist.year} · {checklist.area}
+            Tháng {cleaned.month}/{cleaned.year} · {cleaned.area}
           </p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <RobotChecklistClient
-            key={cleaned.updated_at}
+
+          {/* ✅ GỌI TRỰC TIẾP FORM — KHÔNG QUA CLIENT WRAPPER */}
+          <RobotChecklistForm
             checklist={cleaned}
+            readOnly={cleaned.status === 'approved'}
           />
 
         </div>
