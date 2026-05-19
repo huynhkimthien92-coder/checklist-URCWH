@@ -1,7 +1,7 @@
 'use client'
 // app/robot-checklist/[id]/RobotChecklistClient.tsx
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
 import { RobotChecklist } from '@/lib/robot-checklist-data'
 
@@ -10,16 +10,9 @@ interface Props {
 }
 
 export default function RobotChecklistClient({ checklist: initial }: Props) {
+  // Form tự gọi onUpdate(fresh) sau mỗi lần save với data mới nhất từ DB
+  // Không cần useEffect hay router.refresh() nữa
   const [checklist, setChecklist] = useState<RobotChecklist>(initial)
-
-  // ✅ Khi server component re-render (sau router.refresh()),
-  // Next.js truyền props mới xuống — sync vào state
-  // So sánh bằng updated_at (string primitive) để tránh so sánh object reference
-  useEffect(() => {
-    if (initial.updated_at !== checklist.updated_at) {
-      setChecklist(initial)
-    }
-  }, [initial.updated_at])
 
   return (
     <RobotChecklistForm
