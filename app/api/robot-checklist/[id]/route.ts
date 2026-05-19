@@ -1,4 +1,5 @@
 // app/api/robot-checklist/[id]/route.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -6,94 +7,83 @@ import { createServiceClient } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
-
-function safeParse(value: any) {
-  if (!value) return value
-  if (typeof value === 'string') {
-    try {
-      return JSON.parse(value)
-    } catch {
-      return value
-    }
-  }
-  return value
-}
-
-
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+// ======================= GET =======================
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const session = await getServerSession(authOptions)
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   const supabase = createServiceClient()
+
   const { data, error } = await supabase
     .from('robot_checklists')
-    .select('*, operator:users!robot_checklists_created_by_fkey(id,name,email,role)')
+    .select('*')
     .eq('id', params.id)
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 404 })
-
-  
-  const cleaned = {
-    ...data,
-    items: safeParse(data.items),
-    day_entries: safeParse(data.day_entries),
-    operator_signatures: safeParse(data.operator_signatures),
-    supervisor_signatures: safeParse(data.supervisor_signatures),
-    incidents: safeParse(data.incidents),
+  if (error || !data) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
-  console.log('API RETURN day4:', data.day_entries?.["4"])
 
-  return NextResponse.json(cleaned)
+  return NextResponse.json(data)
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+// ======================= PATCH =======================
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const session = await getServerSession(authOptions)
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   const body = await req.json()
   const supabase = createServiceClient()
 
+  // ✅ chỉ update field cần thiết (giống xe nâng)
+  const updatePayload: any = {
+    updated_at: new Date().toISOString(),
+  }
+
+  if (body.items !== undefined) {
+    updatePayload.items = body.items
+  }
+
+  if (body.operator_signatures !== undefined) {
+    updatePayload.operator_signatures = body.operator_signatures
+  }
+
+  if (body.supervisor_signatures !== undefined) {
+    updatePayload.supervisor_signatures = body.supervisor_signatures
+  }
+
+  if (body.incidents !== undefined) {
+    updatePayload.incidents = body.incidents
+  }
+
+  if (body.notes !== undefined) {
+    updatePayload.notes = body.notes
+  }
+
+  if (body.status !== undefined) {
+    updatePayload.status = body.status
+  }
+
   const { data, error } = await supabase
     .from('robot_checklists')
-    .update({
-      ...(body.day_entries           !== undefined && { day_entries: body.day_entries }),
-      ...(body.operator_signatures   !== undefined && { operator_signatures: body.operator_signatures }),
-      ...(body.supervisor_signatures !== undefined && { supervisor_signatures: body.supervisor_signatures }),
-      ...(body.incidents             !== undefined && { incidents: body.incidents }),
-      ...(body.notes                 !== undefined && { notes: body.notes }),
-      ...(body.status                !== undefined && { status: body.status }),
-      ...(body.robot_number          !== undefined && { robot_number: body.robot_number }),
-      ...(body.area                  !== undefined && { area: body.area }),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id',String(params.id))
+    .update(updatePayload)
+    .eq('id', params.id)
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  
-  const cleaned = {
-      ...data,
-      items: safeParse(data.items),
-      day_entries: safeParse(data.day_entries),
-      operator_signatures: safeParse(data.operator_signatures),
-      supervisor_signatures: safeParse(data.supervisor_signatures),
-      incidents: safeParse(data.incidents),
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json(cleaned)
-}
-
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const role = (session.user as any)?.role
-  if (role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-
-  const supabase = createServiceClient()
-  const { error } = await supabase.from('robot_checklists').delete().eq('id', params.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ success: true })
+  return NextResponse.json(data)
 }
