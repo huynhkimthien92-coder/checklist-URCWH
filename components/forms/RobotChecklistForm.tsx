@@ -10,7 +10,6 @@ import { useSession } from 'next-auth/react'
 import { CheckCircle, XCircle, Minus, Download, Plus, Trash2, Loader2, Save } from 'lucide-react'
 import { RobotChecklist, RobotCheckItem, RobotDayEntry, getDaysInMonth } from '@/lib/robot-checklist-data'
 import { SignaturePad } from '@/components/forms/SignaturePad'
-import { useRouter } from 'next/navigation'
 
 type RichItem = RobotCheckItem & { days: Record<string, RobotDayEntry> }
 
@@ -86,11 +85,7 @@ interface Props {
 
 export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const { data: session } = useSession()
-  const router = useRouter()
   
-
-
-
   // ✅ FIX CHÍNH: khởi tạo ngay với buildItems() thay vì []
   // Tránh: items=[] → hiện "Đang tải..." → rồi mới setItems
   // Tránh: nếu checklist.items rỗng thì items mãi = [] không render được
@@ -301,10 +296,22 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
       if (!patchRes.ok) throw new Error('PATCH failed')
 
-      // router.refresh() → Next.js re-render server component → truyền props mới
-      // → RobotChecklistClient.useEffect(initial.updated_at) → setChecklist(initial)
-      // → RobotChecklistForm nhận checklist mới → useState lazy init đã có data đúng
-      router.refresh()
+      // ✅ Fetch lại GET ngay sau PATCH để lấy data mới nhất từ DB
+      // Không dùng router.refresh() vì nó không đảm bảo props update synchronous
+      const freshRes = await fetch(`/api/robot-checklist/${checklist.id}`)
+      if (freshRes.ok) {
+        const fresh = await freshRes.json()
+        // Rebuild items từ data DB mới nhất
+        setItems(buildItems(
+          fresh.items || checklist.items || [],
+          fresh.day_entries || mergedDayEntries,
+          fresh.month || checklist.month,
+          fresh.year  || checklist.year
+        ))
+        // Cập nhật checklist state ở Client (updated_at, day_entries, v.v.)
+        onUpdate(fresh)
+      }
+
       setDirty(false)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
