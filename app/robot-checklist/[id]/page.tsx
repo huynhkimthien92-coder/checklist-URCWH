@@ -1,71 +1,68 @@
-// app/robot-checklist/[id]/page.tsx
-export const dynamic = 'force-dynamic'
+// app/robot-checklist/[id]/page.tsx// app/robot-check()
 
-import { Navbar } from '@/components/layout/Navbar'
-import { createServiceClient } from '@/lib/supabase'
-import { notFound } from 'next/navigation'
-import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
-
-// ✅ parse JSON từ DB
-function safeParse(value: any) {
-  if (!value) return value
-  if (typeof value === 'string') {
-    try {
-      return JSON.parse(value)
-    } catch {
-      return value
-    }
-  }
-  return value
-}
-
-export default async function RobotChecklistDetailPage({
-  params,
-}: {
-  params: { id: string }
-}) {
-  const supabase = createServiceClient()
-
+  // ✅ FETCH DATA
   const { data, error } = await supabase
     .from('robot_checklists')
     .select('*')
     .eq('id', params.id)
     .single()
 
-  if (error || !data) notFound()
-
-  // ✅ clean data từ DB
-  const checklist = {
-    ...data,
-    items: safeParse(data.items) || [],
-    day_entries: safeParse(data.day_entries) || {},
-    operator_signatures: safeParse(data.operator_signatures) || {},
-    supervisor_signatures: safeParse(data.supervisor_signatures) || {},
-    incidents: safeParse(data.incidents) || [],
+  if (error || !data) {
+    return notFound()
   }
 
+  // ✅ OPTIONAL: xác định supervisor (tuỳ role system của bạn)
+  const isSupervisor =
+    (session.user as any)?.role === 'supervisor'
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Navbar />
+    <div className="p-4">
 
-      <main className="max-w-7xl mx-auto px-4 py-5 space-y-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">
-            Robot: {checklist.robot_number}
-          </h1>
-          <p className="text-sm text-slate-500">
-            Tháng {checklist.month}/{checklist.year} · {checklist.area}
-          </p>
-        </div>
+      {/* HEADER */}
+      <div className="mb-4">
+        <h1 className="text-xl font-bold">
+          Robot Checklist
+        </h1>
 
-        <div className="bg-white border rounded-xl p-4">
-          {/* ✅ gọi trực tiếp form */}
-          <RobotChecklistForm
-            checklist={checklist}
-            readOnly={checklist.status === 'approved'}
-          />
-        </div>
-      </main>
+        <p className="text-sm text-gray-500">
+          Robot: {data.robot_number} — {data.month}/{data.year}
+        </p>
+
+        <p className="text-xs mt-1">
+          Status: <span className="font-semibold">{data.status}</span>
+        </p>
+      </div>
+
+      {/* FORM */}
+      <RobotChecklistForm
+        checklist={data}
+        readOnly={data.status === 'approved'}
+        isSupervisor={isSupervisor}
+      />
+
     </div>
   )
 }
+
+import { notFound } from 'next/navigation'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { createServiceClient } from '@/lib/supabase'
+import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
+
+export const dynamic = 'force-dynamic'
+
+// ======================= PAGE =======================
+export default async function RobotChecklistPage({
+  params
+}: {
+  params: { id: string }
+}) {
+
+  // ✅ AUTH
+  const session = await getServerSession(authOptions)
+
+  if (!session) {
+    return notFound()
+  }
+
