@@ -311,7 +311,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
         })
       })
 
-      await fetch(`/api/robot-checklist/${checklist.id}`, {
+      const patchRes = await fetch(`/api/robot-checklist/${checklist.id}`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -322,6 +322,23 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
           ...extraPayload,
         }),
       })
+
+      // ✅ FIX: dùng response từ PATCH để rebuild items ngay lập tức
+      // Không chỉ dựa vào router.refresh() vì useState không tự update khi props đổi
+      if (patchRes.ok) {
+        const saved = await patchRes.json()
+        const freshDayEntries = saved.day_entries || mergedDayEntries
+        setItems(
+          buildItems(
+            checklist.items || [],
+            freshDayEntries,
+            checklist.month,
+            checklist.year
+          )
+        )
+        onUpdate({ ...checklist, ...saved })
+      }
+
       router.refresh()
       setDirty(false)
       setSaved(true)
