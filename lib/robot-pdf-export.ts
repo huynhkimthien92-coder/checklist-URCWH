@@ -241,12 +241,12 @@ export async function generateRobotPDFReport(
         ${tableRows}
 
         <tr>
-          <td colspan="3" style=" font-family: Arial, sans-serif; font-size:10px">Operator</td>
+          <td colspan="3" style=" font-family: Arial, sans-serif; text-align:center; font-size:10px ">Operator</td>
           ${opSig}
         </tr>
 
         <tr>
-          <td colspan="3" style=" font-family: Arial, sans-serif; font-size:10px">Supervisor</td>
+          <td colspan="3" style=" font-family: Arial, sans-serif; text-align:center; font-size:10px">Supervisor</td>
           ${supSig}
         </tr>
 
