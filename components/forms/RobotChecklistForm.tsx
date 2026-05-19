@@ -299,22 +299,11 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
         }),
       })
 
-      // ✅ FIX: dùng response từ PATCH để rebuild items ngay lập tức
-      // Không chỉ dựa vào router.refresh() vì useState không tự update khi props đổi
-      if (patchRes.ok) {
-        const saved = await patchRes.json()
-        const freshDayEntries = saved.day_entries || mergedDayEntries
-        setItems(
-          buildItems(
-            checklist.items || [],
-            freshDayEntries,
-            checklist.month,
-            checklist.year
-          )
-        )
-        onUpdate({ ...checklist, ...saved })
-      }
+      if (!patchRes.ok) throw new Error('PATCH failed')
 
+      // router.refresh() → Next.js re-render server component → truyền props mới
+      // → RobotChecklistClient.useEffect(initial.updated_at) → setChecklist(initial)
+      // → RobotChecklistForm nhận checklist mới → useState lazy init đã có data đúng
       router.refresh()
       setDirty(false)
       setSaved(true)
