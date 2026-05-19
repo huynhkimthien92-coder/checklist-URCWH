@@ -63,6 +63,6 @@ export default async function RobotChecklistPage({
   const session = await getServerSession(authOptions)
 
   if (!session) {
-    return notFound()
+    notFound()
   }
 
