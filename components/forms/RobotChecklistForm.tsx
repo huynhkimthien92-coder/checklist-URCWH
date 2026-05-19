@@ -88,7 +88,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       checklist.year
     )
     setItems(built)
-  }, [checklist])
+  }, [checklist.updated_at])
 
   
   const updateNote = (itemId: string, day: number, note: string) => {
@@ -165,7 +165,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     setOpSigs(checklist.operator_signatures || {})
     setSupSigs(checklist.supervisor_signatures || {})
     setIncidents(checklist.incidents || [])
-  }, [checklist])
+  }, [checklist.updated_at])
 
   const [activeDay, setActiveDay] = useState<number>(() => {
     const e = checklist.day_entries || {}
@@ -183,6 +183,32 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     const daysInMonth = getDaysInMonth(checklist.month, checklist.year)
     return today <= daysInMonth ? today : 1
   })
+
+  const lastActiveSyncRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!checklist) return
+
+    // chỉ chạy khi server thực sự có data mới
+    if (checklist.updated_at === lastActiveSyncRef.current) return
+    lastActiveSyncRef.current = checklist.updated_at
+
+    const e = checklist.day_entries || {}
+
+    const daysWithData = Object.entries(e)
+      .filter(([, dayMap]) =>
+        Object.values(dayMap || {}).some(
+          (entry: any) =>
+            entry?.status === 'pass' || entry?.status === 'fail'
+        )
+      )
+      .map(([day]) => Number(day))
+      .sort((a, b) => b - a)
+
+    if (daysWithData.length > 0) {
+      setActiveDay(daysWithData[0])
+    }
+  }, [checklist.updated_at])
 
   const role         = (session?.user as any)?.role
   const isSupervisor = role === 'supervisor' || role === 'admin'
