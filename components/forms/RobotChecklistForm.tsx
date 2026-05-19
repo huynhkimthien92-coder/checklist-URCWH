@@ -316,7 +316,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       day_entries: newDayEntries,
     })
 
-    router.refresh()
+    //router.refresh()
 
     setDirty(false)
     setSaved(true)
