@@ -1,7 +1,7 @@
 // lib/robot-checklist-data.ts
-// ✅ FINAL VERSION – production ready (items-based structure)
+// ✅ CLEAN VERSION – easy to maintain
 
-// ===== TYPES =====
+// ================= TYPES =================
 export interface RobotDayEntry {
   status: 'pass' | 'fail' | ''
   note: string
@@ -14,18 +14,7 @@ export interface RobotCheckItem {
   label_vi: string
   label_en?: string
   sub_label?: string
-
-  // ✅ SOURCE OF TRUTH
   days: Record<string, RobotDayEntry>
-}
-
-export interface RobotIncident {
-  id?: string
-  incident: string
-  date: string
-  receiver: string
-  severity?: 'low' | 'medium' | 'high'
-  resolved_at?: string
 }
 
 export interface RobotChecklist {
@@ -34,96 +23,131 @@ export interface RobotChecklist {
   year: number
   area: string
   robot_number: string
-  robot_model?: string
 
-  // ✅ MAIN DATA
   items: RobotCheckItem[]
 
-  operator_signatures: Record<
-    string,
-    {
-      data_url: string
-      signed_at: string
-      user_name: string
-    } | null
-  >
+  operator_signatures: Record<string, any>
+  supervisor_signatures: Record<string, any>
 
-  supervisor_signatures: Record<
-    string,
-    {
-      data_url: string
-      signed_at: string
-      user_name: string
-    } | null
-  >
-
-  incidents: RobotIncident[]
   notes: string
-
   status: 'draft' | 'submitted' | 'reviewed' | 'approved'
-
-  created_by: string
-  created_at: string
-  updated_at: string
 }
 
-// ===== TEMPLATE (KHÔNG có days) =====
-export const ROBOT_CHECKLIST_TEMPLATE = [
-  // ===== QUAN SÁT =====
-  {
-    id: 'r_obs_01',
-    category: 'Quan sát',
-    label_vi: 'Gãy vỡ – Các chi tiết không bị cong, vỡ',
-  },
-  {
-    id: 'r_obs_02',
-    category: 'Quan sát',
-    label_vi: 'Rò rỉ – Không rò rỉ dầu/nước',
-  },
-  {
-    id: 'r_obs_03',
-    category: 'Quan sát',
-    label_vi: 'Bộ truyền động – Không mài mòn',
-  },
+// ================= TEMPLATE =================
 
-  // ===== HOẠT ĐỘNG =====
-  {
-    id: 'r_op_01',
-    category: 'Hoạt động',
-    label_vi: 'Khởi động – Hoạt động bình thường',
-  },
-  {
-    id: 'r_op_02',
-    category: 'Hoạt động',
-    label_vi: 'Di chuyển – Mượt, không giật',
-  },
-  {
-    id: 'r_op_03',
-    category: 'Hoạt động',
-    label_vi: 'Phanh – Hoạt động tốt',
-  },
+// 👉 helper để giảm lặp code
+function createItem(
+  id: string,
+  category: string,
+  label_vi: string,
+  label_en: string,
+  sub_label: string
+) {
+  return { id, category, label_vi, label_en, sub_label }
+}
 
-  // ===== KHU VỰC =====
-  {
-    id: 'r_work_01',
-    category: 'Khu vực',
-    label_vi: 'Khu vực sạch sẽ',
-  },
-  {
-    id: 'r_work_02',
-    category: 'Khu vực',
-    label_vi: 'Đường đi thông thoáng',
-  },
+// ===== CATEGORY: QUAN SÁT =====
+const OBSERVATION = [
+  createItem('r_obs_01', 'Quan sát',
+    'Gãy vỡ – Các chi tiết không cong, vỡ',
+    'Damage – Broken parts',
+    'Damage'),
 
-  // ===== AN TOÀN =====
-  {
-    id: 'r_safe_01',
-    category: 'An toàn',
-    label_vi: 'Không có người vùng nguy hiểm',
-  },
-] as const
+  createItem('r_obs_02', 'Quan sát',
+    'Rò rỉ – Không rò dầu/nước',
+    'Leaks – No fluid leak',
+    'Leak'),
 
-// ===== ✅ BUILD INITIAL ITEMS (QUAN TRỌNG NHẤT) =====
+  createItem('r_obs_03', 'Quan sát',
+    'Truyền động – Không mài mòn',
+    'Drive system OK',
+    'Drive'),
+
+  createItem('r_obs_04', 'Quan sát',
+    'Bánh xe – Không nứt/mòn',
+    'Wheels OK',
+    'Wheels'),
+
+  createItem('r_obs_05', 'Quan sát',
+    'Kết nối điện – Không cháy/lỏng',
+    'Electrical connections OK',
+    'Electrical'),
+
+  createItem('r_obs_06', 'Quan sát',
+    'Pin – Không phồng, đủ điện',
+    'Battery OK',
+    'Battery'),
+
+  createItem('r_obs_07', 'Quan sát',
+    'Che chắn – Không lỏng',
+    'Guards secure',
+    'Guards'),
+
+  createItem('r_obs_08', 'Quan sát',
+    'Cảm biến – Sạch, đúng vị trí',
+    'Sensors clean',
+    'Sensors'),
+
+  createItem('r_obs_09', 'Quan sát',
+    'Dây cáp – Không đứt/mòn',
+    'Cables intact',
+    'Cables'),
+
+  createItem('r_obs_10', 'Quan sát',
+    'Biển cảnh báo – Đầy đủ',
+    'Labels available',
+    'Labels'),
+
+  createItem('r_obs_11', 'Quan sát',
+    'Vệ sinh – Không bám bẩn',
+    'Cleanliness',
+    'Clean'),
+
+  createItem('r_obs_12', 'Quan sát',
+    'Đồng hồ giờ – Ghi lại',
+    'Hour meter',
+    'Hour'),
+]
+
+// ===== CATEGORY: HOẠT ĐỘNG =====
+const OPERATION = [
+  createItem('r_op_01', 'Hoạt động', 'Khởi động bình thường', 'Startup OK', 'Startup'),
+  createItem('r_op_02', 'Hoạt động', 'Di chuyển mượt', 'Movement OK', 'Move'),
+  createItem('r_op_03', 'Hoạt động', 'Tốc độ ổn định', 'Speed OK', 'Speed'),
+  createItem('r_op_04', 'Hoạt động', 'Phanh hoạt động tốt', 'Brake OK', 'Brake'),
+  createItem('r_op_05', 'Hoạt động', 'Cảm biến an toàn hoạt động', 'Safety sensors OK', 'Sensor'),
+  createItem('r_op_06', 'Hoạt động', 'Đèn/còi hoạt động', 'Warning devices OK', 'Warning'),
+  createItem('r_op_07', 'Hoạt động', 'Định vị chính xác', 'Positioning OK', 'Position'),
+  createItem('r_op_08', 'Hoạt động', 'Pin đủ', 'Battery level OK', 'Battery'),
+  createItem('r_op_09', 'Hoạt động', 'Kết nối ổn định', 'Connection OK', 'Connection'),
+  createItem('r_op_10', 'Hoạt động', 'Hoàn thành nhiệm vụ', 'Task completed', 'Task'),
+]
+
+// ===== CATEGORY: KHU VỰC =====
+const WORK_AREA = [
+  createItem('r_work_01', 'Khu vực', 'Khu vực sạch', 'Clean area', 'Area'),
+  createItem('r_work_02', 'Khu vực', 'Không vật cản', 'No obstruction', 'Path'),
+  createItem('r_work_03', 'Khu vực', 'Ánh sáng đủ', 'Lighting OK', 'Light'),
+  createItem('r_work_04', 'Khu vực', 'Không ẩm ướt', 'Dry condition', 'Weather'),
+  createItem('r_work_05', 'Khu vực', 'Sàn an toàn', 'Floor safe', 'Floor'),
+]
+
+// ===== CATEGORY: AN TOÀN =====
+const SAFETY = [
+  createItem('r_safe_01', 'An toàn', 'Không người gần robot', 'No personnel danger', 'Personnel'),
+  createItem('r_safe_02', 'An toàn', 'Tuân thủ quy định', 'Safety rules', 'Rules'),
+  createItem('r_safe_03', 'An toàn', 'PPE đầy đủ', 'PPE used', 'PPE'),
+]
+
+// ===== EXPORT TEMPLATE =====
+export const ROBOT_CHECKLIST_TEMPLATE: Omit<RobotCheckItem, 'days'>[] = [
+  ...OBSERVATION,
+  ...OPERATION,
+  ...WORK_AREA,
+  ...SAFETY,
+]
+
+// ================= BUILD ITEMS =================
 export function buildInitialRobotItems(
   template: typeof ROBOT_CHECKLIST_TEMPLATE,
   month: number,
@@ -139,54 +163,15 @@ export function buildInitialRobotItems(
       days[String(d)] = {
         status: '',
         note: '',
-        image_url: ''
+        image_url: '',
       }
     }
 
-    return {
-      ...item,
-      days
-    }
+    return { ...item, days }
   })
 }
 
-// ===== HELPERS =====
-
-// ✅ số ngày trong tháng
-export function getDaysInMonth(month: number, year: number): number {
+// ================= HELPERS =================
+export function getDaysInMonth(month: number, year: number) {
   return new Date(year, month, 0).getDate()
-}
-
-// ✅ danh sách category
-export function getRobotCategories(items: RobotCheckItem[]): string[] {
-  return Array.from(new Set(items.map(i => i.category)))
-}
-
-// ✅ thống kê 1 ngày
-export function getDayStats(items: RobotCheckItem[], day: string) {
-  const total = items.length
-  const pass = items.filter(i => i.days?.[day]?.status === 'pass').length
-  const fail = items.filter(i => i.days?.[day]?.status === 'fail').length
-  const pending = total - pass - fail
-
-  const passRate = total > 0
-    ? Math.round((pass / total) * 100)
-    : 0
-
-  return { total, pass, fail, pending, passRate }
-}
-
-// ✅ lấy các ngày có data
-export function getDaysWithData(items: RobotCheckItem[]): string[] {
-  const days = new Set<string>()
-
-  items.forEach(item => {
-    Object.entries(item.days || {}).forEach(([day, entry]) => {
-      if (entry.status === 'pass' || entry.status === 'fail') {
-        days.add(day)
-      }
-    })
-  })
-
-  return Array.from(days)
 }
