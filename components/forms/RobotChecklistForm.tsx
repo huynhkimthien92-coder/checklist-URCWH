@@ -111,25 +111,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     console.groupEnd();
     setItems(built)
   }, [checklist])
-  useEffect(() => {
-   if (!items.length) return
 
-   const daysSet = new Set<number>()
-
-   items.forEach(item => {
-    Object.entries(item.days).forEach(([day, entry]) => {
-      if (entry?.status === 'pass' || entry?.status === 'fail') {
-        daysSet.add(Number(day))
-      }
-    })
-   })
-
-   const sortedDays = Array.from(daysSet).sort((a, b) => b - a)
-
-   if (sortedDays.length > 0) {
-    setActiveDay(sortedDays[0])
-   }
-  }, [items])
   
   const updateNote = (itemId: string, day: number, note: string) => {
     setItems(prev => prev.map(item => {
@@ -199,13 +181,19 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
   const [activeDay, setActiveDay] = useState<number>(() => {
     const e = checklist.day_entries || {}
-    const availableDays = Object.keys(e).map(Number).sort((a, b) => b - a)
-  
-    // Ưu tiên: days có data → ngày hôm nay → ngày 1
-    if (availableDays.length > 0) {
-      return availableDays[0]
-    }
-    return new Date().getDate()
+    // Chỉ tính ngày có ít nhất 1 item pass/fail thực sự
+    const daysWithData = Object.entries(e)
+      .filter(([, dayMap]) =>
+        Object.values(dayMap || {}).some((entry: any) => entry?.status === 'pass' || entry?.status === 'fail')
+      )
+      .map(([day]) => Number(day))
+      .sort((a, b) => b - a)
+
+    // Ưu tiên: ngày mới nhất có data → ngày hôm nay → ngày 1
+    if (daysWithData.length > 0) return daysWithData[0]
+    const today = new Date().getDate()
+    const daysInMonth = getDaysInMonth(checklist.month, checklist.year)
+    return today <= daysInMonth ? today : 1
   })
 
   const role         = (session?.user as any)?.role
@@ -253,11 +241,23 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const save = async (extraPayload?: Record<string, unknown>) => {
     setSaving(true)
     try {
+      // Fetch server state mới nhất trước khi ghi — tránh overwrite data ngày khác
+      const serverRes = await fetch(`/api/robot-checklist/${checklist.id}`)
+      const serverData = serverRes.ok ? await serverRes.json() : null
+      const serverDayEntries = (serverData?.day_entries || {}) as RobotChecklist['day_entries']
+
+      // Merge: server làm base, local items override lên trên
+      const localDayEntries = toDayEntries(items)
+      const mergedDayEntries: RobotChecklist['day_entries'] = { ...serverDayEntries }
+      Object.entries(localDayEntries).forEach(([day, dayMap]) => {
+        mergedDayEntries[day] = { ...(serverDayEntries[day] || {}), ...dayMap }
+      })
+
       await fetch(`/api/robot-checklist/${checklist.id}`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          day_entries:           toDayEntries(items),
+          day_entries:           mergedDayEntries,
           operator_signatures:   opSigs,
           supervisor_signatures: supSigs,
           incidents,
