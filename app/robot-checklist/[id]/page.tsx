@@ -42,28 +42,15 @@ export default async function RobotChecklistDetailPage({
 
   
   // ✅ FIX PARSE JSON
-  if (checklist) {
-    checklist.items = safeParse(checklist.items)
-    checklist.items =
-      typeof checklist.items === 'string'
-        ? JSON.parse(checklist.items)
-        : checklist.items || []
 
-    checklist.day_entries =
-      typeof checklist.day_entries === 'string'
-        ? JSON.parse(checklist.day_entries)
-        : checklist.day_entries || {}
-
-    checklist.operator_signatures =
-      typeof checklist.operator_signatures === 'string'
-        ? JSON.parse(checklist.operator_signatures)
-        : checklist.operator_signatures || {}
-
-    checklist.supervisor_signatures =
-      typeof checklist.supervisor_signatures === 'string'
-        ? JSON.parse(checklist.supervisor_signatures)
-        : checklist.supervisor_signatures || {}
+  const cleaned = {
+    ...checklist,
+    items: safeParse(checklist.items) || [],
+    day_entries: safeParse(checklist.day_entries) || {},
+    operator_signatures: safeParse(checklist.operator_signatures) || {},
+    supervisor_signatures: safeParse(checklist.supervisor_signatures) || {},
   }
+
   console.log('ITEMS TYPE:', typeof checklist.items)
   console.log('ITEMS:', checklist.items)
 
@@ -83,7 +70,11 @@ export default async function RobotChecklistDetailPage({
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <RobotChecklistClient key={checklist.updated_at} checklist={checklist} />
+          <RobotChecklistClient
+            key={cleaned.updated_at}
+            checklist={cleaned}
+          />
+
         </div>
       </main>
     </div>
