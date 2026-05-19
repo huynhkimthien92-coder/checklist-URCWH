@@ -186,10 +186,13 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
   const [activeDay, setActiveDay] = useState<number>(() => {
     const e = checklist.day_entries || {}
-    const d = Object.keys(e).map(Number)
-      .filter(n => Object.values(e[String(n)] || {}).some((x: any) => x.status !== ''))
-      .sort((a, b) => b - a)
-    return d[0] ?? new Date().getDate()
+    const availableDays = Object.keys(e).map(Number).sort((a, b) => b - a)
+  
+    // Ưu tiên: days có data → ngày hôm nay → ngày 1
+    if (availableDays.length > 0) {
+      return availableDays[0]
+    }
+    return new Date().getDate()
   })
 
   const role         = (session?.user as any)?.role
