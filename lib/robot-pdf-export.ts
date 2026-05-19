@@ -81,9 +81,21 @@ export async function generateRobotPDFReport(
           'white'
 
         const symbol =
-          status === 'pass' ? '✓' :
-          status === 'fail' ? '✗' :
-          ''
+          status === 'pass'
+            ? `<svg width="12" height="12" viewBox="0 0 24 24"
+                 stroke="#15803d" fill="none" stroke-width="3"
+                 stroke-linecap="round" stroke-linejoin="round">
+                 <path d="M5 13l4 4L19 7"/>
+               </svg>`
+            : status === 'fail'
+            ? `<svg width="12" height="12" viewBox="0 0 24 24"
+                 stroke="#b91c1c" fill="none" stroke-width="3"
+                 stroke-linecap="round" stroke-linejoin="round">
+                 <line x1="6" y1="6" x2="18" y2="18"/>
+                 <line x1="6" y1="18" x2="18" y2="6"/>
+               </svg>`
+            : ''
+
 
         const color =
           status === 'pass' ? '#166534' :
