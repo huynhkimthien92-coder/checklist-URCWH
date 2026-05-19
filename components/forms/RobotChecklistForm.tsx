@@ -91,23 +91,32 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
 
 
-  const [items, setItems] = useState<RichItem[]>([])
-
-  useEffect(() => {
-    if (!checklist) return
-
-    const built = buildItems(
+  // ✅ FIX CHÍNH: khởi tạo ngay với buildItems() thay vì []
+  // Tránh: items=[] → hiện "Đang tải..." → rồi mới setItems
+  // Tránh: nếu checklist.items rỗng thì items mãi = [] không render được
+  const [items, setItems] = useState<RichItem[]>(() =>
+    buildItems(
       checklist.items || [],
       checklist.day_entries || {},
       checklist.month,
       checklist.year
     )
+  )
 
-    setItems(built)
+  // Sync lại khi server trả về data mới sau router.refresh()
+  // Dùng primitive updated_at thay vì object reference day_entries
+  useEffect(() => {
+    if (!checklist) return
+    setItems(
+      buildItems(
+        checklist.items || [],
+        checklist.day_entries || {},
+        checklist.month,
+        checklist.year
+      )
+    )
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checklist.id, checklist.updated_at])
-  // ✅ Dùng updated_at (primitive string) thay vì checklist.day_entries (object reference)
-  // → useEffect chạy đúng mỗi khi server trả về data mới
 
 
   
@@ -396,8 +405,9 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     setIncidents(p => { const n = [...p]; n[idx] = { ...n[idx], [field]: value }; return n }); setDirty(true)
   }
   const removeIncident = (idx: number) => { setIncidents(p => p.filter((_, i) => i !== idx)); setDirty(true) }
-  if (items.length === 0) {
-   return <div className="p-4 text-sm text-slate-500">Đang tải dữ liệu...</div>
+  // items được khởi tạo ngay từ useState() nên sẽ không bao giờ [] trừ khi template rỗng
+  if (!checklist.items || checklist.items.length === 0) {
+    return <div className="p-4 text-sm text-slate-500">⚠️ Chưa có danh sách công việc (items)</div>
   }
   return (
     <div className="space-y-4">
