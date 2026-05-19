@@ -2,14 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
-import {
-  CheckCircle,
-  XCircle,
-  Minus,
-  Loader2,
-  Save
-} from 'lucide-react'
+import { CheckCircle, XCircle, Minus, Loader2, Save } from 'lucide-react'
 
 import {
   RobotChecklist,
@@ -28,10 +21,7 @@ function normalizeStatus(status: any) {
   return (status || '').toString().trim().toLowerCase()
 }
 
-/**
- * ✅ FIX QUAN TRỌNG:
- * luôn match key bằng STRING
- */
+// ✅ FIX KEY MISMATCH (QUAN TRỌNG NHẤT)
 function buildItems(
   template: RobotCheckItem[],
   day_entries: RobotChecklist['day_entries'],
@@ -41,15 +31,13 @@ function buildItems(
   const totalDays = getDaysInMonth(month, year)
 
   return template.map(item => {
-    const days: Record<string, RobotDayEntry> = {}
-
     const itemKey = String(item.id).trim().toLowerCase()
+    const days: Record<string, RobotDayEntry> = {}
 
     for (let d = 1; d <= totalDays; d++) {
       const day = String(d)
       const dayData = day_entries?.[day] || {}
 
-      // ✅ MATCH KEY CHUẨN
       const entry = Object.entries(dayData).find(([k]) =>
         k.trim().toLowerCase() === itemKey
       )?.[1]
@@ -57,7 +45,7 @@ function buildItems(
       days[day] = entry || {
         status: '',
         note: '',
-        image_url: ''
+        image_url: '',
       }
     }
 
@@ -65,21 +53,19 @@ function buildItems(
   })
 }
 
-/**
- * ✅ FIX: luôn convert id → string
- */
+// ✅ stringify id khi save
 function toDayEntries(items: RichItem[]) {
   const result: any = {}
 
   items.forEach(item => {
-    const itemKey = String(item.id)
+    const key = String(item.id)
 
     Object.entries(item.days).forEach(([day, entry]) => {
       const s = normalizeStatus(entry?.status)
 
       if (s === 'pass' || s === 'fail' || entry?.note || entry?.image_url) {
         if (!result[day]) result[day] = {}
-        result[day][itemKey] = entry // ✅ stringify id
+        result[day][key] = entry
       }
     })
   })
@@ -94,10 +80,9 @@ interface Props {
 }
 
 export function RobotChecklistForm({ checklist, readOnly }: Props) {
-  const { data: session } = useSession()
   const router = useRouter()
 
-  // ✅ init từ server
+  // ✅ init giống xe nâng
   const [items, setItems] = useState<RichItem[]>(() =>
     buildItems(
       checklist.items || [],
@@ -125,21 +110,22 @@ export function RobotChecklistForm({ checklist, readOnly }: Props) {
 
     setItems(prev =>
       prev.map(item => {
-        if (item.id !== itemId) return item
+        if (String(item.id) !== String(itemId)) return item
 
         const key = String(day)
         const current = normalizeStatus(item.days[key]?.status)
 
         const next =
-          current === '' ? 'pass' :
-          current === 'pass' ? 'fail' : ''
+          current === '' ? 'pass'
+          : current === 'pass' ? 'fail'
+          : ''
 
         return {
           ...item,
           days: {
             ...item.days,
             [key]: {
-              ...(item.days[key] || { note: '', image_url: '' }),
+              ...(item.days[key] || {}),
               status: next
             }
           }
@@ -176,7 +162,6 @@ export function RobotChecklistForm({ checklist, readOnly }: Props) {
     }
   }
 
-  // ===== UI =====
   return (
     <div className="space-y-4">
 
@@ -219,14 +204,10 @@ export function RobotChecklistForm({ checklist, readOnly }: Props) {
                 <td className="px-2">{i + 1}</td>
                 <td>{item.label_vi}</td>
                 <td className="text-center">
-                  <button
-                    onClick={() =>
-                      cycleStatus(String(item.id), activeDay)
-                    }
-                  >
-                    {status === 'pass' && <CheckCircle className="text-green-600"/>}
-                    {status === 'fail' && <XCircle className="text-red-600"/>}
-                    {status === '' && <Minus className="text-slate-300"/>}
+                  <button onClick={() => cycleStatus(String(item.id), activeDay)}>
+                    {status === 'pass' && <CheckCircle className="text-green-600" />}
+                    {status === 'fail' && <XCircle className="text-red-600" />}
+                    {status === '' && <Minus className="text-slate-300" />}
                   </button>
                 </td>
               </tr>
