@@ -105,7 +105,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
    items.forEach(item => {
     Object.entries(item.days).forEach(([day, entry]) => {
-      if (entry?.status !== '') {
+      if (entry?.status === 'pass' || entry?.status === 'fail') {
         daysSet.add(Number(day))
       }
     })
@@ -346,7 +346,10 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       {/* Day selector */}
       <div className="flex gap-1 flex-wrap">
         {days.map(d => {
-          const hasAny = items.some(item => item.days[String(d)]?.status)
+          const hasAny = items.some(item =>
+            item.days[String(d)]?.status === 'pass' ||
+            item.days[String(d)]?.status === 'fail'
+          )
           return (
             <button key={d} onClick={() => setActiveDay(d)}
               className={`w-8 h-8 text-xs rounded font-medium transition-colors ${
