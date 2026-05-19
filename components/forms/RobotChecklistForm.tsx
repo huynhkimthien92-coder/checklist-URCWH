@@ -99,6 +99,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
   useEffect(() => {
     if (!checklist) return
+    if (dirty) return
 
     const built = buildItems(
       checklist.items || [],
@@ -108,7 +109,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     )
 
     setItems(built)
-  }, [checklist.day_entries])
+  }, [checklist.day_entries, dirty])
 
 
   
@@ -213,23 +214,24 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
   // ✅ Thêm: Đồng bộ activeDay khi dữ liệu thay đổi
   useEffect(() => {
-    if (!checklist.day_entries) return
-  
-    const e = checklist.day_entries
-    const daysWithData = Object.entries(e)
-      .filter(([, dayMap]) =>
-        Object.values(dayMap || {}).some((entry: any) => {
-          const s = normalizeStatus(entry?.status)
-          return s === 'pass' || s === 'fail'
-        })
-      )
-      .map(([day]) => Number(day))
-  
-    if (daysWithData.length > 0) {
-      const maxDay = Math.max(...daysWithData)
-      setActiveDay(maxDay)
-    }
-  }, [checklist.day_entries])
+    if (!items.length) return
+
+    const daysWithData = new Set<number>()
+
+    items.forEach(item => {
+      Object.entries(item.days || {}).forEach(([day, entry]) => {
+        const s = normalizeStatus(entry?.status)
+        if (s === 'pass' || s === 'fail') {
+          daysWithData.add(Number(day))
+        }
+      })
+    })
+
+    if (daysWithData.size > 0) {
+      setActiveDay(Math.max(...Array.from(daysWithData)))
+  }
+  }, [items])
+
 
 
   const role         = (session?.user as any)?.role
