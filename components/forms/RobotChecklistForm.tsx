@@ -179,6 +179,13 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const [saved,     setSaved]     = useState(false)
   const [dirty,     setDirty]     = useState(false)
 
+  // Sync opSigs/supSigs/incidents khi checklist prop thay đổi (sau router.refresh)
+  useEffect(() => {
+    setOpSigs(checklist.operator_signatures || {})
+    setSupSigs(checklist.supervisor_signatures || {})
+    setIncidents(checklist.incidents || [])
+  }, [checklist])
+
   const [activeDay, setActiveDay] = useState<number>(() => {
     const e = checklist.day_entries || {}
     // Chỉ tính ngày có ít nhất 1 item pass/fail thực sự
@@ -292,9 +299,18 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     } else {
       const next = { ...opSigs, [day]: sig }
       setOpSigs(next)
+      // Merge với server trước khi PATCH — tránh overwrite ngày khác
+      const serverRes = await fetch(`/api/robot-checklist/${checklist.id}`)
+      const serverData = serverRes.ok ? await serverRes.json() : null
+      const serverDayEntries = (serverData?.day_entries || {}) as RobotChecklist['day_entries']
+      const localDayEntries = toDayEntries(items)
+      const mergedDayEntries: RobotChecklist['day_entries'] = { ...serverDayEntries }
+      Object.entries(localDayEntries).forEach(([d, dayMap]) => {
+        mergedDayEntries[d] = { ...(serverDayEntries[d] || {}), ...dayMap }
+      })
       await fetch(`/api/robot-checklist/${checklist.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operator_signatures: next, day_entries: toDayEntries(items) }),
+        body: JSON.stringify({ operator_signatures: next, day_entries: mergedDayEntries }),
       })
       setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000)
     }
