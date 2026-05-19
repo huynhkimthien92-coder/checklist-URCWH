@@ -206,6 +206,27 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     return today <= daysInMonth ? today : 1
   })
 
+  useEffect(() => {
+    if (!items.length) return
+
+    let maxDay = 0
+
+    for (let d = 1; d <= daysCount; d++) {
+      const hasData = items.some(item => {
+        const s = normalizeStatus(item.days[String(d)]?.status)
+        return s === 'pass' || s === 'fail'
+      })
+
+      if (hasData) {
+        maxDay = d
+      }
+    }
+
+    if (maxDay !== 0) {
+      setActiveDay(maxDay)
+    }
+  }, [items])
+
   // lastActiveSyncRef và useEffect activeDay đã bị xóa
   // Cũng là stale closure - không cần thiết vì activeDay init đã tính đúng
   // và sau save() activeDay nên giữ nguyên ngày user đang xem
