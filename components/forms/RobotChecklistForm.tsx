@@ -51,12 +51,22 @@ function buildItems(
 
 function toDayEntries(items: RichItem[]): RobotChecklist['day_entries'] {
   const result: RobotChecklist['day_entries'] = {}
+
   items.forEach(item => {
     Object.entries(item.days).forEach(([day, entry]) => {
-      if (!result[day]) result[day] = {}
-      result[day][item.id] = entry
+      // ✅ chỉ lưu khi có data thật
+      if (
+        entry?.status === 'pass' ||
+        entry?.status === 'fail' ||
+        entry?.note ||
+        entry?.image_url
+      ) {
+        if (!result[day]) result[day] = {}
+        result[day][item.id] = entry
+      }
     })
   })
+
   return result
 }
 
@@ -263,8 +273,20 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       // Merge: server làm base, local items override lên trên
       const localDayEntries = toDayEntries(items)
       const mergedDayEntries: RobotChecklist['day_entries'] = { ...serverDayEntries }
+      
       Object.entries(localDayEntries).forEach(([day, dayMap]) => {
-        mergedDayEntries[day] = { ...(serverDayEntries[day] || {}), ...dayMap }
+        if (!mergedDayEntries[day]) mergedDayEntries[day] = {}
+
+        Object.entries(dayMap).forEach(([itemId, entry]) => {
+          if (
+            entry?.status === 'pass' ||
+            entry?.status === 'fail' ||
+            entry?.note ||
+            entry?.image_url
+          ) {
+            mergedDayEntries[day][itemId] = entry
+          }
+        })
       })
 
       await fetch(`/api/robot-checklist/${checklist.id}`, {
