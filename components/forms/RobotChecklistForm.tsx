@@ -30,9 +30,14 @@ function buildItems(
       const day = String(d)
       
       const dayData = (day_entries || {})?.[day] || {}
-      const entry = Object.entries(dayData).find(
-       ([key]) => key.trim() === String(item.id).trim()
-       )?.[1]
+      const entry =
+        dayData?.[item.id] ??
+        dayData?.[String(item.id)] ??
+        Object.entries(dayData || {}).find(
+          ([key]) =>
+            key.trim().toLowerCase() === String(item.id).trim().toLowerCase()
+        )?.[1]
+      
       days[day] = entry ?? {
         status: '',
         note: '',
@@ -64,7 +69,6 @@ interface Props {
 export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const { data: session } = useSession()
   const router = useRouter()
-  const parsedDayEntries = checklist.day_entries || {}
   
 
 
@@ -83,32 +87,16 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   }, [items])
   useEffect(() => {
    if (!checklist) return
-
-   let parsedItems: RobotCheckItem[] =
-    typeof checklist.items === 'string'
-      ? JSON.parse(checklist.items)
-      : checklist.items || []
-
-   let parsedDayEntries: any =
-    typeof checklist.day_entries === 'string'
-      ? JSON.parse(checklist.day_entries)
-      : checklist.day_entries || {}
-
-   // ✅ FIX DOUBLE JSON
-   if (typeof parsedDayEntries === 'string') {
-    parsedDayEntries = JSON.parse(parsedDayEntries)
-   }
-
-   const built = buildItems(
-    parsedItems,
-    parsedDayEntries,
-    checklist.month,
-    checklist.year
-   )
-
-   console.log('DAY 5 FINAL:', built[0].days["5"])
-
-   setItems(built)
+    const parsedItems = checklist.items || []
+    const parsedDayEntries = checklist.day_entries || {}
+    const built = buildItems(
+      parsedItems,
+      parsedDayEntries,
+      checklist.month,
+      checklist.year
+    )
+    console.log('DAY 5 FINAL:', built[0].days["5"])
+    setItems(built)
   }, [checklist])
   useEffect(() => {
    if (!items.length) return
