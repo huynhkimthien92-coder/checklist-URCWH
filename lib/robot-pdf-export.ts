@@ -87,7 +87,7 @@ export async function generateRobotPDFReport(
           '#000'
 
         return `
-          <td style="
+          <td style="<td style;
             text-align:center;
             background:${bg};
             color:${color};
@@ -133,12 +133,12 @@ export async function generateRobotPDFReport(
   // ===================== SIGNATURE =====================
   const opSig = days.map(d => {
     const sig = checklist.operator_signatures?.[String(d)]?.data_url
-    return `<td>${sig ? `<img src="${sig}" style="height:25px"/>` : ''}</td>`
+    return `<td>${sig ? `<img src="${sig}" style="<img src="${:18px; max-height:20px; object-fit:contain; "/>` : ''}</td>`
   }).join('')
 
   const supSig = days.map(d => {
     const sig = checklist.supervisor_signatures?.[String(d)]?.data_url
-    return `<td>${sig ? `<img src="${sig}" style="height:25px"/>` : ''}</td>`
+    return `<td>${sig ? `<img src="${sig}" style="<img src="${:18px; max-height:20px; object-fit:contain; "/>` : ''}</td>`
   }).join('')
 
   // ===================== HTML =====================
@@ -148,7 +148,7 @@ export async function generateRobotPDFReport(
     <meta charset="utf-8"/>
     <style>
       body { font-family: Arial; font-size:8px; }
-      table { border-collapse: collapse; width:100%; }
+      table { border-collapse: collapse; width:100%; table-layout: fixed;}
       td, th { border:1px solid #ccc; }
       th { background:#1a3a6b; color:white; }
     </style>
@@ -181,7 +181,11 @@ export async function generateRobotPDFReport(
           <th>#</th>
           <th>Nhóm</th>
           <th>Công việc</th>
-          ${days.map(d => `<th>${d}</th>`).join('')}
+          ${days.map(d => `<th>${days.map(dpx;text-align:center">
+              ${d}
+            </th>
+          `).join('')}
+
         </tr>
       </thead>
 
