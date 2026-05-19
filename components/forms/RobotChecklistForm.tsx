@@ -311,7 +311,6 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
           day_entries: mergedDayEntries,
           updated_at: new Date().toISOString(),
         })
-      }
 
       setDirty(false)
       setSaved(true)
