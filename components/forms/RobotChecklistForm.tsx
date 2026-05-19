@@ -93,20 +93,19 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
   const [items, setItems] = useState<RichItem[]>([])
 
-  const lastBuiltAtRef = useRef<string | null>(null)
   useEffect(() => {
     if (!checklist) return
-    // Chỉ rebuild khi server trả data mới — tránh reset items giữa chừng user đang nhập
-    if (checklist.updated_at === lastBuiltAtRef.current) return
-    lastBuiltAtRef.current = checklist.updated_at
+
     const built = buildItems(
       checklist.items || [],
       checklist.day_entries || {},
       checklist.month,
       checklist.year
     )
+
     setItems(built)
-  }, [checklist.updated_at])
+  }, [checklist.day_entries])
+
 
   
   const updateNote = (itemId: string, day: number, note: string) => {
@@ -210,20 +209,14 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   useEffect(() => {
     if (!checklist) return
 
-    // chỉ chạy khi server thực sự có data mới
-    if (checklist.updated_at === lastActiveSyncRef.current) return
-    lastActiveSyncRef.current = checklist.updated_at
-
     const e = checklist.day_entries || {}
 
     const daysWithData = Object.entries(e)
       .filter(([, dayMap]) =>
-        Object.values(dayMap || {}).some(
-          (entry: any) =>{
-            const s = normalizeStatus(entry?.status)
-            return s === 'pass' || s === 'fail'
-          }
-        )
+        Object.values(dayMap || {}).some(entry => {
+          const s = normalizeStatus(entry?.status)
+          return s === 'pass' || s === 'fail'
+        })
       )
       .map(([day]) => Number(day))
       .sort((a, b) => b - a)
@@ -231,7 +224,8 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     if (daysWithData.length > 0) {
       setActiveDay(daysWithData[0])
     }
-  }, [checklist.updated_at])
+  }, [checklist.day_entries])
+
 
   const role         = (session?.user as any)?.role
   const isSupervisor = role === 'supervisor' || role === 'admin'
