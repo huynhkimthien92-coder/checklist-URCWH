@@ -1,5 +1,5 @@
 // lib/robot-checklist-data.ts
-// ✅ FINAL VERSION – server-driven giống checklist xe nâng
+// ✅ FINAL VERSION – production ready (items-based structure)
 
 // ===== TYPES =====
 export interface RobotDayEntry {
@@ -15,7 +15,7 @@ export interface RobotCheckItem {
   label_en?: string
   sub_label?: string
 
-  // ✅ QUAN TRỌNG NHẤT
+  // ✅ SOURCE OF TRUTH
   days: Record<string, RobotDayEntry>
 }
 
@@ -36,11 +36,27 @@ export interface RobotChecklist {
   robot_number: string
   robot_model?: string
 
-  // ✅ SOURCE OF TRUTH
+  // ✅ MAIN DATA
   items: RobotCheckItem[]
 
-  operator_signatures: Record<string, any>
-  supervisor_signatures: Record<string, any>
+  operator_signatures: Record<
+    string,
+    {
+      data_url: string
+      signed_at: string
+      user_name: string
+    } | null
+  >
+
+  supervisor_signatures: Record<
+    string,
+    {
+      data_url: string
+      signed_at: string
+      user_name: string
+    } | null
+  >
+
   incidents: RobotIncident[]
   notes: string
 
@@ -51,26 +67,63 @@ export interface RobotChecklist {
   updated_at: string
 }
 
-// ===== TEMPLATE (KHÔNG CÓ days) =====
+// ===== TEMPLATE (KHÔNG có days) =====
 export const ROBOT_CHECKLIST_TEMPLATE = [
+  // ===== QUAN SÁT =====
   {
     id: 'r_obs_01',
     category: 'Quan sát',
-    label_vi: 'Gãy vỡ – Các chi tiết...',
-    label_en: 'Damage',
-    sub_label: 'Damage',
+    label_vi: 'Gãy vỡ – Các chi tiết không bị cong, vỡ',
   },
   {
     id: 'r_obs_02',
     category: 'Quan sát',
-    label_vi: 'Rò rỉ – Các bộ phận...',
-    label_en: 'Leaks',
-    sub_label: 'Leaks',
+    label_vi: 'Rò rỉ – Không rò rỉ dầu/nước',
   },
-  // 👉 giữ nguyên toàn bộ template của bạn ở đây
+  {
+    id: 'r_obs_03',
+    category: 'Quan sát',
+    label_vi: 'Bộ truyền động – Không mài mòn',
+  },
+
+  // ===== HOẠT ĐỘNG =====
+  {
+    id: 'r_op_01',
+    category: 'Hoạt động',
+    label_vi: 'Khởi động – Hoạt động bình thường',
+  },
+  {
+    id: 'r_op_02',
+    category: 'Hoạt động',
+    label_vi: 'Di chuyển – Mượt, không giật',
+  },
+  {
+    id: 'r_op_03',
+    category: 'Hoạt động',
+    label_vi: 'Phanh – Hoạt động tốt',
+  },
+
+  // ===== KHU VỰC =====
+  {
+    id: 'r_work_01',
+    category: 'Khu vực',
+    label_vi: 'Khu vực sạch sẽ',
+  },
+  {
+    id: 'r_work_02',
+    category: 'Khu vực',
+    label_vi: 'Đường đi thông thoáng',
+  },
+
+  // ===== AN TOÀN =====
+  {
+    id: 'r_safe_01',
+    category: 'An toàn',
+    label_vi: 'Không có người vùng nguy hiểm',
+  },
 ] as const
 
-// ===== ✅ INIT ITEMS (QUAN TRỌNG NHẤT) =====
+// ===== ✅ BUILD INITIAL ITEMS (QUAN TRỌNG NHẤT) =====
 export function buildInitialRobotItems(
   template: typeof ROBOT_CHECKLIST_TEMPLATE,
   month: number,
@@ -98,23 +151,42 @@ export function buildInitialRobotItems(
 }
 
 // ===== HELPERS =====
+
+// ✅ số ngày trong tháng
 export function getDaysInMonth(month: number, year: number): number {
   return new Date(year, month, 0).getDate()
 }
 
-export function getRobotChecklistCategories(items: RobotCheckItem[]): string[] {
+// ✅ danh sách category
+export function getRobotCategories(items: RobotCheckItem[]): string[] {
   return Array.from(new Set(items.map(i => i.category)))
 }
 
-// ✅ dùng trực tiếp items (không còn day_entries)
-export function getDayStatistics(items: RobotCheckItem[], day: string) {
+// ✅ thống kê 1 ngày
+export function getDayStats(items: RobotCheckItem[], day: string) {
   const total = items.length
-
   const pass = items.filter(i => i.days?.[day]?.status === 'pass').length
   const fail = items.filter(i => i.days?.[day]?.status === 'fail').length
   const pending = total - pass - fail
 
-  const passRate = total > 0 ? Math.round((pass / total) * 100) : 0
+  const passRate = total > 0
+    ? Math.round((pass / total) * 100)
+    : 0
 
   return { total, pass, fail, pending, passRate }
+}
+
+// ✅ lấy các ngày có data
+export function getDaysWithData(items: RobotCheckItem[]): string[] {
+  const days = new Set<string>()
+
+  items.forEach(item => {
+    Object.entries(item.days || {}).forEach(([day, entry]) => {
+      if (entry.status === 'pass' || entry.status === 'fail') {
+        days.add(day)
+      }
+    })
+  })
+
+  return Array.from(days)
 }
