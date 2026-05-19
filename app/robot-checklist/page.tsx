@@ -1,17 +1,34 @@
 // app/robot-checklist/page.tsx
-// FIX: Bỏ toàn bộ fetch Supabase trực tiếp ở Server Component.
-//      Chuyển thành wrapper gọi RobotChecklistListClient — giống cấu trúc của /checklist/page.tsx.
-//      Client Component tự fetch /api/robot-checklist nên có filter, tạo mới và re-fetch được.
 
 import { Navbar } from '@/components/layout/Navbar'
 import RobotChecklistListClient from './RobotChecklistListClient'
 
+// ✅ không cache vì data realtime
+export const dynamic = 'force-dynamic'
+
 export default function RobotChecklistPage() {
   return (
     <div className="min-h-screen bg-slate-50">
+
+      {/* NAVBAR */}
       <Navbar />
-      <main className="max-w-4xl mx-auto px-4 py-6">
+
+      {/* MAIN CONTENT */}
+      <main className="max-w-5xl mx-auto px-4 py-6">
+
+        {/* HEADER */}
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-slate-900">
+            🤖 Robot Checklist
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Quản lý checklist kiểm tra robot theo tháng
+          </p>
+        </div>
+
+        {/* LIST CLIENT */}
         <RobotChecklistListClient />
+
       </main>
     </div>
   )
