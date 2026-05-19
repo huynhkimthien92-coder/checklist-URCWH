@@ -70,7 +70,11 @@ function toDayEntries(items: RichItem[]): RobotChecklist['day_entries'] {
         entry?.image_url
       ) {
         if (!result[day]) result[day] = {}
-        result[day][item.id] = entry
+        result[day][item.id] = {
+          status: normalizeStatus(entry?.status),
+          note: entry?.note || '',
+          image_url: entry?.image_url || '',
+        }
       }
     })
   })
@@ -227,28 +231,6 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     }
   }, [checklist.day_entries])
 
-  const lastActiveSyncRef = useRef<string | null>(null)
-
-  useEffect(() => {
-    if (!checklist) return
-
-    const e = checklist.day_entries || {}
-
-    const daysWithData = Object.entries(e)
-      .filter(([, dayMap]) =>
-        Object.values(dayMap || {}).some(entry => {
-          const s = normalizeStatus(entry?.status)
-          return s === 'pass' || s === 'fail'
-        })
-      )
-      .map(([day]) => Number(day))
-      .sort((a, b) => b - a)
-
-    if (daysWithData.length > 0) {
-      setActiveDay(daysWithData[0])
-    }
-  }, [checklist.day_entries])
-
 
   const role         = (session?.user as any)?.role
   const isSupervisor = role === 'supervisor' || role === 'admin'
@@ -314,6 +296,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     onUpdate({
       ...checklist,
       day_entries: newDayEntries,
+      updated_at: new Date().toISOString(),
     })
 
     //router.refresh()
