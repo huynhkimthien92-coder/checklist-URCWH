@@ -16,7 +16,13 @@ export default function RobotChecklistClient({ checklist: initial }: Props) {
   // Chỉ sync khi server thực sự trả về data mới hơn (updated_at thay đổi)
   // Tránh việc object reference mới mỗi render làm trigger không cần thiết
   useEffect(() => {
-    if (initial.updated_at !== lastUpdatedAt.current) {
+    if (!initial) return
+
+    // ✅ chỉ update nếu server mới hơn
+    if (
+      new Date(initial.updated_at).getTime() >
+      new Date(lastUpdatedAt.current).getTime()
+    ) {
       lastUpdatedAt.current = initial.updated_at
       setChecklist(initial)
     }
