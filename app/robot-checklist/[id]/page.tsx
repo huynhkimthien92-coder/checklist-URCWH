@@ -1,5 +1,4 @@
 // app/robot-checklist/[id]/page.tsx
-
 export const dynamic = 'force-dynamic'
 
 import { Navbar } from '@/components/layout/Navbar'
@@ -7,7 +6,7 @@ import { createServiceClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import { RobotChecklistForm } from '@/components/forms/RobotChecklistForm'
 
-// ✅ helper parse JSON
+// ✅ parse JSON từ DB
 function safeParse(value: any) {
   if (!value) return value
   if (typeof value === 'string') {
@@ -27,28 +26,22 @@ export default async function RobotChecklistDetailPage({
 }) {
   const supabase = createServiceClient()
 
-  const { data: checklist, error } = await supabase
+  const { data, error } = await supabase
     .from('robot_checklists')
     .select('*')
     .eq('id', params.id)
-    .maybeSingle()
+    .single()
 
-  if (error) {
-    console.error(error)
-  }
+  if (error || !data) notFound()
 
-  if (!checklist) {
-    notFound()
-  }
-
-  // ✅ parse JSON giống trước
-  const cleaned = {
-    ...checklist,
-    items: safeParse(checklist.items) || [],
-    day_entries: safeParse(checklist.day_entries) || {},
-    operator_signatures: safeParse(checklist.operator_signatures) || {},
-    supervisor_signatures: safeParse(checklist.supervisor_signatures) || {},
-    incidents: safeParse(checklist.incidents) || [],
+  // ✅ clean data từ DB
+  const checklist = {
+    ...data,
+    items: safeParse(data.items) || [],
+    day_entries: safeParse(data.day_entries) || {},
+    operator_signatures: safeParse(data.operator_signatures) || {},
+    supervisor_signatures: safeParse(data.supervisor_signatures) || {},
+    incidents: safeParse(data.incidents) || [],
   }
 
   return (
@@ -58,21 +51,19 @@ export default async function RobotChecklistDetailPage({
       <main className="max-w-7xl mx-auto px-4 py-5 space-y-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900">
-            Robot: {cleaned.robot_number}
+            Robot: {checklist.robot_number}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Tháng {cleaned.month}/{cleaned.year} · {cleaned.area}
+          <p className="text-sm text-slate-500">
+            Tháng {checklist.month}/{checklist.year} · {checklist.area}
           </p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-
-          {/* ✅ GỌI TRỰC TIẾP FORM — KHÔNG QUA CLIENT WRAPPER */}
+        <div className="bg-white border rounded-xl p-4">
+          {/* ✅ gọi trực tiếp form */}
           <RobotChecklistForm
-            checklist={cleaned}
-            readOnly={cleaned.status === 'approved'}
+            checklist={checklist}
+            readOnly={checklist.status === 'approved'}
           />
-
         </div>
       </main>
     </div>
