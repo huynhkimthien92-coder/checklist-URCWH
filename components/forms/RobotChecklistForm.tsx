@@ -5,7 +5,7 @@
 //   - cycleStatus chỉ setItems (local), không PATCH
 //   - Chỉ PATCH khi bấm "Lưu tạm" / ký / submit
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { CheckCircle, XCircle, Minus, Download, Plus, Trash2, Loader2, Save } from 'lucide-react'
 import { RobotChecklist, RobotCheckItem, RobotDayEntry, getDaysInMonth } from '@/lib/robot-checklist-data'
@@ -74,41 +74,19 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
 
   const [items, setItems] = useState<RichItem[]>([])
-  useEffect(() => {
-    const allDays = new Set<string>()
 
-    items.forEach(item => {
-      Object.keys(item.days).forEach(day => {
-        allDays.add(day)
-      })
-    })
-
-    console.log('Loaded days:', Array.from(allDays))
-  }, [items])
+  const lastBuiltAtRef = useRef<string | null>(null)
   useEffect(() => {
-   if (!checklist) return
-    const parsedItems = checklist.items || []
-    const parsedDayEntries = checklist.day_entries || {}
+    if (!checklist) return
+    // Chỉ rebuild khi server trả data mới — tránh reset items giữa chừng user đang nhập
+    if (checklist.updated_at === lastBuiltAtRef.current) return
+    lastBuiltAtRef.current = checklist.updated_at
     const built = buildItems(
-      parsedItems,
-      parsedDayEntries,
+      checklist.items || [],
+      checklist.day_entries || {},
       checklist.month,
       checklist.year
     )
-    console.log('DAY 5 FINAL:', built[0].days["5"])
-    // ✅ ADD DEBUG LOGS HERE
-    console.group('🔍 DEBUG: buildItems Output');
-    console.log('Items count:', built.length);
-    console.log('Sample item (first):', {
-      id: built[0]?.id,
-      label: built[0]?.label_vi,
-      daysLoaded: Object.keys(built[0]?.days || {}),
-      day1: built[0]?.days['1'],
-      day2: built[0]?.days['2'],
-      day3: built[0]?.days['3'],
-    });
-    console.log('All days in first item:', built[0]?.days);
-    console.groupEnd();
     setItems(built)
   }, [checklist])
 
@@ -179,8 +157,11 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const [saved,     setSaved]     = useState(false)
   const [dirty,     setDirty]     = useState(false)
 
-  // Sync opSigs/supSigs/incidents khi checklist prop thay đổi (sau router.refresh)
+  // Sync signatures/incidents chỉ khi server trả data mới (updated_at đổi)
+  const lastSigAtRef = useRef<string | null>(null)
   useEffect(() => {
+    if (checklist.updated_at === lastSigAtRef.current) return
+    lastSigAtRef.current = checklist.updated_at
     setOpSigs(checklist.operator_signatures || {})
     setSupSigs(checklist.supervisor_signatures || {})
     setIncidents(checklist.incidents || [])
@@ -299,18 +280,9 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     } else {
       const next = { ...opSigs, [day]: sig }
       setOpSigs(next)
-      // Merge với server trước khi PATCH — tránh overwrite ngày khác
-      const serverRes = await fetch(`/api/robot-checklist/${checklist.id}`)
-      const serverData = serverRes.ok ? await serverRes.json() : null
-      const serverDayEntries = (serverData?.day_entries || {}) as RobotChecklist['day_entries']
-      const localDayEntries = toDayEntries(items)
-      const mergedDayEntries: RobotChecklist['day_entries'] = { ...serverDayEntries }
-      Object.entries(localDayEntries).forEach(([d, dayMap]) => {
-        mergedDayEntries[d] = { ...(serverDayEntries[d] || {}), ...dayMap }
-      })
       await fetch(`/api/robot-checklist/${checklist.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operator_signatures: next, day_entries: mergedDayEntries }),
+        body: JSON.stringify({ operator_signatures: next, day_entries: toDayEntries(items) }),
       })
       setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000)
     }
