@@ -318,23 +318,36 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       user_id:   (session?.user as any)?.id,
       user_name: (session?.user as any)?.name,
     }
+
     if (isSuper) {
       const next = { ...supSigs, [day]: sig }
       setSupSigs(next)
+
       await fetch(`/api/robot-checklist/${checklist.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ supervisor_signatures: next }),
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          supervisor_signatures: next
+        }),
       })
+
     } else {
       const next = { ...opSigs, [day]: sig }
       setOpSigs(next)
+
       await fetch(`/api/robot-checklist/${checklist.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operator_signatures: next, day_entries: toDayEntries(items) }),
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operator_signatures: next  // ✅ chỉ lưu signature
+        }),
       })
-      setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2000)
+
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
     }
   }
+
 
   const submit = async () => {
     const de = toDayEntries(items)
