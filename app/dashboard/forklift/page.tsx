@@ -1,5 +1,5 @@
 // app/dashboard/forklift/page.tsx// app/dashboard createServiceClient } from '@/lib/supabase'
-
+import { createServiceClient } from '@/lib/supabase'
 export const dynamic = 'force-dynamic'
 
 // ======================= PAGE =======================
