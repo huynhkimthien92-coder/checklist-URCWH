@@ -124,7 +124,7 @@ const OBSERVATION = [
 // ===== CATEGORY: HOẠT ĐỘNG =====
 const OPERATION = [
   createItem('r_op_01', 'Hoạt động', 'Khởi động – Robot khởi động bình thường, không có âm thanh lạ?','Startup – Normal startup, no unusual sounds','Startup – Khởi động'),
-  createItem('r_op_02', 'Hoạt động', 'Điều khiển di chuyển – Kiểm tra chuyển động tiến, lùi, quay có trơn mượt, không rơ?''Movement – Forward, reverse, rotation smooth, no binding','Movement – Di chuyển'),
+  createItem('r_op_02', 'Hoạt động', 'Điều khiển di chuyển – Kiểm tra chuyển động tiến, lùi, quay có trơn mượt, không rơ?','Movement – Forward, reverse, rotation smooth, no binding','Movement – Di chuyển'),
   createItem('r_op_03', 'Hoạt động', 'Tốc độ – Tốc độ tối đa, tối thiểu hoạt động bình thường?','Speed Control – Max/min speeds functioning properly','Speed – Tốc độ'),
   createItem('r_op_04', 'Hoạt động', 'Dừng – Dừng khẩn cấp, dừng bình thường hoạt động tốt, khoảng cách dừng hợp lý?','Braking – Emergency & normal stop working, adequate stopping distance','Braking – Dừng'),
   createItem('r_op_05', 'Hoạt động', 'Cảm biến an toàn – Cảm biến xung quanh hoạt động, robot dừng lại khi có vật cản?','Safety Sensors – Perimeter sensors detecting obstacles','Safety Sensors – Cảm biến'),
