@@ -42,6 +42,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     supervisor_signatures: safeParse(data.supervisor_signatures),
     incidents: safeParse(data.incidents),
   }
+  console.log('API RETURN day4:', data.day_entries?.["4"])
 
   return NextResponse.json(cleaned)
 }
