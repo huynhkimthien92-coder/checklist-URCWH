@@ -181,7 +181,7 @@ export async function generateRobotPDFReport(
           <th>#</th>
           <th>Nhóm</th>
           <th>Công việc</th>
-          ${days.map(d => `${days.map <th style="width:18px;text-align:center;font-size:8px">
+          ${days.map(d => `<th style="width:18px;text-align:center;font-size:8px">
               ${d}
             </th>
           `).join('')}
