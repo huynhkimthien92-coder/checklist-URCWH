@@ -1,4 +1,7 @@
-// ================= IMPORT =================// ================= IMPORT { notFound } from 'next/navigation'
+// app/robot-checklist/[id]/page.tsx
+
+// ================= IMPORT =================
+import { notFound } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 
 import { authOptions } from '@/lib/auth'
@@ -16,6 +19,7 @@ export default async function RobotChecklistPage({
 }: {
   params: { id: string }
 }) {
+
   // ===== AUTH =====
   const session = await getServerSession(authOptions)
 
@@ -79,4 +83,3 @@ export default async function RobotChecklistPage({
     </div>
   )
 }
-
