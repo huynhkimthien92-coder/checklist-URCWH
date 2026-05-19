@@ -52,7 +52,7 @@ export default async function RobotChecklistPage({
       <Navbar />
 
       {/* CONTENT */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6 space-y-4">
+      <main className="max-w-screen-2xl mx-auto px-6 py-6 space-y-4">
 
         {/* HEADER */}
         <div className="border-b pb-3">
