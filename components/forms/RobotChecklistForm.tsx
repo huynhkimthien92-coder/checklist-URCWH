@@ -2,75 +2,27 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle, XCircle, Minus, Loader2, Save } from 'lucide-react'
-
+import { useSession } from 'next-auth/react'
 import {
-  RobotChecklist,
-  RobotCheckItem,
-  RobotDayEntry,
-  getDaysInMonth
-} from '@/lib/robot-checklist-data'
+  CheckCircle,
+  XCircle,
+  Minus,
+  Loader2,
+  Save
+} from 'lucide-react'
+
+import { RobotChecklist } from '@/lib/robot-checklist-data'
 
 // ===== TYPES =====
-type RichItem = RobotCheckItem & {
-  days: Record<string, RobotDayEntry>
-}
-
-// ===== UTILS =====
-function normalizeStatus(status: any) {
-  return (status || '').toString().trim().toLowerCase()
-}
-
-// ✅ FIX KEY MISMATCH (QUAN TRỌNG NHẤT)
-function buildItems(
-  template: RobotCheckItem[],
-  day_entries: RobotChecklist['day_entries'],
-  month: number,
-  year: number
-): RichItem[] {
-  const totalDays = getDaysInMonth(month, year)
-
-  return template.map(item => {
-    const itemKey = String(item.id).trim().toLowerCase()
-    const days: Record<string, RobotDayEntry> = {}
-
-    for (let d = 1; d <= totalDays; d++) {
-      const day = String(d)
-      const dayData = day_entries?.[day] || {}
-
-      const entry = Object.entries(dayData).find(([k]) =>
-        k.trim().toLowerCase() === itemKey
-      )?.[1]
-
-      days[day] = entry || {
-        status: '',
-        note: '',
-        image_url: '',
-      }
-    }
-
-    return { ...item, days }
-  })
-}
-
-// ✅ stringify id khi save
-function toDayEntries(items: RichItem[]) {
-  const result: any = {}
-
-  items.forEach(item => {
-    const key = String(item.id)
-
-    Object.entries(item.days).forEach(([day, entry]) => {
-      const s = normalizeStatus(entry?.status)
-
-      if (s === 'pass' || s === 'fail' || entry?.note || entry?.image_url) {
-        if (!result[day]) result[day] = {}
-        result[day][key] = entry
-      }
-    })
-  })
-
-  return result
+type Item = {
+  id: string
+  label_vi: string
+  category?: string
+  days: Record<string, {
+    status?: string
+    note?: string
+    image_url?: string
+  }>
 }
 
 // ===== COMPONENT =====
@@ -81,51 +33,46 @@ interface Props {
 
 export function RobotChecklistForm({ checklist, readOnly }: Props) {
   const router = useRouter()
+  const { data: session } = useSession()
 
-  // ✅ init giống xe nâng
-  const [items, setItems] = useState<RichItem[]>(() =>
-    buildItems(
-      checklist.items || [],
-      checklist.day_entries || {},
-      checklist.month,
-      checklist.year
-    )
-  )
+  // ✅ GIỐNG XE NÂNG 100%
+  const [items, setItems] = useState<Item[]>(checklist.items || [])
 
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  const [activeDay, setActiveDay] = useState<number>(() => {
-    const today = new Date().getDate()
-    const max = getDaysInMonth(checklist.month, checklist.year)
-    return today <= max ? today : 1
-  })
+  const today = new Date().getDate()
+  const [activeDay, setActiveDay] = useState<string>(String(today))
 
-  const daysCount = getDaysInMonth(checklist.month, checklist.year)
-  const days = Array.from({ length: daysCount }, (_, i) => i + 1)
+  const daysInMonth = new Date(
+    checklist.year,
+    checklist.month,
+    0
+  ).getDate()
+
+  const days = Array.from({ length: daysInMonth }, (_, i) => String(i + 1))
 
   // ===== STATUS =====
-  const cycleStatus = useCallback((itemId: string, day: number) => {
+  const updateStatus = useCallback((itemId: string, day: string) => {
     if (readOnly) return
 
     setItems(prev =>
       prev.map(item => {
-        if (String(item.id) !== String(itemId)) return item
+        if (item.id !== itemId) return item
 
-        const key = String(day)
-        const current = normalizeStatus(item.days[key]?.status)
+        const current = item.days?.[day]?.status || ''
 
         const next =
           current === '' ? 'pass'
-          : current === 'pass' ? 'fail'
-          : ''
+            : current === 'pass' ? 'fail'
+            : ''
 
         return {
           ...item,
           days: {
             ...item.days,
-            [key]: {
-              ...(item.days[key] || {}),
+            [day]: {
+              ...(item.days?.[day] || {}),
               status: next
             }
           }
@@ -143,7 +90,7 @@ export function RobotChecklistForm({ checklist, readOnly }: Props) {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          day_entries: toDayEntries(items)
+          items // ✅ giống xe nâng
         })
       })
 
@@ -152,7 +99,7 @@ export function RobotChecklistForm({ checklist, readOnly }: Props) {
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
 
-      // ✅ SERVER SOURCE OF TRUTH
+      // ✅ reload từ server
       router.refresh()
 
     } catch {
@@ -162,49 +109,47 @@ export function RobotChecklistForm({ checklist, readOnly }: Props) {
     }
   }
 
+  // ===== UI =====
   return (
     <div className="space-y-4">
 
-      {/* DAY SELECT */}
-      <div className="flex gap-1 flex-wrap">
-        {days.map(d => {
-          const hasData = items.some(item => {
-            const s = normalizeStatus(item.days[String(d)]?.status)
-            return s === 'pass' || s === 'fail'
-          })
+      {/* DAY PICKER */}
+      <div className="flex flex-wrap gap-1">
+        {days.map(day => {
+          const hasData = items.some(i => i.days?.[day]?.status)
 
           return (
             <button
-              key={d}
-              onClick={() => setActiveDay(d)}
+              key={day}
+              onClick={() => setActiveDay(day)}
               className={`w-8 h-8 text-xs rounded ${
-                activeDay === d
+                activeDay === day
                   ? 'bg-blue-600 text-white'
                   : hasData
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-slate-100 text-slate-600'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-slate-100 text-slate-600'
               }`}
             >
-              {d}
+              {day}
             </button>
           )
         })}
       </div>
 
       {/* TABLE */}
-      <table className="w-full border text-sm">
+      <table className="w-full text-sm border">
         <tbody>
-          {items.map((item, i) => {
-            const status = normalizeStatus(
-              item.days[String(activeDay)]?.status
-            )
+          {items.map((item, idx) => {
+            const entry = item.days?.[activeDay] || {}
+            const status = entry.status || ''
 
             return (
               <tr key={item.id} className="border-t">
-                <td className="px-2">{i + 1}</td>
-                <td>{item.label_vi}</td>
-                <td className="text-center">
-                  <button onClick={() => cycleStatus(String(item.id), activeDay)}>
+                <td className="px-2">{idx + 1}</td>
+                <td className="px-2">{item.label_vi}</td>
+
+                <td className="text-center px-2">
+                  <button onClick={() => updateStatus(item.id, activeDay)}>
                     {status === 'pass' && <CheckCircle className="text-green-600" />}
                     {status === 'fail' && <XCircle className="text-red-600" />}
                     {status === '' && <Minus className="text-slate-300" />}
