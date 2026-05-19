@@ -298,18 +298,19 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
       // ✅ Fetch lại GET ngay sau PATCH để lấy data mới nhất từ DB
       // Không dùng router.refresh() vì nó không đảm bảo props update synchronous
-      const freshRes = await fetch(`/api/robot-checklist/${checklist.id}`)
-      if (freshRes.ok) {
-        const fresh = await freshRes.json()
-        // Rebuild items từ data DB mới nhất
-        setItems(buildItems(
-          fresh.items || checklist.items || [],
-          fresh.day_entries || mergedDayEntries,
-          fresh.month || checklist.month,
-          fresh.year  || checklist.year
-        ))
+      setItems(buildItems(
+        checklist.items || [],
+        mergedDayEntries,
+        checklist.month,
+        checklist.year
+      ))
+
         // Cập nhật checklist state ở Client (updated_at, day_entries, v.v.)
-        onUpdate(fresh)
+        onUpdate({
+          ...checklist,
+          day_entries: mergedDayEntries,
+          updated_at: new Date().toISOString(),
+        })
       }
 
       setDirty(false)
