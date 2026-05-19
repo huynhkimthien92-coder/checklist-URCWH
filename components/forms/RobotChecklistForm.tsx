@@ -96,6 +96,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
 
   const [items, setItems] = useState<RichItem[]>([])
+  const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
     if (!checklist) return
@@ -177,7 +178,6 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const [incidents, setIncidents] = useState(checklist.incidents || [])
   const [saving,    setSaving]    = useState(false)
   const [saved,     setSaved]     = useState(false)
-  const [dirty,     setDirty]     = useState(false)
 
   // Sync signatures/incidents chỉ khi server trả data mới (updated_at đổi)
   const lastSigAtRef = useRef<string | null>(null)
