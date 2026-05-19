@@ -28,9 +28,13 @@ export interface RobotChecklist {
 
   operator_signatures: Record<string, any>
   supervisor_signatures: Record<string, any>
+  incidents: RobotIncident[]
 
   notes: string
   status: 'draft' | 'submitted' | 'reviewed' | 'approved'
+  created_by?: string
+  created_at: string
+  updated_at?: string
 }
 
 // ================= TEMPLATE =================
