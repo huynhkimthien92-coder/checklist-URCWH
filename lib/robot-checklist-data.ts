@@ -16,6 +16,13 @@ export interface RobotCheckItem {
   sub_label?: string
   days: Record<string, RobotDayEntry>
 }
+export interface RobotIncident {export interface Robot id?: string
+  incident: string
+  date: string
+  receiver: string
+  severity?: 'low' | 'medium' | 'high'
+  resolved_at?: string
+}
 
 export interface RobotChecklist {
   id: string
