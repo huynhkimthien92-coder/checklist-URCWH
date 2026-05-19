@@ -96,6 +96,19 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       checklist.year
     )
     console.log('DAY 5 FINAL:', built[0].days["5"])
+    // ✅ ADD DEBUG LOGS HERE
+    console.group('🔍 DEBUG: buildItems Output');
+    console.log('Items count:', built.length);
+    console.log('Sample item (first):', {
+      id: built[0]?.id,
+      label: built[0]?.label_vi,
+      daysLoaded: Object.keys(built[0]?.days || {}),
+      day1: built[0]?.days['1'],
+      day2: built[0]?.days['2'],
+      day3: built[0]?.days['3'],
+    });
+    console.log('All days in first item:', built[0]?.days);
+    console.groupEnd();
     setItems(built)
   }, [checklist])
   useEffect(() => {
