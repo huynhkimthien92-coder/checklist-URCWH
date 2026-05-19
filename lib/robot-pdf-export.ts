@@ -107,9 +107,10 @@ export async function generateRobotPDFReport(
               transform:rotate(180deg);
               background:#1a3a6b;
               color:#fff;
-              font-size:7px;
+              font-size:8px;
               text-align:center;
-              padding:2px;
+              padding:4px;
+              width:60px;
             ">
               ${escapeHtml(cat)}
             </td>`
@@ -117,7 +118,7 @@ export async function generateRobotPDFReport(
 
       tableRows += `
         <tr>
-          <td style="text-align:center;font-size:8px">${index}</td>
+          <td style="width:30px; text-align:center;font-size:8px">${index}</td>
           ${catCell}
           <td style="font-size:7px;padding:2px">
             ${escapeHtml(item.label_vi)}
