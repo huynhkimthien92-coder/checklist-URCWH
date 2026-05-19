@@ -11,17 +11,17 @@ interface Props {
 
 export default function RobotChecklistClient({ checklist: initial }: Props) {
   const [checklist, setChecklist] = useState<RobotChecklist>(initial)
-  const lastUpdatedAt = useRef(initial.updated_at)
+  const lastUpdatedAt = useRef<string | null>(null) // ← null ban đầu, không phải initial.updated_at
 
-  // Chỉ sync khi server thực sự trả về data mới hơn (updated_at thay đổi)
-  // Tránh việc object reference mới mỗi render làm trigger không cần thiết
   useEffect(() => {
     if (!initial) return
 
-    // ✅ chỉ update nếu server mới hơn
+    // Lần đầu (lastUpdatedAt.current === null): luôn sync
+    // Các lần sau: chỉ sync nếu server mới hơn
     if (
+      lastUpdatedAt.current === null ||
       new Date(initial.updated_at).getTime() >
-      new Date(lastUpdatedAt.current).getTime()
+        new Date(lastUpdatedAt.current).getTime()
     ) {
       lastUpdatedAt.current = initial.updated_at
       setChecklist(initial)
