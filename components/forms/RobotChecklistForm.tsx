@@ -14,6 +14,13 @@ import { useRouter } from 'next/navigation'
 
 type RichItem = RobotCheckItem & { days: Record<string, RobotDayEntry> }
 
+function normalizeStatus(status: any) {
+  return (status || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+}
+
 function buildItems(
   template: RobotCheckItem[],
   day_entries: RobotChecklist['day_entries'],
@@ -55,9 +62,10 @@ function toDayEntries(items: RichItem[]): RobotChecklist['day_entries'] {
   items.forEach(item => {
     Object.entries(item.days).forEach(([day, entry]) => {
       // ✅ chỉ lưu khi có data thật
+      const s = normalizeStatus(entry?.status)
       if (
-        entry?.status === 'pass' ||
-        entry?.status === 'fail' ||
+        s === 'pass' ||
+        s === 'fail' ||
         entry?.note ||
         entry?.image_url
       ) {
@@ -182,7 +190,10 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     // Chỉ tính ngày có ít nhất 1 item pass/fail thực sự
     const daysWithData = Object.entries(e)
       .filter(([, dayMap]) =>
-        Object.values(dayMap || {}).some((entry: any) => entry?.status === 'pass' || entry?.status === 'fail')
+        Object.values(dayMap || {}).some((entry: any) => {
+          const s = normalizeStatus(entry?.status)
+          return s === 'pass' || s === 'fail'
+        })
       )
       .map(([day]) => Number(day))
       .sort((a, b) => b - a)
@@ -208,8 +219,10 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     const daysWithData = Object.entries(e)
       .filter(([, dayMap]) =>
         Object.values(dayMap || {}).some(
-          (entry: any) =>
-            entry?.status === 'pass' || entry?.status === 'fail'
+          (entry: any) =>{
+            const s = normalizeStatus(entry?.status)
+            return s === 'pass' || s === 'fail'
+          }
         )
       )
       .map(([day]) => Number(day))
@@ -244,7 +257,8 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     setItems(prev => prev.map(item => {
       if (item.id !== itemId) return item
       const dayStr  = String(day)
-      const current = item.days[dayStr]?.status || ''
+      const raw = item.days[dayStr]?.status || ''
+      const current = normalizeStatus(raw)
       const next    = (current === '' ? 'pass' : current === 'pass' ? 'fail' : '') as '' | 'pass' | 'fail'
       return {
         ...item,
@@ -278,9 +292,10 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
         if (!mergedDayEntries[day]) mergedDayEntries[day] = {}
 
         Object.entries(dayMap).forEach(([itemId, entry]) => {
+          const s = normalizeStatus(entry?.status)
           if (
-            entry?.status === 'pass' ||
-            entry?.status === 'fail' ||
+            s === 'pass' ||
+            s === 'fail' ||
             entry?.note ||
             entry?.image_url
           ) {
@@ -412,8 +427,8 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       <div className="flex gap-1 flex-wrap">
         {days.map(d => {
           const hasAny = items.some(item =>
-            item.days[String(d)]?.status === 'pass' ||
-            item.days[String(d)]?.status === 'fail'
+            normalizeStatus(item.days[String(d)]?.status) === 'pass' ||
+            normalizeStatus(item.days[String(d)]?.status) === 'fail'
           )
           return (
             <button key={d} onClick={() => setActiveDay(d)}
@@ -442,7 +457,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
             {categories.map(cat => {
               const catItems = items.filter(i => i.category === cat)
               return catItems.map((item, idx) => {
-                const status = item.days[String(activeDay)]?.status || ''
+                const status = normalizeStatus(item.days[String(activeDay)]?.status)
                 const bg = status === 'pass' ? 'bg-green-50' : status === 'fail' ? 'bg-red-50' : ''
                 return (
                   <tr key={item.id} className={`border-t ${bg}`}>
