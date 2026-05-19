@@ -133,12 +133,12 @@ export async function generateRobotPDFReport(
   // ===================== SIGNATURE =====================
   const opSig = days.map(d => {
     const sig = checklist.operator_signatures?.[String(d)]?.data_url
-    return `<td>${sig ? `<img src="${sig}" style="<img src="${:18px; max-height:20px; object-fit:contain; "/>` : ''}</td>`
+    return `<td style="width:18px;text-align:center >${sig ? `<img src="${sig}" style="max-width:18px; max-height:20px; object-fit:contain; "/>` : ''}</td>`
   }).join('')
 
   const supSig = days.map(d => {
     const sig = checklist.supervisor_signatures?.[String(d)]?.data_url
-    return `<td>${sig ? `<img src="${sig}" style="<img src="${:18px; max-height:20px; object-fit:contain; "/>` : ''}</td>`
+    return `<td style="width:18px;text-align:center >${sig ? `<img src="${sig}" style="max-width:18px; max-height:20px; object-fit:contain; "/>` : ''}</td>`
   }).join('')
 
   // ===================== HTML =====================
