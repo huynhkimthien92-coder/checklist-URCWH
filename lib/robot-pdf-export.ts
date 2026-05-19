@@ -73,7 +73,7 @@ export async function generateRobotPDFReport(
         const status =
           typeof entry === 'string'
             ? entry
-            : entry?.status || entry?.value || ''
+            : entry?.status || ''
 
         const bg =
           status === 'pass' ? '#dcfce7' :
