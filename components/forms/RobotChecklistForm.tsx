@@ -222,10 +222,18 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
       }
     }
 
-    if (maxDay !== 0) {
+    // ✅ CHỈ update nếu activeDay đang KHÔNG có data
+    const activeHasData = items.some(item => {
+      const s = normalizeStatus(item.days[String(activeDay)]?.status)
+      return s === 'pass' || s === 'fail'
+    })
+
+    if (!activeHasData && maxDay !== 0) {
       setActiveDay(maxDay)
     }
+
   }, [items])
+
 
   // lastActiveSyncRef và useEffect activeDay đã bị xóa
   // Cũng là stale closure - không cần thiết vì activeDay init đã tính đúng
