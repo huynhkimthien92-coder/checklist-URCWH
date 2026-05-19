@@ -70,11 +70,7 @@ function toDayEntries(items: RichItem[]): RobotChecklist['day_entries'] {
         entry?.image_url
       ) {
         if (!result[day]) result[day] = {}
-        result[day][item.id] = {
-          status: normalizeStatus(entry?.status),
-          note: entry?.note || '',
-          image_url: entry?.image_url || '',
-        }
+        result[day][item.id] = entry
       }
     })
   })
@@ -96,11 +92,9 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
 
   const [items, setItems] = useState<RichItem[]>([])
-  const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
     if (!checklist) return
-    if (dirty) return
 
     const built = buildItems(
       checklist.items || [],
@@ -110,7 +104,10 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     )
 
     setItems(built)
-  }, [checklist.day_entries, dirty])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checklist.id, checklist.updated_at])
+  // ✅ Dùng updated_at (primitive string) thay vì checklist.day_entries (object reference)
+  // → useEffect chạy đúng mỗi khi server trả về data mới
 
 
   
@@ -178,6 +175,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
   const [incidents, setIncidents] = useState(checklist.incidents || [])
   const [saving,    setSaving]    = useState(false)
   const [saved,     setSaved]     = useState(false)
+  const [dirty,     setDirty]     = useState(false)
 
   // Sync signatures/incidents chỉ khi server trả data mới (updated_at đổi)
   const lastSigAtRef = useRef<string | null>(null)
@@ -191,8 +189,7 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
 
   const [activeDay, setActiveDay] = useState<number>(() => {
     const e = checklist.day_entries || {}
-  
-    // Tìm tất cả ngày có dữ liệu pass/fail
+    // Chỉ tính ngày có ít nhất 1 item pass/fail thực sự
     const daysWithData = Object.entries(e)
       .filter(([, dayMap]) =>
         Object.values(dayMap || {}).some((entry: any) => {
@@ -201,37 +198,37 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
         })
       )
       .map(([day]) => Number(day))
-  
-    // ✅ Lấy ngày lớn nhất (ngày cuối cùng)
-    if (daysWithData.length > 0) {
-      return Math.max(...daysWithData)
-    }
-  
+      .sort((a, b) => b - a)
+
+    // Ưu tiên: ngày mới nhất có data → ngày hôm nay → ngày 1
+    if (daysWithData.length > 0) return daysWithData[0]
     const today = new Date().getDate()
     const daysInMonth = getDaysInMonth(checklist.month, checklist.year)
     return today <= daysInMonth ? today : 1
   })
 
-  // ✅ Thêm: Đồng bộ activeDay khi dữ liệu thay đổi
+  const lastActiveSyncRef = useRef<string | null>(null)
+
   useEffect(() => {
-    if (!items.length) return
+    if (!checklist) return
 
-    const daysWithData = new Set<number>()
+    const e = checklist.day_entries || {}
 
-    items.forEach(item => {
-      Object.entries(item.days || {}).forEach(([day, entry]) => {
-        const s = normalizeStatus(entry?.status)
-        if (s === 'pass' || s === 'fail') {
-          daysWithData.add(Number(day))
-        }
-      })
-    })
+    const daysWithData = Object.entries(e)
+      .filter(([, dayMap]) =>
+        Object.values(dayMap || {}).some(entry => {
+          const s = normalizeStatus(entry?.status)
+          return s === 'pass' || s === 'fail'
+        })
+      )
+      .map(([day]) => Number(day))
+      .sort((a, b) => b - a)
 
-    if (daysWithData.size > 0) {
-      setActiveDay(Math.max(...Array.from(daysWithData)))
-  }
-  }, [items])
-
+    if (daysWithData.length > 0) {
+      setActiveDay(daysWithData[0])
+    }
+  // ✅ Dùng updated_at thay vì object reference
+  }, [checklist.id, checklist.updated_at])
 
 
   const role         = (session?.user as any)?.role
@@ -277,42 +274,55 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     setSaved(false)
   }, [readOnly])
 
- const save = async (extraPayload?: Record<string, unknown>) => {
-  setSaving(true)
-  try {
-    const newDayEntries = toDayEntries(items)
+  const save = async (extraPayload?: Record<string, unknown>) => {
+    setSaving(true)
+    try {
+      // Fetch server state mới nhất trước khi ghi — tránh overwrite data ngày khác
+      const serverRes = await fetch(`/api/robot-checklist/${checklist.id}`)
+      const serverData = serverRes.ok ? await serverRes.json() : null
+      const serverDayEntries = (serverData?.day_entries || {}) as RobotChecklist['day_entries']
 
-    await fetch(`/api/robot-checklist/${checklist.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        day_entries: newDayEntries,
-        operator_signatures: opSigs,
-        supervisor_signatures: supSigs,
-        incidents,
-        ...extraPayload,
-      }),
-    })
+      // Merge: server làm base, local items override lên trên
+      const localDayEntries = toDayEntries(items)
+      const mergedDayEntries: RobotChecklist['day_entries'] = { ...serverDayEntries }
+      
+      Object.entries(localDayEntries).forEach(([day, dayMap]) => {
+        if (!mergedDayEntries[day]) mergedDayEntries[day] = {}
 
-    // ✅ update UI NGAY (rất quan trọng)
-    onUpdate({
-      ...checklist,
-      day_entries: newDayEntries,
-      updated_at: new Date().toISOString(),
-    })
+        Object.entries(dayMap).forEach(([itemId, entry]) => {
+          const s = normalizeStatus(entry?.status)
+          if (
+            s === 'pass' ||
+            s === 'fail' ||
+            entry?.note ||
+            entry?.image_url
+          ) {
+            mergedDayEntries[day][itemId] = entry
+          }
+        })
+      })
 
-    //router.refresh()
-
-    setDirty(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-
-  } catch {
-    alert('❌ Lưu thất bại')
-  } finally {
-    setSaving(false)
+      await fetch(`/api/robot-checklist/${checklist.id}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          day_entries:           mergedDayEntries,
+          operator_signatures:   opSigs,
+          supervisor_signatures: supSigs,
+          incidents,
+          ...extraPayload,
+        }),
+      })
+      router.refresh()
+      setDirty(false)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {
+      alert('❌ Lưu thất bại')
+    } finally {
+      setSaving(false)
+    }
   }
-}
 
   const signDay = async (day: number, dataUrl: string, isSuper: boolean) => {
     const sig = {
