@@ -293,55 +293,41 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     setSaved(false)
   }, [readOnly])
 
-  const save = async (extraPayload?: Record<string, unknown>) => {
-    setSaving(true)
-    try {
-      // Fetch server state mới nhất trước khi ghi — tránh overwrite data ngày khác
-      const serverRes = await fetch(`/api/robot-checklist/${checklist.id}`)
-      const serverData = serverRes.ok ? await serverRes.json() : null
-      const serverDayEntries = (serverData?.day_entries || {}) as RobotChecklist['day_entries']
+ const save = async (extraPayload?: Record<string, unknown>) => {
+  setSaving(true)
+  try {
+    const newDayEntries = toDayEntries(items)
 
-      // Merge: server làm base, local items override lên trên
-      const localDayEntries = toDayEntries(items)
-      const mergedDayEntries: RobotChecklist['day_entries'] = { ...serverDayEntries }
-      
-      Object.entries(localDayEntries).forEach(([day, dayMap]) => {
-        if (!mergedDayEntries[day]) mergedDayEntries[day] = {}
+    await fetch(`/api/robot-checklist/${checklist.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        day_entries: newDayEntries,
+        operator_signatures: opSigs,
+        supervisor_signatures: supSigs,
+        incidents,
+        ...extraPayload,
+      }),
+    })
 
-        Object.entries(dayMap).forEach(([itemId, entry]) => {
-          const s = normalizeStatus(entry?.status)
-          if (
-            s === 'pass' ||
-            s === 'fail' ||
-            entry?.note ||
-            entry?.image_url
-          ) {
-            mergedDayEntries[day][itemId] = entry
-          }
-        })
-      })
+    // ✅ update UI NGAY (rất quan trọng)
+    onUpdate({
+      ...checklist,
+      day_entries: newDayEntries,
+    })
 
-      await fetch(`/api/robot-checklist/${checklist.id}`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          day_entries:           mergedDayEntries,
-          operator_signatures:   opSigs,
-          supervisor_signatures: supSigs,
-          incidents,
-          ...extraPayload,
-        }),
-      })
-      router.refresh()
-      setDirty(false)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-    } catch {
-      alert('❌ Lưu thất bại')
-    } finally {
-      setSaving(false)
-    }
+    router.refresh()
+
+    setDirty(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+
+  } catch {
+    alert('❌ Lưu thất bại')
+  } finally {
+    setSaving(false)
   }
+}
 
   const signDay = async (day: number, dataUrl: string, isSuper: boolean) => {
     const sig = {
