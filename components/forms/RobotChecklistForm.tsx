@@ -103,20 +103,15 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     )
   )
 
-  // Sync lại khi server trả về data mới sau router.refresh()
-  // Dùng primitive updated_at thay vì object reference day_entries
-  useEffect(() => {
-    if (!checklist) return
-    setItems(
-      buildItems(
-        checklist.items || [],
-        checklist.day_entries || {},
-        checklist.month,
-        checklist.year
-      )
-    )
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checklist.id, checklist.updated_at])
+  // ❌ KHÔNG dùng useEffect để sync items từ checklist prop
+  // → Gây stale closure: checklist trong closure là giá trị CŨ
+  // → Sau save(), onUpdate() cập nhật checklist mới nhưng useEffect lại
+  //   overwrite items về day_entries cũ (không có ngày mới vừa save)
+  //
+  // ✅ Thay vào đó:
+  // - useState init: buildItems() chạy 1 lần khi mount (nhờ lazy init)
+  // - save(): setItems từ PATCH response ngay lập tức (đã có ngày mới)
+  // - page.tsx key={updated_at}: remount sạch khi reload trang
 
 
   
@@ -216,28 +211,9 @@ export function RobotChecklistForm({ checklist, onUpdate, readOnly }: Props) {
     return today <= daysInMonth ? today : 1
   })
 
-  const lastActiveSyncRef = useRef<string | null>(null)
-
-  useEffect(() => {
-    if (!checklist) return
-
-    const e = checklist.day_entries || {}
-
-    const daysWithData = Object.entries(e)
-      .filter(([, dayMap]) =>
-        Object.values(dayMap || {}).some(entry => {
-          const s = normalizeStatus(entry?.status)
-          return s === 'pass' || s === 'fail'
-        })
-      )
-      .map(([day]) => Number(day))
-      .sort((a, b) => b - a)
-
-    if (daysWithData.length > 0) {
-      setActiveDay(daysWithData[0])
-    }
-  // ✅ Dùng updated_at thay vì object reference
-  }, [checklist.id, checklist.updated_at])
+  // lastActiveSyncRef và useEffect activeDay đã bị xóa
+  // Cũng là stale closure - không cần thiết vì activeDay init đã tính đúng
+  // và sau save() activeDay nên giữ nguyên ngày user đang xem
 
 
   const role         = (session?.user as any)?.role
