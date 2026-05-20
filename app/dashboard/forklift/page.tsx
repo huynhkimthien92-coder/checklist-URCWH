@@ -1,22 +1,145 @@
-// app/dashboard/forklift/page.tsx
+'use client'
 
+import { useEffect, useState } from 'react'
 import { createServiceClient } from '@/lib/supabase'
 import Link from 'next/link'
 
-export const dynamic = 'force-dynamic'
+export default function ForkliftDashboardPage() {
 
-export default async function ForkliftDashboardPage() {
+  const [data, setData] = useState<any[]>([])
+  const [filtered, setFiltered] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const [search, setSearch] = useState('')
+  const [sortKey, setSortKey] = useState<string>('created_at')
+  const [sortAsc, setSortAsc] = useState<boolean>(false)
 
   const supabase = createServiceClient()
 
-  const { data, error } = await supabase
-    .from('checklists')
-    .select('*')
-    .order('created_at', { ascending: false })
+  // ================= FETCH =================
+  useEffect(() => {
+    supabase
+      .from('checklists')
+      .select('*')
+      .then(({ data }) => {
+        setData(data || [])
+        setLoading(false)
+      })
+  }, [])
 
-  if (error) {
-    return <div className="p-4 text-red-500">Load error</div>
+  // ================= SORT + FILTER =================
+  useEffect(() => {
+
+    const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
+
+    let result = (data || []).map(c => {
+
+      // parse items
+      let items: any[] = []
+      try {
+        items = Array.isArray(c.items)
+          ? c.items
+          : JSON.parse(c.items || '[]')
+      } catch {}
+
+      let opSigns: any = {}
+      try {
+        opSigns = typeof c.operator_signatures === 'string'
+          ? JSON.parse(c.operator_signatures || '{}')
+          : c.operator_signatures || {}
+      } catch {}
+
+      let supSigns: any = {}
+      try {
+        supSigns = typeof c.supervisor_signatures === 'string'
+          ? JSON.parse(c.supervisor_signatures || '{}')
+          : c.supervisor_signatures || {}
+      } catch {}
+
+      const daysSet = new Set<string>()
+      const failSet = new Set<string>()
+
+      items.forEach((item: any) => {
+        const days = typeof item.days === 'object' ? item.days : {}
+
+        Object.entries(days).forEach(([day, entry]: any) => {
+          const status = typeof entry === 'string' ? entry : entry?.status
+
+          if (DAYS.includes(day) && (status === 'pass' || status === 'fail')) {
+            daysSet.add(day)
+          }
+
+          if (status === 'fail') {
+            failSet.add(day)
+          }
+        })
+      })
+
+      const daysArray = Array.from(daysSet).sort(
+        (a, b) => DAYS.indexOf(a) - DAYS.indexOf(b)
+      )
+
+      const unsignedSupervisor = daysArray.filter(
+        d => !supSigns?.[d]?.data_url
+      )
+
+      return {
+        ...c,
+        daysArray,
+        failCount: failSet.size,
+        unsignedSupervisorCount: unsignedSupervisor.length
+      }
+    })
+
+    // ===== FILTER
+    if (search) {
+      result = result.filter(c =>
+        c.forklift_number?.toLowerCase().includes(search.toLowerCase())
+      )
+    }
+
+    // ===== SORT
+    result.sort((a, b) => {
+
+      let aVal = a[sortKey]
+      let bVal = b[sortKey]
+
+      if (sortKey === 'week') {
+        aVal = a.week_number
+        bVal = b.week_number
+      }
+
+      if (sortKey === 'failCount') {
+        aVal = a.failCount
+        bVal = b.failCount
+      }
+
+      if (sortKey === 'forklift_number') {
+        aVal = a.forklift_number || ''
+        bVal = b.forklift_number || ''
+      }
+
+      if (aVal < bVal) return sortAsc ? -1 : 1
+      if (aVal > bVal) return sortAsc ? 1 : -1
+      return 0
+    })
+
+    setFiltered(result)
+
+  }, [data, search, sortKey, sortAsc])
+
+  // ================= UI =================
+
+  const toggleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortAsc(!sortAsc)
+    } else {
+      setSortKey(key)
+      setSortAsc(false)
+    }
   }
+
+  if (loading) return <div className="p-4">Loading...</div>
 
   return (
     <div className="space-y-4">
@@ -25,241 +148,75 @@ export default async function ForkliftDashboardPage() {
         📊 Forklift Checklist Dashboard
       </h1>
 
+      {/* FILTER */}
+      <input
+        placeholder="🔍 Tìm theo xe..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="border px-3 py-1 rounded text-sm"
+      />
+
       <table className="w-full border text-sm bg-white">
+
         <thead className="bg-slate-100">
           <tr>
-            <th className="p-2 border">Xe</th>
-            <th className="p-2 border">Tuần</th>
+            <th onClick={() => toggleSort('forklift_number')} className="p-2 border cursor-pointer">
+              Xe
+            </th>
+            <th onClick={() => toggleSort('week')} className="p-2 border cursor-pointer">
+              Tuần
+            </th>
             <th className="p-2 border">Trạng thái</th>
             <th className="p-2 border">Tiến độ</th>
             <th className="p-2 border">Ngày</th>
-            <th className="p-2 border">Lỗi</th>
+            <th onClick={() => toggleSort('failCount')} className="p-2 border cursor-pointer">
+              Lỗi
+            </th>
             <th className="p-2 border">Chữ ký</th>
           </tr>
         </thead>
 
         <tbody>
+          {filtered.map(c => {
 
-          {data?.map((c) => {
-            try {
+            return (
+              <tr key={c.id} className="border-t hover:bg-gray-50">
 
-              // ✅ SAFE PARSE items
-              const items = (() => {
-                try {
-                  return Array.isArray(c.items)
-                    ? c.items
-                    : JSON.parse(c.items || '[]')
-                } catch {
-                  return []
-                }
-              })()
+                <td className="p-2 border font-medium">
+                  <Link href={`/checklist/${c.id}`}>{c.forklift_number}</Link>
+                </td>
 
-              // ✅ SAFE PARSE operator
-              const opSigns = (() => {
-                try {
-                  return typeof c.operator_signatures === 'string'
-                    ? JSON.parse(c.operator_signatures || '{}')
-                    : c.operator_signatures || {}
-                } catch {
-                  return {}
-                }
-              })()
+                <td className="p-2 border">
+                  {c.week_number}/{c.year}
+                </td>
 
-              // ✅ SAFE PARSE supervisor ✅ NEW
-              const supSigns = (() => {
-                try {
-                  return typeof c.supervisor_signatures === 'string'
-                    ? JSON.parse(c.supervisor_signatures || '{}')
-                    : c.supervisor_signatures || {}
-                } catch {
-                  return {}
-                }
-              })()
+                <td className="p-2 border">
+                  {c.status}
+                </td>
 
-              const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
+                <td className="p-2 border">
+                  {c.daysArray.length}/7
+                </td>
 
-              const daysSet = new Set<string>()
-              const failSet = new Set<string>()
+                <td className="p-2 border text-xs">
+                  {c.daysArray.join(', ')}
+                </td>
 
-              items.forEach((item: any) => {
+                <td className="p-2 border text-center">
+                  {c.failCount}
+                </td>
 
-                const days =
-                  typeof item.days === 'object' && item.days !== null
-                    ? item.days
-                    : {}
+                <td className="p-2 border text-xs">
+                  {c.unsignedSupervisorCount > 0
+                    ? `⚠ ${c.unsignedSupervisorCount}`
+                    : '✅'}
+                </td>
 
-                Object.entries(days).forEach(([day, entry]: any) => {
-
-                  const status =
-                    typeof entry === 'string'
-                      ? entry
-                      : entry?.status || ''
-
-                  if (
-                    DAYS.includes(day) &&
-                    (status === 'pass' || status === 'fail')
-                  ) {
-                    daysSet.add(day)
-                  }
-
-                  if (status === 'fail') {
-                    failSet.add(day)
-                  }
-                })
-              })
-
-              const daysArray = Array.from(daysSet)
-
-              // ✅ NEW: phân loại chữ ký
-              const unsignedOperator = daysArray.filter(
-                d => !opSigns?.[d]?.data_url
-              )
-
-              const unsignedSupervisor = daysArray.filter(
-                d => !supSigns?.[d]?.data_url
-              )
-
-              const percent =
-                Math.round((daysArray.length / DAYS.length) * 100)
-
-              return (
-                <tr
-                  key={c.id}
-                  className={`
-                    border-t hover:bg-gray-50
-                    ${failSet.size > 0 ? 'bg-red-50' : ''}
-                  `}
-                >
-
-                  {/* XE */}
-                  <td className="p-2 border font-medium">
-                    <Link href={`/checklist/${c.id}`}>
-                      {c.forklift_number}
-                    </Link>
-                  </td>
-
-                  {/* TUẦN */}
-                  <td className="p-2 border">
-                    <Link href={`/checklist/${c.id}`}>
-                      {c.week_number}/{c.year}
-                    </Link>
-                  </td>
-
-                  {/* STATUS */}
-                  <td className="p-2 border">
-                    <Link href={`/checklist/${c.id}`}>
-                      <span className={
-                        c.status === 'approved'
-                          ? 'text-green-600 font-bold'
-                          : c.status === 'submitted'
-                          ? 'text-blue-600'
-                          : 'text-gray-500'
-                      }>
-                        {c.status}
-                      </span>
-                    </Link>
-                  </td>
-
-                  {/* PROGRESS */}
-                  <td className="p-2 border">
-                    <Link href={`/checklist/${c.id}`}>
-
-                      <div className="w-full bg-gray-200 h-2 rounded">
-                        <div
-                          className={`
-                            h-2 rounded
-                            ${
-                              percent === 100
-                                ? 'bg-green-500'
-                                : percent > 50
-                                ? 'bg-blue-500'
-                                : 'bg-yellow-500'
-                            }
-                          `}
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-
-                      <div className="text-xs mt-1">
-                        {percent}% ({daysArray.length}/7)
-                      </div>
-
-                    </Link>
-                  </td>
-
-                  {/* DAYS */}
-                  <td className="p-2 border text-xs">
-                    <Link href={`/checklist/${c.id}`}>
-                      {daysArray.map(d => (
-                        <span
-                          key={d}
-                          className={`mr-1 px-1 rounded ${
-                            failSet.has(d)
-                              ? 'bg-red-200 text-red-700'
-                              : 'bg-green-100 text-green-700'
-                          }`}
-                        >
-                          {d}
-                        </span>
-                      ))}
-                    </Link>
-                  </td>
-
-                  {/* FAIL */}
-                  <td className="p-2 border text-center">
-                    <Link href={`/checklist/${c.id}`}>
-                      {failSet.size > 0
-                        ? <span className="text-red-600 font-bold">⚠ {failSet.size}</span>
-                        : <span className="text-green-600">OK</span>
-                      }
-                    </Link>
-                  </td>
-
-                  {/* ✅ SIGNATURE LOGIC MỚI */}
-                  <td className="p-2 border text-xs">
-
-                    <Link href={`/checklist/${c.id}`}>
-
-                      {/* thiếu cả 2 */}
-                      {unsignedOperator.length > 0 && unsignedSupervisor.length > 0 && (
-                        <span className="text-red-600">
-                          ❌ Op+Sup
-                        </span>
-                      )}
-
-                      {/* thiếu supervisor */}
-                      {unsignedOperator.length === 0 && unsignedSupervisor.length > 0 && (
-                        <span className="text-orange-600 font-medium">
-                          ⚠ Supervisor ({unsignedSupervisor.length})
-                        </span>
-                      )}
-
-                      {/* thiếu operator */}
-                      {unsignedOperator.length > 0 && unsignedSupervisor.length === 0 && (
-                        <span className="text-blue-600">
-                          ⏳ Operator ({unsignedOperator.length})
-                        </span>
-                      )}
-
-                      {/* đủ */}
-                      {unsignedOperator.length === 0 && unsignedSupervisor.length === 0 && (
-                        <span className="text-green-600">✅</span>
-                      )}
-
-                    </Link>
-
-                  </td>
-
-                </tr>
-              )
-
-            } catch (err) {
-              console.error('ROW ERROR:', err)
-              return null
-            }
+              </tr>
+            )
           })}
-
         </tbody>
+
       </table>
 
     </div>
