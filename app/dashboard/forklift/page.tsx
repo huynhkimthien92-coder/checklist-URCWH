@@ -5,7 +5,6 @@ import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
-// ======================= PAGE =======================
 export default async function ForkliftDashboardPage() {
 
   const supabase = createServiceClient()
@@ -40,6 +39,7 @@ export default async function ForkliftDashboardPage() {
         </thead>
 
         <tbody>
+
           {data?.map((c) => {
             try {
 
@@ -111,90 +111,102 @@ export default async function ForkliftDashboardPage() {
               return (
                 <tr
                   key={c.id}
-                  className={`
-                    relative border-t group
-                    ${failSet.size > 0 ? 'bg-red-50' : ''}
-                    hover:bg-gray-50
-                  `}
+                  className={`border-t hover:bg-gray-50 ${
+                    failSet.size > 0 ? 'bg-red-50' : ''
+                  }`}
                 >
 
-                  {/* ✅ CLICK OVERLAY */}
-                  <td colSpan={7} className="absolute inset-0 z-10">
-                    <Link
-                      href={`/checklist/${c.id}`}
-                      className="block w-full h-full"
-                    />
+                  {/* XE */}
+                  <td className="p-2 border font-medium">
+                    <Link href={`/checklist/${c.id}`} className="block">
+                      {c.forklift_number}
+                    </Link>
                   </td>
 
-                  {/* CONTENT */}
-                  <td className="p-2 border relative z-20 font-medium">
-                    {c.forklift_number}
+                  {/* TUẦN */}
+                  <td className="p-2 border">
+                    <Link href={`/checklist/${c.id}`} className="block">
+                      {c.week_number}/{c.year}
+                    </Link>
                   </td>
 
-                  <td className="p-2 border relative z-20">
-                    {c.week_number}/{c.year}
-                  </td>
-
-                  <td className="p-2 border relative z-20">
-                    <span className={
-                      c.status === 'approved'
-                        ? 'text-green-600 font-bold'
-                        : c.status === 'submitted'
-                        ? 'text-blue-600'
-                        : 'text-gray-500'
-                    }>
-                      {c.status}
-                    </span>
-                  </td>
-
-                  <td className="p-2 border relative z-20">
-                    <div className="w-full bg-gray-200 h-2 rounded">
-                      <div
-                        className={`
-                          h-2 rounded
-                          ${
-                            percent === 100
-                              ? 'bg-green-500'
-                              : percent > 50
-                              ? 'bg-blue-500'
-                              : 'bg-yellow-500'
-                          }
-                        `}
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-
-                    <div className="text-xs mt-1">
-                      {percent}% ({daysArray.length}/7)
-                    </div>
-                  </td>
-
-                  <td className="p-2 border text-xs relative z-20">
-                    {daysArray.map(d => (
-                      <span
-                        key={d}
-                        className={`mr-1 px-1 rounded ${
-                          failSet.has(d)
-                            ? 'bg-red-200 text-red-700'
-                            : 'bg-green-100 text-green-700'
-                        }`}
-                      >
-                        {d}
+                  {/* STATUS */}
+                  <td className="p-2 border">
+                    <Link href={`/checklist/${c.id}`} className="block">
+                      <span className={
+                        c.status === 'approved'
+                          ? 'text-green-600 font-bold'
+                          : c.status === 'submitted'
+                          ? 'text-blue-600'
+                          : 'text-gray-500'
+                      }>
+                        {c.status}
                       </span>
-                    ))}
+                    </Link>
                   </td>
 
-                  <td className="p-2 border text-center relative z-20">
-                    {failSet.size > 0
-                      ? <span className="text-red-600 font-bold">⚠ {failSet.size}</span>
-                      : <span className="text-green-600">OK</span>
-                    }
+                  {/* PROGRESS */}
+                  <td className="p-2 border">
+                    <Link href={`/checklist/${c.id}`} className="block">
+
+                      <div className="w-full bg-gray-200 h-2 rounded">
+                        <div
+                          className={`
+                            h-2 rounded
+                            ${
+                              percent === 100
+                                ? 'bg-green-500'
+                                : percent > 50
+                                ? 'bg-blue-500'
+                                : 'bg-yellow-500'
+                            }
+                          `}
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+
+                      <div className="text-xs mt-1">
+                        {percent}% ({daysArray.length}/7)
+                      </div>
+
+                    </Link>
                   </td>
 
-                  <td className="p-2 border text-xs text-red-600 relative z-20">
-                    {unsigned.length > 0
-                      ? unsigned.join(', ')
-                      : '✅'}
+                  {/* DAYS */}
+                  <td className="p-2 border text-xs">
+                    <Link href={`/checklist/${c.id}`} className="block">
+                      {daysArray.map(d => (
+                        <span
+                          key={d}
+                          className={`mr-1 px-1 rounded ${
+                            failSet.has(d)
+                              ? 'bg-red-200 text-red-700'
+                              : 'bg-green-100 text-green-700'
+                          }`}
+                        >
+                          {d}
+                        </span>
+                      ))}
+                    </Link>
+                  </td>
+
+                  {/* FAIL */}
+                  <td className="p-2 border text-center">
+                    <Link href={`/checklist/${c.id}`} className="block">
+                      {failSet.size > 0
+                        ? <span className="text-red-600 font-bold">⚠ {failSet.size}</span>
+                        : <span className="text-green-600">OK</span>
+                      }
+                    </Link>
+                  </td>
+
+                  {/* UNSIGNED */}
+                  <td className="p-2 border text-xs text-red-600">
+                    <Link href={`/checklist/${c.id}`} className="block">
+                      {unsigned.length > 0
+                        ? unsigned.join(', ')
+                        : '✅'}
+                    </Link>
                   </td>
 
                 </tr>
@@ -205,6 +217,7 @@ export default async function ForkliftDashboardPage() {
               return null
             }
           })}
+
         </tbody>
       </table>
 
