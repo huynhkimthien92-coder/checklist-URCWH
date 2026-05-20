@@ -1,6 +1,7 @@
 // app/dashboard/forklift/page.tsx
 
 import { createServiceClient } from '@/lib/supabase'
+import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,7 +43,7 @@ export default async function ForkliftDashboardPage() {
           {data?.map((c) => {
             try {
 
-              // ================= SAFE PARSE ITEMS =================
+              // ✅ SAFE PARSE items
               const items = (() => {
                 try {
                   return Array.isArray(c.items)
@@ -53,7 +54,7 @@ export default async function ForkliftDashboardPage() {
                 }
               })()
 
-              // ================= SAFE PARSE SIGNATURE =================
+              // ✅ SAFE PARSE signatures
               const opSigns = (() => {
                 try {
                   return typeof c.operator_signatures === 'string'
@@ -64,8 +65,7 @@ export default async function ForkliftDashboardPage() {
                 }
               })()
 
-              // ================= DAYS =================
-              const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+              const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
 
               const daysSet = new Set<string>()
               const failSet = new Set<string>()
@@ -99,7 +99,6 @@ export default async function ForkliftDashboardPage() {
 
               const daysArray = Array.from(daysSet)
 
-              // ================= UNSIGNED =================
               const unsigned = daysArray.filter(
                 d => !opSigns?.[d]?.data_url
               )
@@ -112,24 +111,31 @@ export default async function ForkliftDashboardPage() {
               return (
                 <tr
                   key={c.id}
-                  className={`border-t hover:bg-gray-50 cursor-pointer ${
-                    failSet.size > 0 ? 'bg-red-50' : ''
-                  }`}
-                  onClick={() => window.location.href = `/checklist/${c.id}`}
+                  className={`
+                    relative border-t group
+                    ${failSet.size > 0 ? 'bg-red-50' : ''}
+                    hover:bg-gray-50
+                  `}
                 >
 
-                  {/* XE */}
-                  <td className="p-2 border font-medium">
+                  {/* ✅ CLICK OVERLAY */}
+                  <td colSpan={7} className="absolute inset-0 z-10">
+                    <Link
+                      href={`/checklist/${c.id}`}
+                      className="block w-full h-full"
+                    />
+                  </td>
+
+                  {/* CONTENT */}
+                  <td className="p-2 border relative z-20 font-medium">
                     {c.forklift_number}
                   </td>
 
-                  {/* TUẦN */}
-                  <td className="p-2 border">
+                  <td className="p-2 border relative z-20">
                     {c.week_number}/{c.year}
                   </td>
 
-                  {/* STATUS */}
-                  <td className="p-2 border">
+                  <td className="p-2 border relative z-20">
                     <span className={
                       c.status === 'approved'
                         ? 'text-green-600 font-bold'
@@ -141,27 +147,29 @@ export default async function ForkliftDashboardPage() {
                     </span>
                   </td>
 
-                  {/* PROGRESS */}
-                  <td className="p-2 border">
+                  <td className="p-2 border relative z-20">
                     <div className="w-full bg-gray-200 h-2 rounded">
                       <div
-                        className={`h-2 rounded ${
-                          percent === 100
-                            ? 'bg-green-500'
-                            : percent > 50
-                            ? 'bg-blue-500'
-                            : 'bg-yellow-500'
-                        }`}
+                        className={`
+                          h-2 rounded
+                          ${
+                            percent === 100
+                              ? 'bg-green-500'
+                              : percent > 50
+                              ? 'bg-blue-500'
+                              : 'bg-yellow-500'
+                          }
+                        `}
                         style={{ width: `${percent}%` }}
                       />
                     </div>
+
                     <div className="text-xs mt-1">
                       {percent}% ({daysArray.length}/7)
                     </div>
                   </td>
 
-                  {/* DAYS */}
-                  <td className="p-2 border text-xs">
+                  <td className="p-2 border text-xs relative z-20">
                     {daysArray.map(d => (
                       <span
                         key={d}
@@ -176,16 +184,14 @@ export default async function ForkliftDashboardPage() {
                     ))}
                   </td>
 
-                  {/* FAIL */}
-                  <td className="p-2 border text-center">
+                  <td className="p-2 border text-center relative z-20">
                     {failSet.size > 0
                       ? <span className="text-red-600 font-bold">⚠ {failSet.size}</span>
                       : <span className="text-green-600">OK</span>
                     }
                   </td>
 
-                  {/* UNSIGNED */}
-                  <td className="p-2 border text-xs text-red-600">
+                  <td className="p-2 border text-xs text-red-600 relative z-20">
                     {unsigned.length > 0
                       ? unsigned.join(', ')
                       : '✅'}
