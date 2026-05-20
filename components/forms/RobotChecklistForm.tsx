@@ -1,6 +1,5 @@
 'use client'
 
-// ===== IMPORT =====
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -53,9 +52,20 @@ export function RobotChecklistForm({
   const daysInMonth = new Date(checklist.year, checklist.month, 0).getDate()
   const days = Array.from({ length: daysInMonth }, (_, i) => String(i + 1))
 
+  // ===== LOCK LOGIC (GIỐNG FORKLIFT) =====
+  const isDaySignedByOperator = (day: string) => {
+    return !!opSigs?.[day]?.data_url
+  }
+
+  const isDayLocked = (day: string) => {
+    return isDaySignedByOperator(day) // ✅ LOCK theo operator
+  }
+
+  const isDisabled = readOnly || isDayLocked(activeDay)
+
   // ===== UPDATE STATUS =====
   const updateStatus = (itemId: string) => {
-    if (readOnly) return
+    if (isDisabled) return
 
     setItems(prev =>
       prev.map(item => {
@@ -68,7 +78,7 @@ export function RobotChecklistForm({
           ...item,
           days: {
             ...item.days,
-            [activeDay]: {
+            {
               ...item.days[activeDay],
               status: next
             }
@@ -80,6 +90,8 @@ export function RobotChecklistForm({
 
   // ===== UPDATE NOTE =====
   const updateNote = (itemId: string, note: string) => {
+    if (isDisabled) return
+
     setItems(prev =>
       prev.map(i =>
         i.id === itemId
@@ -87,7 +99,7 @@ export function RobotChecklistForm({
               ...i,
               days: {
                 ...i.days,
-                [activeDay]: {
+                {
                   ...i.days[activeDay],
                   note
                 }
@@ -100,6 +112,8 @@ export function RobotChecklistForm({
 
   // ===== UPDATE IMAGE =====
   const updateImage = (itemId: string, url: string) => {
+    if (isDisabled) return
+
     setItems(prev =>
       prev.map(i =>
         i.id === itemId
@@ -107,7 +121,7 @@ export function RobotChecklistForm({
               ...i,
               days: {
                 ...i.days,
-                [activeDay]: {
+                {
                   ...i.days[activeDay],
                   image_url: url
                 }
@@ -120,6 +134,12 @@ export function RobotChecklistForm({
 
   // ===== SAVE =====
   const save = async (extra?: any) => {
+
+    if (isDayLocked(activeDay)) {
+      alert('Ngày đã được ký, không thể chỉnh sửa ❌')
+      return
+    }
+
     setSaving(true)
 
     await fetch(`/api/robot-checklist/${checklist.id}`, {
@@ -176,6 +196,13 @@ export function RobotChecklistForm({
         })}
       </div>
 
+      {/* ✅ LOCK INFO */}
+      {isDayLocked(activeDay) && (
+        <div className="text-xs text-red-500">
+          🔒 Ngày đã được ký bởi operator - không thể chỉnh sửa
+        </div>
+      )}
+
       {/* ===== TABLE ===== */}
       <table className="w-full border text-sm table-fixed">
 
@@ -183,14 +210,12 @@ export function RobotChecklistForm({
           {Object.entries(grouped).map(([category, list]) => (
             <tbody key={category}>
 
-              {/* CATEGORY */}
               <tr>
                 <td colSpan={3} className="w-full bg-indigo-600 text-white px-2 py-1">
                   {category}
                 </td>
               </tr>
 
-              {/* ITEMS */}
               {list.map((item, idx) => {
                 const entry = item.days?.[activeDay]
                 const isPass = entry?.status === 'pass'
@@ -208,22 +233,20 @@ export function RobotChecklistForm({
                     <td className="w-10 text-center">{idx + 1}</td>
 
                     <td className="px-2 w-full">
-                      <div className="break-words">{item.label_vi}</div>
+                      {item.label_vi}
 
-                      {/* FAIL DETAIL */}
                       {isFail && (
                         <div className="mt-2 space-y-2">
 
-                          {/* NOTE (optional) */}
                           <textarea
-                            placeholder="Nhập lỗi (không bắt buộc)..."
+                            disabled={isDisabled}
                             value={entry?.note || ''}
                             onChange={e => updateNote(item.id, e.target.value)}
                             className="w-full border text-xs p-1 rounded"
                           />
 
-                          {/* IMAGE (optional) */}
                           <ImageUploader
+                            disabled={isDisabled}
                             checklistId={checklist.id}
                             itemId={item.id}
                             day={activeDay}
@@ -237,6 +260,7 @@ export function RobotChecklistForm({
 
                     <td className="text-center">
                       <button
+                        disabled={isDisabled}
                         onClick={() => updateStatus(item.id)}
                         className={`
                           w-8 h-8 border rounded
@@ -269,7 +293,7 @@ export function RobotChecklistForm({
           onSave={(url) =>
             setOpSigs(prev => ({
               ...prev,
-              [activeDay]: url
+              url
                 ? {
                     data_url: url,
                     signed_at: new Date().toISOString(),
@@ -290,13 +314,11 @@ export function RobotChecklistForm({
             onSave={(url) =>
               setSupSigs(prev => ({
                 ...prev,
-                [activeDay]: url
-                  ? {
-                      data_url: url,
-                      signed_at: new Date().toISOString(),
-                      user_name: 'Supervisor'
-                    }
-                  : null
+                {
+                  data_url: url,
+                  signed_at: new Date().toISOString(),
+                  user_name: 'Supervisor'
+                }
               }))
             }
           />
@@ -304,20 +326,15 @@ export function RobotChecklistForm({
 
       </div>
 
-      {/* ===== NOTES ===== */}
+      {/* NOTES */}
       <textarea
         value={notes}
         onChange={e => setNotes(e.target.value)}
-        onFocus={e => (e.target.rows = 5)}
-        onBlur={e => {
-          if (!notes) e.target.rows = 1
-        }}
-        rows={1}
+        disabled={readOnly}
         className="w-full border p-2"
-        placeholder="Ghi chú..."
       />
 
-      {/* ===== ACTION ===== */}
+      {/* ACTION */}
       {!readOnly && (
         <div className="flex gap-2">
 
