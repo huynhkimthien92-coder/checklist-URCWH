@@ -16,6 +16,8 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { Navbar } from '@/components/layout/Navbar'
+import { ExportPDFButton } from '@/components/ExportPDFButton'
+import { Download, Eye } from 'lucide-react'
 
 export default function SupervisorPage() {
 
@@ -263,15 +265,36 @@ export default function SupervisorPage() {
 
                     </div>
 
-                    <Link
-                      href={cl.type === 'robot'
-                        ? `/robot-checklist/${cl.id}`
-                        : `/supervisor/${cl.id}`}
-                      className="btn-primary text-sm px-3 py-1.5"
-                    >
-                      <Eye className="w-4 h-4" />
-                      Xem
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      {/* ✅ EXPORT PDF */}
+                      {cl.type === 'forklift' ? (
+                        <ExportPDFButton
+                          checklistId={cl.id}
+                          filename={`XeNang_Tuan${cl.week_number}_${cl.year}_${cl.forklift_number || 'xe'}.pdf`}
+                          //className="btn-secondary text-xs px-2 py-1.5"
+                        />
+                      ) : (
+                        <a
+                          href={`/api/robot-checklist/${cl.id}/pdf`}
+                          className="btn-secondary text-xs px-2 py-1.5"
+                          title="Xuất PDF"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+
+                      {/* ✅ VIEW */}
+                      <Link
+                        href={cl.type === 'robot'
+                          ? `/robot-checklist/${cl.id}`
+                          : `/supervisor/${cl.id}`}
+                        className="btn-primary text-sm px-3 py-1.5 flex items-center gap-1"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Xem
+                      </Link>
+
+                    </div>
 
                   </div>
 
