@@ -238,14 +238,6 @@ export default function RobotChecklistListClient() {
 
                   {/* RIGHT */}
                   <div className="flex items-center gap-2">
-                    {/* ✅ EXPORT PDF */}
-                    {cl.type === 'forklift' ? (
-                      <ExportPDFButton
-                        checklistId={cl.id}
-                        filename={`XeNang_Tuan${cl.week_number}_${cl.year}_${cl.forklift_number || 'xe'}.pdf`}
-                        //className="btn-secondary text-xs px-2 py-1.5"
-                      />
-                    ) : (
                       <a
                         href={`/api/robot-checklist/${cl.id}/pdf`}
                         className="btn-secondary text-xs px-2 py-1.5"
@@ -257,16 +249,13 @@ export default function RobotChecklistListClient() {
 
                     {/* ✅ VIEW */}
                     <Link
-                      href={cl.type === 'robot'
-                        ? `/robot-checklist/${cl.id}`
-                        : `/supervisor/${cl.id}`}
+                      href={`/robot-checklist/${cl.id}`}
                       className="btn-primary text-sm px-3 py-1.5"
                     >
-                      <Eye className="w-4 h-4" />
                       Xem
                     </Link>
 
-                  </div>
+
 
                 </div>
               </div>
