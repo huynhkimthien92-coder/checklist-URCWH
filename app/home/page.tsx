@@ -122,18 +122,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold">Warehouse App</h1>
-      </div>
-      <button
-        onClick={() => signOut()}
-        className="text-xs text-red-500 mt-4"
-      >
-        Đăng xuất
-      </button>
-
-
-      //<Navbar />
+      {/*<Navbar />*/}
 
       <main className="max-w-5xl mx-auto px-4 py-6 pb-16">
 
@@ -182,7 +171,16 @@ export default function HomePage() {
           })}
 
         </div>
-
+        {/* LOGOUT */}
+        <div className="mt-8">
+          <button
+            onClick={() => signOut()}
+            className="w-full py-3 rounded-xl bg-red-50 text-red-600 font-medium
+                       hover:bg-red-100 transition"
+          >
+            Đăng xuất
+          </button>
+        </div>
       </main>
     </div>
   )
