@@ -8,7 +8,7 @@ export default async function ChecklistPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/auth/login')
   const role = (session.user as any)?.role
-  if (role !== 'operator' && role !== 'admin') redirect('/')
+  if (role !== 'operator' && role !== 'admin' && role !== 'supervisor') redirect('/')
 
   return (
     <div className="min-h-screen bg-slate-50">
