@@ -7,10 +7,12 @@ import {
   Shield,
   Bot,
   Truck,
-  ClipboardList
+  ClipboardList,
+  Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 
 // ===== TYPE =====
 type MenuItem = {
@@ -29,7 +31,7 @@ const MENU: MenuItem[] = [
     href: '/admin',
     icon: UserCog,
     color: 'bg-purple-100 text-purple-600',
-    roles: ['admin']
+    roles: ['admin'],
   },
   {
     label: 'Supervisor',
@@ -66,12 +68,25 @@ const MENU: MenuItem[] = [
 // ===== COMPONENT =====
 export default function HomePage() {
 
-  // 👉 TODO: lấy thật từ session nếu cần
-  const role = 'admin'
+  const { data: session, status } = useSession()
 
   const [pending, setPending] = useState(0)
 
-  // ✅ ví dụ: lấy số checklist chờ duyệt
+  // ✅ loading session
+  if (status === 'loading') {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="animate-spin w-6 h-6 text-blue-500" />
+      </div>
+    )
+  }
+
+  // ✅ chưa login
+  if (!session) return null
+
+  const role = (session.user as any)?.role
+
+  // ✅ lấy số checklist chờ duyệt
   useEffect(() => {
     fetch('/api/checklists')
       .then(r => r.json())
@@ -82,7 +97,7 @@ export default function HomePage() {
       .catch(() => {})
   }, [])
 
-  // ✅ inject badge động
+  // ✅ gán badge
   const menuWithBadge = MENU.map(item => {
     if (item.href === '/supervisor') {
       return { ...item, badge: pending }
@@ -90,7 +105,7 @@ export default function HomePage() {
     return item
   })
 
-  // ✅ filter theo role
+  // ✅ filter role
   const menu = menuWithBadge.filter(item => {
     if (!item.roles) return true
     return item.roles.includes(role)
@@ -113,20 +128,27 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* GRID APP STYLE */}
+        {/* GRID */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
 
           {menu.map(item => {
             const Icon = item.icon
 
             return (
-              {item.href}
+              <Link
+                key={item.href}
+                href={item.href}
+                className="relative card p-4 flex flex-col items-center justify-center text-center
+                           hover:shadow-lg hover:-translate-y-1 active:scale-95 transition"
+              >
 
                 {/* ICON */}
-                <div className={cn(
-                  'w-14 h-14 rounded-2xl flex items-center justify-center mb-2',
-                  item.color
-                )}>
+                <div
+                  className={cn(
+                    'w-14 h-14 rounded-2xl flex items-center justify-center mb-2',
+                    item.color
+                  )}
+                >
                   <Icon className="w-6 h-6" />
                 </div>
 
