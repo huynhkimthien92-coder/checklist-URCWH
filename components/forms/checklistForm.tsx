@@ -348,6 +348,11 @@ const isDayLocked = (day: string) => {
                 getSignatureBadgeColor(activeDay, isSupervisor)
               )}
             >
+
+             <span className="font-semibold">
+               {opSigs?.[activeDay]?.user_name || 'operator'}
+             </span>{''}
+
               ✓ Đã ký
             </span>
           )}
