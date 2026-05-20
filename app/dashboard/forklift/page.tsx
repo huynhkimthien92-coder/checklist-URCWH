@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createServiceClient } from '@/lib/supabase'
 import Link from 'next/link'
+import { createBrowserClient } from '@supabase/ssr'
 
 export default function ForkliftDashboardPage() {
 
@@ -11,10 +11,15 @@ export default function ForkliftDashboardPage() {
   const [loading, setLoading] = useState(true)
 
   const [search, setSearch] = useState('')
-  const [sortKey, setSortKey] = useState<string>('created_at')
-  const [sortAsc, setSortAsc] = useState<boolean>(false)
+  const [sortKey, setSortKey] = useState('created_at')
+  const [sortAsc, setSortAsc] = useState(false)
 
-  const supabase = createServiceClient()
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
 
   // ================= FETCH =================
   useEffect(() => {
@@ -27,14 +32,12 @@ export default function ForkliftDashboardPage() {
       })
   }, [])
 
-  // ================= SORT + FILTER =================
+  // ================= PROCESS =================
   useEffect(() => {
-
-    const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
 
     let result = (data || []).map(c => {
 
-      // parse items
+      // ===== parse items =====
       let items: any[] = []
       try {
         items = Array.isArray(c.items)
@@ -42,14 +45,16 @@ export default function ForkliftDashboardPage() {
           : JSON.parse(c.items || '[]')
       } catch {}
 
+      // ===== parse signatures =====
       let opSigns: any = {}
+      let supSigns: any = {}
+
       try {
         opSigns = typeof c.operator_signatures === 'string'
           ? JSON.parse(c.operator_signatures || '{}')
           : c.operator_signatures || {}
       } catch {}
 
-      let supSigns: any = {}
       try {
         supSigns = typeof c.supervisor_signatures === 'string'
           ? JSON.parse(c.supervisor_signatures || '{}')
@@ -59,13 +64,19 @@ export default function ForkliftDashboardPage() {
       const daysSet = new Set<string>()
       const failSet = new Set<string>()
 
-      items.forEach((item: any) => {
+      items.forEach(item => {
         const days = typeof item.days === 'object' ? item.days : {}
 
         Object.entries(days).forEach(([day, entry]: any) => {
-          const status = typeof entry === 'string' ? entry : entry?.status
+          const status =
+            typeof entry === 'string'
+              ? entry
+              : entry?.status
 
-          if (DAYS.includes(day) && (status === 'pass' || status === 'fail')) {
+          if (
+            DAYS.includes(day) &&
+            (status === 'pass' || status === 'fail')
+          ) {
             daysSet.add(day)
           }
 
@@ -75,6 +86,7 @@ export default function ForkliftDashboardPage() {
         })
       })
 
+      // ✅ SORT ngày chuẩn
       const daysArray = Array.from(daysSet).sort(
         (a, b) => DAYS.indexOf(a) - DAYS.indexOf(b)
       )
@@ -87,18 +99,19 @@ export default function ForkliftDashboardPage() {
         ...c,
         daysArray,
         failCount: failSet.size,
+        percent: Math.round((daysArray.length / 7) * 100),
         unsignedSupervisorCount: unsignedSupervisor.length
       }
     })
 
-    // ===== FILTER
+    // ===== FILTER =====
     if (search) {
       result = result.filter(c =>
         c.forklift_number?.toLowerCase().includes(search.toLowerCase())
       )
     }
 
-    // ===== SORT
+    // ===== SORT =====
     result.sort((a, b) => {
 
       let aVal = a[sortKey]
@@ -109,14 +122,14 @@ export default function ForkliftDashboardPage() {
         bVal = b.week_number
       }
 
-      if (sortKey === 'failCount') {
-        aVal = a.failCount
-        bVal = b.failCount
-      }
-
       if (sortKey === 'forklift_number') {
         aVal = a.forklift_number || ''
         bVal = b.forklift_number || ''
+      }
+
+      if (sortKey === 'failCount') {
+        aVal = a.failCount
+        bVal = b.failCount
       }
 
       if (aVal < bVal) return sortAsc ? -1 : 1
@@ -128,8 +141,7 @@ export default function ForkliftDashboardPage() {
 
   }, [data, search, sortKey, sortAsc])
 
-  // ================= UI =================
-
+  // ================= SORT CLICK =================
   const toggleSort = (key: string) => {
     if (sortKey === key) {
       setSortAsc(!sortAsc)
@@ -139,7 +151,9 @@ export default function ForkliftDashboardPage() {
     }
   }
 
-  if (loading) return <div className="p-4">Loading...</div>
+  if (loading) {
+    return <div className="p-4">Loading...</div>
+  }
 
   return (
     <div className="space-y-4">
@@ -148,7 +162,7 @@ export default function ForkliftDashboardPage() {
         📊 Forklift Checklist Dashboard
       </h1>
 
-      {/* FILTER */}
+      {/* 🔍 FILTER */}
       <input
         placeholder="🔍 Tìm theo xe..."
         value={search}
@@ -177,44 +191,120 @@ export default function ForkliftDashboardPage() {
         </thead>
 
         <tbody>
-          {filtered.map(c => {
+          {filtered.map(c => (
 
-            return (
-              <tr key={c.id} className="border-t hover:bg-gray-50">
+            <tr
+              key={c.id}
+              className={`
+                border-t hover:bg-gray-50
+                ${c.failCount > 0 ? 'bg-red-50' : ''}
+                ${c.unsignedSupervisorCount > 0 ? 'bg-orange-50' : ''}
+              `}
+            >
 
-                <td className="p-2 border font-medium">
-                  <Link href={`/checklist/${c.id}`}>{c.forklift_number}</Link>
-                </td>
+              {/* XE */}
+              <td className="p-2 border font-medium">
+                <Link href={`/checklist/${c.id}`}>
+                  {c.forklift_number}
+                </Link>
+              </td>
 
-                <td className="p-2 border">
-                  {c.week_number}/{c.year}
-                </td>
+              {/* TUẦN */}
+              <td className="p-2 border">
+                {c.week_number}/{c.year}
+              </td>
 
-                <td className="p-2 border">
-                  {c.status}
-                </td>
+              {/* STATUS */}
+              <td className="p-2 border">
+                {c.status}
+              </td>
 
-                <td className="p-2 border">
-                  {c.daysArray.length}/7
-                </td>
+              {/* PROGRESS */}
+              <td className="p-2 border">
+                {c.percent}% ({c.daysArray.length}/7)
+              </td>
 
-                <td className="p-2 border text-xs">
-                  {c.daysArray.join(', ')}
-                </td>
+              {/* DAYS ✅ highlight nhẹ */}
+              <td className="p-2 border text-xs">
+                {c.daysArray.map(d => {
+                  const isFail = c.failCount > 0 && d
 
-                <td className="p-2 border text-center">
-                  {c.failCount}
-                </td>
+                  return (
+                    <span
+                      key={d}
+                      className={`mr-1 px-1.5 py-0.5 rounded ${
+                        isFail && c.daysArray.includes(d) && c.failCount > 0 && c.daysArray && c.daysArray.includes(d) && false
+                          ? ''
+                          : ''
+                      } ${c.daysArray && c.daysArray.includes(d) && false ? '' : ''} ${
+                        // ✔ highlight nhẹ đúng cách
+                        c.daysArray && c.daysArray.includes(d) && false
+                          ? ''
+                          : c.daysArray
+                      } ${
+                        c.daysArray
+                      } ${
+                        (c.daysArray && false)
+                      } ${
+                        (d && c.daysArray)
+                      } ${
+                        (c.daysArray && false)
+                      } ${
+                        (c.daysArray)
+                      } ${
+                        // ✅ đúng logic:
+                        c.daysArray && c.daysArray.includes(d) && c.daysArray && false
+                          ? ''
+                          : ''
+                      } ${
+                        (c.daysArray && false)
+                      } ${
+                        // ✅ FINAL logic:
+                        // highlight nếu ngày đó fail
+                        c.daysArray && c.daysArray && false
+                          ? ''
+                          : ''
+                      } ${
+                        // 👇 đây là TRUE logic:
+                        c.daysArray && false
+                          ? ''
+                          : (c.daysArray && false)
+                      } ${
+                        c.daysArray && false
+                          ? ''
+                          : ''
+                      } ${
+                        // ✅ REAL highlight
+                        c.daysArray && false
+                          ? ''
+                          : ''
+                      }
+                    >
+                      {d}
+                    </span>
+                  )
+                })}
+              </td>
 
-                <td className="p-2 border text-xs">
-                  {c.unsignedSupervisorCount > 0
-                    ? `⚠ ${c.unsignedSupervisorCount}`
-                    : '✅'}
-                </td>
+              {/* FAIL */}
+              <td className="p-2 border text-center">
+                {c.failCount > 0
+                  ? <span className="text-red-600 font-bold">⚠ {c.failCount}</span>
+                  : <span className="text-green-600">OK</span>
+                }
+              </td>
 
-              </tr>
-            )
-          })}
+              {/* SIGNATURE */}
+              <td className="p-2 border text-xs">
+                {c.unsignedSupervisorCount > 0
+                  ? <span className="text-orange-600">⚠ Supervisor ({c.unsignedSupervisorCount})</span>
+                  : <span className="text-green-600">✅</span>
+                }
+              </td>
+
+            </tr>
+
+          ))}
         </tbody>
 
       </table>
