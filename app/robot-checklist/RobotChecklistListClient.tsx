@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { cn, checklistStatusLabel, checklistStatusColor, formatDate } from '@/lib/utils'
 import { Plus, Loader2, Bot, Download } from 'lucide-react'
 import { RobotChecklist } from '@/lib/robot-checklist-data'
+import { ExportPDFButton } from '@/components/ExportPDFButton'
 
 // ================= HELPERS =================
 function currentMonthYear() {
@@ -236,20 +237,33 @@ export default function RobotChecklistListClient() {
                   </div>
 
                   {/* RIGHT */}
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
+                    {/* ✅ EXPORT PDF */}
+                    {cl.type === 'forklift' ? (
+                      <ExportPDFButton
+                        checklistId={cl.id}
+                        filename={`XeNang_Tuan${cl.week_number}_${cl.year}_${cl.forklift_number || 'xe'}.pdf`}
+                        //className="btn-secondary text-xs px-2 py-1.5"
+                      />
+                    ) : (
+                      <a
+                        href={`/api/robot-checklist/${cl.id}/pdf`}
+                        className="btn-secondary text-xs px-2 py-1.5"
+                        title="Xuất PDF"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </a>
+                    )}
 
-                    <a
-                      href={`/api/robot-checklist/${cl.id}/pdf`}
-                      className="btn-secondary text-xs"
-                    >
-                      <Download size={14} />
-                    </a>
-
+                    {/* ✅ VIEW */}
                     <Link
-                      href={`/robot-checklist/${cl.id}`}
-                      className="btn-primary text-xs"
+                      href={cl.type === 'robot'
+                        ? `/robot-checklist/${cl.id}`
+                        : `/supervisor/${cl.id}`}
+                      className="btn-primary text-sm px-3 py-1.5"
                     >
-                      {cl.status === 'draft' ? 'Edit' : 'View'}
+                      <Eye className="w-4 h-4" />
+                      Xem
                     </Link>
 
                   </div>
