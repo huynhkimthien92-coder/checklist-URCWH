@@ -7,6 +7,7 @@ import { cn, checklistStatusLabel, checklistStatusColor, formatDate } from '@/li
 import { Plus, FileText, Download, Loader2, ClipboardList, QrCode } from 'lucide-react'
 import { getCurrentWeek } from '@/lib/utils'
 import { QRScanner } from '@/components/forms/QRScanner'
+import { ExportPDFButton } from '@/components/ExportPDFButton'
 
 export default function ChecklistListClient() {
   const router = useRouter()
@@ -202,13 +203,11 @@ export default function ChecklistListClient() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <a
-                      href={`/api/reports/${cl.id}`}
+                    <ExportPDFButton
+                      checklistId={cl.id}
+                      filename={`XeNang_Tuan${cl.week_number}_${cl.year}_${cl.forklift_number || 'xe'}.pdf`}
                       className="btn-secondary text-xs py-1.5 px-2.5"
-                      title="Xuất Excel"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                    </a>
+                    />
                     <Link href={`/checklist/${cl.id}`} className="btn-primary text-xs py-1.5 px-3">
                       {cl.status === 'draft' ? 'Tiếp tục' : 'Xem'}
                     </Link>
