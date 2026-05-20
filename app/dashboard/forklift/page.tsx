@@ -11,7 +11,7 @@ export default function ForkliftDashboardPage() {
   const [loading, setLoading] = useState(true)
 
   const [search, setSearch] = useState('')
-  const [sortKey, setSortKey] = useState<'forklift' | 'week' | 'fail'>('week')
+  const [sortKey, setSortKey] = useState<'forklift' | 'week' | 'status' | 'fail' | 'signature'>('week')
   const [sortAsc, setSortAsc] = useState(false)
 
   const supabase = createClient(
@@ -35,9 +35,14 @@ export default function ForkliftDashboardPage() {
   // ================= PROCESS =================
   useEffect(() => {
 
+    const STATUS_ORDER: Record<string, number> = {
+      submitted: 0,
+      approved: 1,
+      draft: 2
+    }
+
     let result = (data || []).map(c => {
 
-      // ===== parse items =====
       let items: any[] = []
       try {
         items = Array.isArray(c.items)
@@ -45,7 +50,6 @@ export default function ForkliftDashboardPage() {
           : JSON.parse(c.items || '[]')
       } catch {}
 
-      // ===== parse signatures =====
       let supSigns: any = {}
       try {
         supSigns = typeof c.supervisor_signatures === 'string'
@@ -78,7 +82,6 @@ export default function ForkliftDashboardPage() {
         })
       })
 
-      // ✅ sort ngày đúng thứ tự
       const daysArray = Array.from(daysSet).sort(
         (a, b) => DAYS.indexOf(a) - DAYS.indexOf(b)
       )
@@ -87,13 +90,19 @@ export default function ForkliftDashboardPage() {
         d => !supSigns?.[d]?.data_url
       )
 
+      // ✅ signature score (để sort)
+      const signatureScore =
+        unsignedSupervisor.length > 0 ? 0 : 1
+
       return {
         ...c,
         daysArray,
         failSet: Array.from(failSet),
         failCount: failSet.size,
         percent: Math.round((daysArray.length / 7) * 100),
-        unsignedSupervisorCount: unsignedSupervisor.length
+        unsignedSupervisorCount: unsignedSupervisor.length,
+        signatureScore,
+        statusOrder: STATUS_ORDER[c.status] ?? 99
       }
     })
 
@@ -113,12 +122,22 @@ export default function ForkliftDashboardPage() {
       if (sortKey === 'forklift') {
         aVal = a.forklift_number || ''
         bVal = b.forklift_number || ''
-      } else if (sortKey === 'week') {
+      }
+      else if (sortKey === 'week') {
         aVal = a.week_number
         bVal = b.week_number
-      } else if (sortKey === 'fail') {
+      }
+      else if (sortKey === 'status') {
+        aVal = a.statusOrder
+        bVal = b.statusOrder
+      }
+      else if (sortKey === 'fail') {
         aVal = a.failCount
         bVal = b.failCount
+      }
+      else if (sortKey === 'signature') {
+        aVal = a.signatureScore
+        bVal = b.signatureScore
       }
 
       if (aVal < bVal) return sortAsc ? -1 : 1
@@ -130,7 +149,8 @@ export default function ForkliftDashboardPage() {
 
   }, [data, search, sortKey, sortAsc])
 
-  const toggleSort = (key: 'forklift' | 'week' | 'fail') => {
+  // ================= SORT CLICK =================
+  const toggleSort = (key: typeof sortKey) => {
     if (sortKey === key) {
       setSortAsc(!sortAsc)
     } else {
@@ -139,18 +159,14 @@ export default function ForkliftDashboardPage() {
     }
   }
 
-  if (loading) {
-    return <div className="p-4">Loading...</div>
-  }
+  if (loading) return <div className="p-4">Loading...</div>
 
   return (
     <div className="space-y-4">
 
-      <h1 className="text-xl font-bold">
-        📊 Forklift Checklist Dashboard
-      </h1>
+      <h1 className="text-xl font-bold">📊 Forklift Checklist Dashboard</h1>
 
-      {/* 🔍 FILTER */}
+      {/* FILTER */}
       <input
         placeholder="🔍 Tìm theo xe..."
         value={search}
@@ -162,25 +178,18 @@ export default function ForkliftDashboardPage() {
 
         <thead className="bg-slate-100">
           <tr>
-            <th onClick={() => toggleSort('forklift')} className="p-2 border cursor-pointer">
-              Xe
-            </th>
-            <th onClick={() => toggleSort('week')} className="p-2 border cursor-pointer">
-              Tuần
-            </th>
-            <th className="p-2 border">Trạng thái</th>
+            <th onClick={() => toggleSort('forklift')} className="cursor-pointer p-2 border">Xe</th>
+            <th onClick={() => toggleSort('week')} className="cursor-pointer p-2 border">Tuần</th>
+            <th onClick={() => toggleSort('status')} className="cursor-pointer p-2 border">Trạng thái</th>
             <th className="p-2 border">Tiến độ</th>
             <th className="p-2 border">Ngày</th>
-            <th onClick={() => toggleSort('fail')} className="p-2 border cursor-pointer">
-              Lỗi
-            </th>
-            <th className="p-2 border">Chữ ký</th>
+            <th onClick={() => toggleSort('fail')} className="cursor-pointer p-2 border">Lỗi</th>
+            <th onClick={() => toggleSort('signature')} className="cursor-pointer p-2 border">Chữ ký</th>
           </tr>
         </thead>
 
         <tbody>
           {filtered.map(c => (
-
             <tr
               key={c.id}
               className={`
@@ -190,33 +199,27 @@ export default function ForkliftDashboardPage() {
               `}
             >
 
-              {/* XE */}
               <td className="p-2 border font-medium">
                 <Link href={`/checklist/${c.id}`}>
                   {c.forklift_number}
                 </Link>
               </td>
 
-              {/* TUẦN */}
               <td className="p-2 border">
                 {c.week_number}/{c.year}
               </td>
 
-              {/* STATUS */}
               <td className="p-2 border">
                 {c.status}
               </td>
 
-              {/* PROGRESS */}
               <td className="p-2 border">
                 {c.percent}% ({c.daysArray.length}/7)
               </td>
 
-              {/* DAYS ✅ highlight nhẹ */}
               <td className="p-2 border text-xs">
                 {c.daysArray.map((d: string) => {
                   const isFail = c.failSet.includes(d)
-
                   return (
                     <span
                       key={d}
@@ -232,7 +235,6 @@ export default function ForkliftDashboardPage() {
                 })}
               </td>
 
-              {/* FAIL */}
               <td className="p-2 border text-center">
                 {c.failCount > 0
                   ? <span className="text-red-600 font-bold">⚠ {c.failCount}</span>
@@ -240,7 +242,6 @@ export default function ForkliftDashboardPage() {
                 }
               </td>
 
-              {/* SIGNATURE */}
               <td className="p-2 border text-xs">
                 {c.unsignedSupervisorCount > 0
                   ? <span className="text-orange-600">
@@ -251,7 +252,6 @@ export default function ForkliftDashboardPage() {
               </td>
 
             </tr>
-
           ))}
         </tbody>
 
