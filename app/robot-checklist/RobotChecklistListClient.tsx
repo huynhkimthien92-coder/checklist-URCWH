@@ -254,9 +254,7 @@ export default function RobotChecklistListClient() {
                     >
                       Xem
                     </Link>
-
-
-
+                  </div>
                 </div>
               </div>
             )
