@@ -52,18 +52,18 @@ export function RobotChecklistForm({
   const daysInMonth = new Date(checklist.year, checklist.month, 0).getDate()
   const days = Array.from({ length: daysInMonth }, (_, i) => String(i + 1))
 
-  // ===== LOCK LOGIC (GIỐNG FORKLIFT) =====
+  // ================= ✅ LOCK LOGIC =================
   const isDaySignedByOperator = (day: string) => {
     return !!opSigs?.[day]?.data_url
   }
 
   const isDayLocked = (day: string) => {
-    return isDaySignedByOperator(day) // ✅ LOCK theo operator
+    return isDaySignedByOperator(day) // giống forklift
   }
 
   const isDisabled = readOnly || isDayLocked(activeDay)
 
-  // ===== UPDATE STATUS =====
+  // ================= UPDATE =================
   const updateStatus = (itemId: string) => {
     if (isDisabled) return
 
@@ -78,8 +78,8 @@ export function RobotChecklistForm({
           ...item,
           days: {
             ...item.days,
-            {
-              ...item.days[activeDay],
+            [activeDay]: {
+              ...(item.days?.[activeDay] || {}),
               status: next
             }
           }
@@ -88,7 +88,6 @@ export function RobotChecklistForm({
     )
   }
 
-  // ===== UPDATE NOTE =====
   const updateNote = (itemId: string, note: string) => {
     if (isDisabled) return
 
@@ -99,8 +98,8 @@ export function RobotChecklistForm({
               ...i,
               days: {
                 ...i.days,
-                {
-                  ...i.days[activeDay],
+                [activeDay]: {
+                  ...(i.days?.[activeDay] || {}),
                   note
                 }
               }
@@ -110,7 +109,6 @@ export function RobotChecklistForm({
     )
   }
 
-  // ===== UPDATE IMAGE =====
   const updateImage = (itemId: string, url: string) => {
     if (isDisabled) return
 
@@ -121,8 +119,8 @@ export function RobotChecklistForm({
               ...i,
               days: {
                 ...i.days,
-                {
-                  ...i.days[activeDay],
+                [activeDay]: {
+                  ...(i.days?.[activeDay] || {}),
                   image_url: url
                 }
               }
@@ -132,7 +130,7 @@ export function RobotChecklistForm({
     )
   }
 
-  // ===== SAVE =====
+  // ================= SAVE =================
   const save = async (extra?: any) => {
 
     if (isDayLocked(activeDay)) {
@@ -158,7 +156,7 @@ export function RobotChecklistForm({
     router.refresh()
   }
 
-  // ===== DAY STATE =====
+  // ================= STATE =================
   const hasData = (day: string) =>
     items.some(i =>
       ['pass', 'fail'].includes(i.days?.[day]?.status || '')
@@ -205,13 +203,12 @@ export function RobotChecklistForm({
 
       {/* ===== TABLE ===== */}
       <table className="w-full border text-sm table-fixed">
-
         <tbody>
           {Object.entries(grouped).map(([category, list]) => (
             <tbody key={category}>
 
               <tr>
-                <td colSpan={3} className="w-full bg-indigo-600 text-white px-2 py-1">
+                <td colSpan={3} className="bg-indigo-600 text-white px-2 py-1">
                   {category}
                 </td>
               </tr>
@@ -222,17 +219,10 @@ export function RobotChecklistForm({
                 const isFail = entry?.status === 'fail'
 
                 return (
-                  <tr
-                    key={item.id}
-                    className={`
-                      border-t
-                      ${isPass ? 'bg-green-50' : ''}
-                      ${isFail ? 'bg-red-50' : ''}
-                    `}
-                  >
+                  <tr key={item.id} className={`${isPass ? 'bg-green-50' : ''} ${isFail ? 'bg-red-50' : ''}`}>
                     <td className="w-10 text-center">{idx + 1}</td>
 
-                    <td className="px-2 w-full">
+                    <td className="px-2">
                       {item.label_vi}
 
                       {isFail && (
@@ -262,11 +252,9 @@ export function RobotChecklistForm({
                       <button
                         disabled={isDisabled}
                         onClick={() => updateStatus(item.id)}
-                        className={`
-                          w-8 h-8 border rounded
+                        className={`w-8 h-8 border rounded
                           ${isPass ? 'bg-green-600 text-white' : ''}
-                          ${isFail ? 'bg-red-500 text-white' : ''}
-                        `}
+                          ${isFail ? 'bg-red-500 text-white' : ''}`}
                       >
                         {isPass ? '✓' : isFail ? 'X' : '-'}
                       </button>
@@ -274,11 +262,9 @@ export function RobotChecklistForm({
                   </tr>
                 )
               })}
-
             </tbody>
           ))}
         </tbody>
-
       </table>
 
       {/* ===== SIGNATURE ===== */}
@@ -293,7 +279,7 @@ export function RobotChecklistForm({
           onSave={(url) =>
             setOpSigs(prev => ({
               ...prev,
-              url
+              [activeDay]: url
                 ? {
                     data_url: url,
                     signed_at: new Date().toISOString(),
@@ -314,11 +300,13 @@ export function RobotChecklistForm({
             onSave={(url) =>
               setSupSigs(prev => ({
                 ...prev,
-                {
-                  data_url: url,
-                  signed_at: new Date().toISOString(),
-                  user_name: 'Supervisor'
-                }
+                [activeDay]: url
+                  ? {
+                      data_url: url,
+                      signed_at: new Date().toISOString(),
+                      user_name: 'Supervisor'
+                    }
+                  : null
               }))
             }
           />
@@ -332,37 +320,27 @@ export function RobotChecklistForm({
         onChange={e => setNotes(e.target.value)}
         disabled={readOnly}
         className="w-full border p-2"
+        placeholder="Ghi chú..."
       />
 
       {/* ACTION */}
       {!readOnly && (
         <div className="flex gap-2">
-
-          <button
-            onClick={() => save()}
-            className="bg-gray-600 text-white px-3 py-1 rounded"
-          >
+          <button onClick={() => save()} className="bg-gray-600 text-white px-3 py-1 rounded">
             {saving ? 'Saving...' : 'Save'}
           </button>
 
           {!isSupervisor && (
-            <button
-              onClick={() => save({ status: 'submitted' })}
-              className="bg-blue-600 text-white px-3 py-1 rounded"
-            >
+            <button onClick={() => save({ status: 'submitted' })} className="bg-blue-600 text-white px-3 py-1 rounded">
               Submit
             </button>
           )}
 
           {isSupervisor && (
-            <button
-              onClick={() => save({ status: 'approved' })}
-              className="bg-green-600 text-white px-3 py-1 rounded"
-            >
+            <button onClick={() => save({ status: 'approved' })} className="bg-green-600 text-white px-3 py-1 rounded">
               Approve
             </button>
           )}
-
         </div>
       )}
 
