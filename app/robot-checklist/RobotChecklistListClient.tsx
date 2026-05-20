@@ -7,6 +7,7 @@ import { cn, checklistStatusLabel, checklistStatusColor, formatDate } from '@/li
 import { Plus, Loader2, Bot, Download } from 'lucide-react'
 import { RobotChecklist } from '@/lib/robot-checklist-data'
 import { ExportPDFButton } from '@/components/ExportPDFButton'
+import { QRScanner } from '@/components/forms/QRScanner'
 
 // ================= HELPERS =================
 function currentMonthYear() {
@@ -20,6 +21,12 @@ export default function RobotChecklistListClient() {
 
   const [checklists, setChecklists] = useState<RobotChecklist[]>([])
   const [loading, setLoading] = useState(true)
+  const [showQR, setShowQR] = useState(false)
+  const handleQRScan = (value: string) => {
+    setForm(f => ({ ...f, robot_number: value }))
+    setShowQR(false)
+  }
+
 
   const [openDropdown, setOpenDropdown] = useState(false)
   const [search, setSearch] = useState('')
@@ -267,14 +274,41 @@ export default function RobotChecklistListClient() {
 
             <h3 className="font-semibold">Tạo checklist</h3>
 
-            <input
-              className="input"
-              placeholder="Robot"
-              value={form.robot_number}
-              onChange={e =>
-                setForm({ ...form, robot_number: e.target.value })
-              }
-            />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Robot
+              </label>
+
+              <div className="flex gap-2">
+                <input
+                  className="input flex-1"
+                  placeholder="Nhập hoặc quét mã QR"
+                  value={form.robot_number}
+                  onChange={e =>
+                    setForm({ ...form, robot_number: e.target.value })
+                  }
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowQR(true)}
+                  title="Quét QR"
+                  className={cn(
+                    'flex-shrink-0 w-10 h-10 rounded-lg border-2 flex items-center justify-center transition-all',
+                    form.robot_number
+                      ? 'border-blue-500 bg-blue-50 text-blue-600'
+                      : 'border-slate-200 bg-white text-slate-400 hover:border-blue-400 hover:text-blue-600'
+                  )}
+                >
+                  <QrCode className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="mt-1 text-xs text-slate-400">
+                Nhập tay hoặc quét QR trên robot
+              </p>
+            </div>
+
 
             <button
               onClick={create}
@@ -293,7 +327,12 @@ export default function RobotChecklistListClient() {
           </div>
         </div>
       )}
-
+      {showQR && (
+        <QRScanner
+          onScan={handleQRScan}
+          onClose={() => setShowQR(false)}
+        />
+      )}
     </div>
   )
 }
