@@ -110,7 +110,7 @@ export default function SupervisorPage() {
         <div className="grid grid-cols-3 gap-3">
 
           <div className="card p-4">
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center text-xs sm:text-sm whitespace-nowrap">
               <Clock className="w-4 h-4 text-blue-500" />
               Chờ duyệt
             </div>
@@ -120,7 +120,7 @@ export default function SupervisorPage() {
           </div>
 
           <div className="card p-4">
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center text-xs sm:text-sm whitespace-nowrap">
               <CheckCircle2 className="w-4 h-4 text-green-500" />
               Đã duyệt
             </div>
@@ -130,7 +130,7 @@ export default function SupervisorPage() {
           </div>
 
           <div className="card p-4">
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center text-xs sm:text-sm whitespace-nowrap">
               <AlertCircle className="w-4 h-4 text-gray-400" />
               Bản nháp
             </div>
