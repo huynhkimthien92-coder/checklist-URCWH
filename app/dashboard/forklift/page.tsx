@@ -11,7 +11,7 @@ export default function ForkliftDashboardPage() {
   const [loading, setLoading] = useState(true)
 
   const [search, setSearch] = useState('')
-  const [sortKey, setSortKey] = useState('created_at')
+  const [sortKey, setSortKey] = useState<'forklift' | 'week' | 'fail'>('week')
   const [sortAsc, setSortAsc] = useState(false)
 
   const supabase = createBrowserClient(
@@ -46,15 +46,7 @@ export default function ForkliftDashboardPage() {
       } catch {}
 
       // ===== parse signatures =====
-      let opSigns: any = {}
       let supSigns: any = {}
-
-      try {
-        opSigns = typeof c.operator_signatures === 'string'
-          ? JSON.parse(c.operator_signatures || '{}')
-          : c.operator_signatures || {}
-      } catch {}
-
       try {
         supSigns = typeof c.supervisor_signatures === 'string'
           ? JSON.parse(c.supervisor_signatures || '{}')
@@ -86,7 +78,7 @@ export default function ForkliftDashboardPage() {
         })
       })
 
-      // ✅ SORT ngày chuẩn
+      // ✅ sort ngày đúng thứ tự
       const daysArray = Array.from(daysSet).sort(
         (a, b) => DAYS.indexOf(a) - DAYS.indexOf(b)
       )
@@ -98,6 +90,7 @@ export default function ForkliftDashboardPage() {
       return {
         ...c,
         daysArray,
+        failSet: Array.from(failSet),
         failCount: failSet.size,
         percent: Math.round((daysArray.length / 7) * 100),
         unsignedSupervisorCount: unsignedSupervisor.length
@@ -114,20 +107,16 @@ export default function ForkliftDashboardPage() {
     // ===== SORT =====
     result.sort((a, b) => {
 
-      let aVal = a[sortKey]
-      let bVal = b[sortKey]
+      let aVal: any
+      let bVal: any
 
-      if (sortKey === 'week') {
-        aVal = a.week_number
-        bVal = b.week_number
-      }
-
-      if (sortKey === 'forklift_number') {
+      if (sortKey === 'forklift') {
         aVal = a.forklift_number || ''
         bVal = b.forklift_number || ''
-      }
-
-      if (sortKey === 'failCount') {
+      } else if (sortKey === 'week') {
+        aVal = a.week_number
+        bVal = b.week_number
+      } else if (sortKey === 'fail') {
         aVal = a.failCount
         bVal = b.failCount
       }
@@ -141,8 +130,7 @@ export default function ForkliftDashboardPage() {
 
   }, [data, search, sortKey, sortAsc])
 
-  // ================= SORT CLICK =================
-  const toggleSort = (key: string) => {
+  const toggleSort = (key: 'forklift' | 'week' | 'fail') => {
     if (sortKey === key) {
       setSortAsc(!sortAsc)
     } else {
@@ -174,7 +162,7 @@ export default function ForkliftDashboardPage() {
 
         <thead className="bg-slate-100">
           <tr>
-            <th onClick={() => toggleSort('forklift_number')} className="p-2 border cursor-pointer">
+            <th onClick={() => toggleSort('forklift')} className="p-2 border cursor-pointer">
               Xe
             </th>
             <th onClick={() => toggleSort('week')} className="p-2 border cursor-pointer">
@@ -183,7 +171,7 @@ export default function ForkliftDashboardPage() {
             <th className="p-2 border">Trạng thái</th>
             <th className="p-2 border">Tiến độ</th>
             <th className="p-2 border">Ngày</th>
-            <th onClick={() => toggleSort('failCount')} className="p-2 border cursor-pointer">
+            <th onClick={() => toggleSort('fail')} className="p-2 border cursor-pointer">
               Lỗi
             </th>
             <th className="p-2 border">Chữ ký</th>
@@ -226,59 +214,17 @@ export default function ForkliftDashboardPage() {
 
               {/* DAYS ✅ highlight nhẹ */}
               <td className="p-2 border text-xs">
-                {c.daysArray.map(d => {
-                  const isFail = c.failCount > 0 && d
+                {c.daysArray.map((d: string) => {
+                  const isFail = c.failSet.includes(d)
 
                   return (
                     <span
                       key={d}
                       className={`mr-1 px-1.5 py-0.5 rounded ${
-                        isFail && c.daysArray.includes(d) && c.failCount > 0 && c.daysArray && c.daysArray.includes(d) && false
-                          ? ''
-                          : ''
-                      } ${c.daysArray && c.daysArray.includes(d) && false ? '' : ''} ${
-                        // ✔ highlight nhẹ đúng cách
-                        c.daysArray && c.daysArray.includes(d) && false
-                          ? ''
-                          : c.daysArray
-                      } ${
-                        c.daysArray
-                      } ${
-                        (c.daysArray && false)
-                      } ${
-                        (d && c.daysArray)
-                      } ${
-                        (c.daysArray && false)
-                      } ${
-                        (c.daysArray)
-                      } ${
-                        // ✅ đúng logic:
-                        c.daysArray && c.daysArray.includes(d) && c.daysArray && false
-                          ? ''
-                          : ''
-                      } ${
-                        (c.daysArray && false)
-                      } ${
-                        // ✅ FINAL logic:
-                        // highlight nếu ngày đó fail
-                        c.daysArray && c.daysArray && false
-                          ? ''
-                          : ''
-                      } ${
-                        // 👇 đây là TRUE logic:
-                        c.daysArray && false
-                          ? ''
-                          : (c.daysArray && false)
-                      } ${
-                        c.daysArray && false
-                          ? ''
-                          : ''
-                      } ${
-                        // ✅ REAL highlight
-                        c.daysArray && false
-                          ? ''
-                          : ''
-                      }
+                        isFail
+                          ? 'bg-red-100 text-red-600 font-medium'
+                          : 'bg-green-100 text-green-700'
+                      }`}
                     >
                       {d}
                     </span>
@@ -297,7 +243,9 @@ export default function ForkliftDashboardPage() {
               {/* SIGNATURE */}
               <td className="p-2 border text-xs">
                 {c.unsignedSupervisorCount > 0
-                  ? <span className="text-orange-600">⚠ Supervisor ({c.unsignedSupervisorCount})</span>
+                  ? <span className="text-orange-600">
+                      ⚠ Supervisor ({c.unsignedSupervisorCount})
+                    </span>
                   : <span className="text-green-600">✅</span>
                 }
               </td>
