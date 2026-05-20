@@ -82,12 +82,17 @@ export default function SupervisorPage() {
     draft: allChecklists.filter(c => c.status === 'draft').length,
     all: allChecklists.length
   }
+  const statusFiltered = filter === 'all'
+    ? allChecklists
+    : allChecklists.filter(c => c.status === filter)
+
 
   const countByType = {
-    forklift: allChecklists.filter(c => c.type === 'forklift').length,
-    robot: allChecklists.filter(c => c.type === 'robot').length,
-    all: allChecklists.length
+    forklift: statusFiltered.filter(c => c.type === 'forklift').length,
+    robot: statusFiltered.filter(c => c.type === 'robot').length,
+    all: statusFiltered.length
   }
+
 
   // ================= UI =================
   return (
