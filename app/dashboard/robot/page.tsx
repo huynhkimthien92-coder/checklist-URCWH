@@ -72,7 +72,7 @@ export default function RobotDashboardPage() {
       const failSet = new Set<string>()
 
       items.forEach(item => {
-        const days = typeof item.days === 'object' ? item.days : {}
+        const days = item && typeof item.days === 'object' &&  item.days !== null ? item.days : {}
 
         Object.entries(days).forEach(([day, entry]: any) => {
 
@@ -91,7 +91,7 @@ export default function RobotDashboardPage() {
         })
       })
 
-      const daysArray = Array.from(daysSet).sort(
+      const daysArray = Array.from(daysSet || []).sort(
         (a, b) => Number(a) - Number(b)
       )
 
