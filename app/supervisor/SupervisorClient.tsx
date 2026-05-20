@@ -30,7 +30,7 @@ export default function SupervisorPage() {
   useEffect(() => {
     Promise.all([
       fetch('/api/checklists').then(r => r.json()),
-      fetch('/api/robot-checklists').then(r => r.json()),
+      fetch('/api/robot-checklist').then(r => r.json()),
     ])
       .then(([forklift, robot]) => {
 
