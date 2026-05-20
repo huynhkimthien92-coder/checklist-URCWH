@@ -41,28 +41,55 @@ export default async function RobotDashboardPage() {
         <tbody>
           {data?.map((c) => {
 
-            const items = c.items || []
+            // ✅ SAFE PARSE items
+            const items = (() => {
+              try {
+                return Array.isArray(c.items)
+                  ? c.items
+                  : JSON.parse(c.items || '[]')
+              } catch {
+                return []
+              }
+            })()
 
-            // ✅ lấy ngày có data
+            // ✅ SAFE PARSE signatures
+            const opSigns = (() => {
+              try {
+                return typeof c.operator_signatures === 'string'
+                  ? JSON.parse(c.operator_signatures || '{}')
+                  : (c.operator_signatures || {})
+              } catch {
+                return {}
+              }
+            })()
+
+            // ✅ DAYS WITH DATA
             const daysWithData = new Set<string>()
 
             items.forEach((item: any) => {
-              Object.entries(item.days || {}).forEach(([day, v]: any) => {
-                if (v?.status === 'pass' || v?.status === 'fail') {
+              Object.entries(item.days || {}).forEach(([day, entry]: any) => {
+
+                const status =
+                  typeof entry === 'string'
+                    ? entry
+                    : entry?.status || ''
+
+                if (status === 'pass' || status === 'fail') {
                   daysWithData.add(day)
                 }
               })
             })
 
-            const daysArray = Array.from(daysWithData)
+            const daysArray = Array.from(daysWithData).sort((a, b) => Number(a) - Number(b))
 
-            // ✅ check unsigned (operator)
+            // ✅ UNSIGNED
             const unsigned = daysArray.filter(
-              day => !c.operator_signatures?.[day]?.data_url
+              day => !opSigns?.[day]?.data_url
             )
 
-            // ✅ progress %
+            // ✅ PROGRESS
             const totalDays = getDaysInMonth(c.month, c.year)
+
             const percent =
               totalDays > 0
                 ? Math.round((daysArray.length / totalDays) * 100)
@@ -84,9 +111,11 @@ export default async function RobotDashboardPage() {
                 {/* STATUS */}
                 <td className="p-2 border">
                   <span className={
-                    c.status === 'approved' ? 'text-green-600 font-bold' :
-                    c.status === 'submitted' ? 'text-blue-600' :
-                    'text-gray-500'
+                    c.status === 'approved'
+                      ? 'text-green-600 font-bold'
+                      : c.status === 'submitted'
+                      ? 'text-blue-600'
+                      : 'text-gray-500'
                   }>
                     {c.status}
                   </span>
