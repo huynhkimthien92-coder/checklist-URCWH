@@ -6,8 +6,8 @@ export default async function Home() {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/auth/login')
 
-  const role = (session.user as any)?.role
-  if (role === 'admin')      redirect('/admin')
-  if (role === 'supervisor') redirect('/supervisor')
-  redirect('/checklist')
+  //const role = (session.user as any)?.role
+  //if (role === 'admin')      redirect('/admin')
+  //if (role === 'supervisor') redirect('/supervisor')
+  redirect('/home')
 }
