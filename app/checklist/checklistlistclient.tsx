@@ -206,8 +206,10 @@ export default function ChecklistListClient() {
                     <ExportPDFButton
                       checklistId={cl.id}
                       filename={`XeNang_Tuan${cl.week_number}_${cl.year}_${cl.forklift_number || 'xe'}.pdf`}
-                      //className="btn-secondary text-xs py-1.5 px-2.5"
-                    />
+                      className="btn-secondary text-xs py-1.5 px-2.5"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </ExportPDFButton>
                     <Link href={`/checklist/${cl.id}`} className="btn-primary text-xs py-1.5 px-3">
                       {cl.status === 'draft' ? 'Tiếp tục' : 'Xem'}
                     </Link>
