@@ -165,7 +165,7 @@ export function Navbar() {
           {/* ===== USER ===== */}
           <div className="flex items-center gap-3">
 
-            <div className="hidden sm:flex flex-col items-end">
+            <div className="flex flex-col items-end">
               <span className="text-sm font-medium">
                 {session?.user?.name}
               </span>
