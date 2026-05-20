@@ -19,13 +19,13 @@ export default async function ForkliftDashboardPage() {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4">
 
       <h1 className="text-xl font-bold">
         📊 Forklift Checklist Dashboard
       </h1>
 
-      <table className="w-full border text-sm">
+      <table className="w-full border text-sm bg-white">
         <thead className="bg-slate-100">
           <tr>
             <th className="p-2 border">Xe</th>
@@ -34,7 +34,7 @@ export default async function ForkliftDashboardPage() {
             <th className="p-2 border">Tiến độ</th>
             <th className="p-2 border">Ngày</th>
             <th className="p-2 border">Lỗi</th>
-            <th className="p-2 border">Chưa ký</th>
+            <th className="p-2 border">Chữ ký</th>
           </tr>
         </thead>
 
@@ -54,12 +54,23 @@ export default async function ForkliftDashboardPage() {
                 }
               })()
 
-              // ✅ SAFE PARSE signatures
+              // ✅ SAFE PARSE operator
               const opSigns = (() => {
                 try {
                   return typeof c.operator_signatures === 'string'
                     ? JSON.parse(c.operator_signatures || '{}')
                     : c.operator_signatures || {}
+                } catch {
+                  return {}
+                }
+              })()
+
+              // ✅ SAFE PARSE supervisor ✅ NEW
+              const supSigns = (() => {
+                try {
+                  return typeof c.supervisor_signatures === 'string'
+                    ? JSON.parse(c.supervisor_signatures || '{}')
+                    : c.supervisor_signatures || {}
                 } catch {
                   return {}
                 }
@@ -99,40 +110,44 @@ export default async function ForkliftDashboardPage() {
 
               const daysArray = Array.from(daysSet)
 
-              const unsigned = daysArray.filter(
+              // ✅ NEW: phân loại chữ ký
+              const unsignedOperator = daysArray.filter(
                 d => !opSigns?.[d]?.data_url
               )
 
+              const unsignedSupervisor = daysArray.filter(
+                d => !supSigns?.[d]?.data_url
+              )
+
               const percent =
-                DAYS.length > 0
-                  ? Math.round((daysArray.length / DAYS.length) * 100)
-                  : 0
+                Math.round((daysArray.length / DAYS.length) * 100)
 
               return (
                 <tr
                   key={c.id}
-                  className={`border-t hover:bg-gray-50 ${
-                    failSet.size > 0 ? 'bg-red-50' : ''
-                  }`}
+                  className={`
+                    border-t hover:bg-gray-50
+                    ${failSet.size > 0 ? 'bg-red-50' : ''}
+                  `}
                 >
 
                   {/* XE */}
                   <td className="p-2 border font-medium">
-                    <Link href={`/checklist/${c.id}`} className="block">
+                    <Link href={`/checklist/${c.id}`}>
                       {c.forklift_number}
                     </Link>
                   </td>
 
                   {/* TUẦN */}
                   <td className="p-2 border">
-                    <Link href={`/checklist/${c.id}`} className="block">
+                    <Link href={`/checklist/${c.id}`}>
                       {c.week_number}/{c.year}
                     </Link>
                   </td>
 
                   {/* STATUS */}
                   <td className="p-2 border">
-                    <Link href={`/checklist/${c.id}`} className="block">
+                    <Link href={`/checklist/${c.id}`}>
                       <span className={
                         c.status === 'approved'
                           ? 'text-green-600 font-bold'
@@ -147,7 +162,7 @@ export default async function ForkliftDashboardPage() {
 
                   {/* PROGRESS */}
                   <td className="p-2 border">
-                    <Link href={`/checklist/${c.id}`} className="block">
+                    <Link href={`/checklist/${c.id}`}>
 
                       <div className="w-full bg-gray-200 h-2 rounded">
                         <div
@@ -174,7 +189,7 @@ export default async function ForkliftDashboardPage() {
 
                   {/* DAYS */}
                   <td className="p-2 border text-xs">
-                    <Link href={`/checklist/${c.id}`} className="block">
+                    <Link href={`/checklist/${c.id}`}>
                       {daysArray.map(d => (
                         <span
                           key={d}
@@ -192,7 +207,7 @@ export default async function ForkliftDashboardPage() {
 
                   {/* FAIL */}
                   <td className="p-2 border text-center">
-                    <Link href={`/checklist/${c.id}`} className="block">
+                    <Link href={`/checklist/${c.id}`}>
                       {failSet.size > 0
                         ? <span className="text-red-600 font-bold">⚠ {failSet.size}</span>
                         : <span className="text-green-600">OK</span>
@@ -200,13 +215,39 @@ export default async function ForkliftDashboardPage() {
                     </Link>
                   </td>
 
-                  {/* UNSIGNED */}
-                  <td className="p-2 border text-xs text-red-600">
-                    <Link href={`/checklist/${c.id}`} className="block">
-                      {unsigned.length > 0
-                        ? unsigned.join(', ')
-                        : '✅'}
+                  {/* ✅ SIGNATURE LOGIC MỚI */}
+                  <td className="p-2 border text-xs">
+
+                    <Link href={`/checklist/${c.id}`}>
+
+                      {/* thiếu cả 2 */}
+                      {unsignedOperator.length > 0 && unsignedSupervisor.length > 0 && (
+                        <span className="text-red-600">
+                          ❌ Op+Sup
+                        </span>
+                      )}
+
+                      {/* thiếu supervisor */}
+                      {unsignedOperator.length === 0 && unsignedSupervisor.length > 0 && (
+                        <span className="text-orange-600 font-medium">
+                          ⚠ Supervisor ({unsignedSupervisor.length})
+                        </span>
+                      )}
+
+                      {/* thiếu operator */}
+                      {unsignedOperator.length > 0 && unsignedSupervisor.length === 0 && (
+                        <span className="text-blue-600">
+                          ⏳ Operator ({unsignedOperator.length})
+                        </span>
+                      )}
+
+                      {/* đủ */}
+                      {unsignedOperator.length === 0 && unsignedSupervisor.length === 0 && (
+                        <span className="text-green-600">✅</span>
+                      )}
+
                     </Link>
+
                   </td>
 
                 </tr>
