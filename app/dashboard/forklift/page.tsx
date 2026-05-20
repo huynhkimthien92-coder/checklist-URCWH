@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@/lib/supabase'
 
 export default function ForkliftDashboardPage() {
 
@@ -14,10 +14,7 @@ export default function ForkliftDashboardPage() {
   const [sortKey, setSortKey] = useState<'forklift' | 'week' | 'status' | 'fail' | 'signature'>('week')
   const [sortAsc, setSortAsc] = useState(false)
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = createBrowserClient()
 
   const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
 
@@ -30,7 +27,7 @@ export default function ForkliftDashboardPage() {
         setData(data || [])
         setLoading(false)
       })
-  }, [])
+  }, [supabase])
 
   // ================= PROCESS =================
   useEffect(() => {
@@ -61,7 +58,7 @@ export default function ForkliftDashboardPage() {
       const failSet = new Set<string>()
 
       items.forEach(item => {
-        const days = typeof item.days === 'object' ? item.days : {}
+        const days = item && typeof item.days === 'object' && item.days !== null ? item.days : {}
 
         Object.entries(days).forEach(([day, entry]: any) => {
           const status =
@@ -109,7 +106,7 @@ export default function ForkliftDashboardPage() {
     // ===== FILTER =====
     if (search) {
       result = result.filter(c =>
-        c.forklift_number?.toLowerCase().includes(search.toLowerCase())
+        (c.forklift_number || '').toLowerCase().includes(search.toLowerCase())
       )
     }
 
