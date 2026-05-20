@@ -41,13 +41,13 @@ const MENU: MenuItem[] = [
   },
   {
     label: 'Dashboard Xe nâng',
-    href: '/dashboard',
+    href: '/dashboard/forklift',
     icon: Truck,
     color: 'bg-green-100 text-green-600',
   },
   {
     label: 'Dashboard Robot',
-    href: '/robot-dashboard',
+    href: '/dashboard/robot',
     icon: Bot,
     color: 'bg-pink-100 text-pink-600',
   },
