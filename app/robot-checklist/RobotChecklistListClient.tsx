@@ -245,8 +245,6 @@ export default function RobotChecklistListClient() {
                       >
                         <Download className="w-3.5 h-3.5" />
                       </a>
-                    )}
-
                     {/* ✅ VIEW */}
                     <Link
                       href={`/robot-checklist/${cl.id}`}
