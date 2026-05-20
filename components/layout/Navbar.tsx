@@ -37,7 +37,7 @@ export function Navbar() {
           { href: '/admin/users', label: 'Người dùng', icon: Users },
           { href: '/admin/checklists', label: 'Checklists', icon: ClipboardCheck },
 
-          { href: '/checklist', label: 'Checklist Xe Nâng', icon: ClipboardCheck },
+          { href: '/checklists', label: 'Checklist Xe Nâng', icon: ClipboardCheck },
           { href: '/robot-checklist', label: 'Checklist Robot', icon: Bot },
         ]
       : []),
@@ -45,7 +45,7 @@ export function Navbar() {
     // ===== OPERATOR =====
     ...(role === 'operator'
       ? [
-          { href: '/checklist', label: 'Checklist Xe Nâng', icon: ClipboardCheck },
+          { href: '/checklists', label: 'Checklist Xe Nâng', icon: ClipboardCheck },
           { href: '/robot-checklist', label: 'Checklist Robot', icon: Bot },
         ]
       : []),
@@ -55,7 +55,7 @@ export function Navbar() {
       ? [
           { href: '/supervisor', label: 'Kiểm tra & Xét duyệt', icon: ShieldCheck },
 
-          { href: '/checklist', label: 'Checklist Xe Nâng', icon: ClipboardCheck },
+          { href: '/checklists', label: 'Checklist Xe Nâng', icon: ClipboardCheck },
           { href: '/robot-checklist', label: 'Checklist Robot', icon: Bot },
         ]
       : []),
