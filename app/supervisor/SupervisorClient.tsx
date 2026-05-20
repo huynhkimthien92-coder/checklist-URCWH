@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { Navbar } from '@/components/layout/Navbar'
 import { ExportPDFButton } from '@/components/ExportPDFButton'
-import { Download, Eye } from 'lucide-react'
+import { Download } from 'lucide-react'
 
 export default function SupervisorPage() {
 
