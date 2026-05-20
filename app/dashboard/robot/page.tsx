@@ -27,6 +27,7 @@ export default function RobotDashboardPage() {
       .from('robot_checklists')
       .select('*')
       .then(({ data }) => {
+        console.log('ROBOT DATA:', data)
         setData(data || [])
         setLoading(false)
       })
