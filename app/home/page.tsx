@@ -38,30 +38,35 @@ const MENU: MenuItem[] = [
     href: '/supervisor',
     icon: Shield,
     color: 'bg-blue-100 text-blue-600',
+    roles: ['admin', 'supervisor'],
   },
   {
     label: 'Dashboard Xe nâng',
     href: '/dashboard/forklift',
     icon: Truck,
     color: 'bg-green-100 text-green-600',
+    roles: ['admin', 'supervisor'],
   },
   {
     label: 'Dashboard Robot',
     href: '/dashboard/robot',
     icon: Bot,
     color: 'bg-pink-100 text-pink-600',
+    roles: ['admin', 'supervisor'],
   },
   {
     label: 'Checklist Xe nâng',
     href: '/checklist',
     icon: ClipboardList,
     color: 'bg-orange-100 text-orange-600',
+    roles: ['admin', 'supervisor','operator'],
   },
   {
     label: 'Checklist Robot',
     href: '/robot-checklist',
     icon: Bot,
     color: 'bg-slate-100 text-slate-600',
+    roles: ['admin', 'supervisor','operator'],
   },
 ]
 
@@ -117,8 +122,18 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold">Warehouse App</h1>
+      </div>
+      <button
+        onClick={() => signOut()}
+        className="text-xs text-red-500 mt-4"
+      >
+        Đăng xuất
+      </button>
 
-      <Navbar />
+
+      //<Navbar />
 
       <main className="max-w-5xl mx-auto px-4 py-6 pb-16">
 
