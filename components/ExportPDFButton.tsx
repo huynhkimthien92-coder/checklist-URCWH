@@ -8,27 +8,35 @@ interface ExportPDFButtonProps {
   filename?: string
 }
 
-export function ExportPDFButton({ checklistId, filename }: ExportPDFButtonProps) {
+export function ExportPDFButton({
+  checklistId,
+  filename,
+  className,
+  children
+}: ExportPDFButtonProps & { 
+  className?: string
+  children?: React.ReactNode
+}) {
+
   const [loading, setLoading] = useState(false)
 
   const exportPDF = async () => {
+    if (loading) return
     setLoading(true)
+
     try {
       const res = await fetch(`/api/pdf/${checklistId}`)
-      if (!res.ok) throw new Error('Lỗi tạo PDF')
+      if (!res.ok) throw new Error()
 
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
+
       const a = document.createElement('a')
       a.href = url
       a.download = filename || `checklist_${checklistId}.pdf`
-      document.body.appendChild(a)
       a.click()
-      a.remove()
+
       URL.revokeObjectURL(url)
-    } catch (err) {
-      alert('Không thể xuất PDF. Vui lòng thử lại.')
-      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -38,14 +46,17 @@ export function ExportPDFButton({ checklistId, filename }: ExportPDFButtonProps)
     <button
       onClick={exportPDF}
       disabled={loading}
-      className="btn-secondary text-sm no-print disabled:opacity-60"
-      title="Xuất báo cáo PDF"
+      className={cn(
+        'btn-secondary text-xs px-2 py-1.5',
+        className
+      )}
+      title="Xuất PDF"
     >
-      {loading
-        ? <Loader2 className="w-4 h-4 animate-spin" />
-        : <FileDown className="w-4 h-4" />
-      }
-      {loading ? 'Đang tạo PDF...' : 'Xuất PDF'}
+      {loading ? (
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      ) : (
+        children || <FileDown className="w-3.5 h-3.5" />
+      )}
     </button>
   )
 }
