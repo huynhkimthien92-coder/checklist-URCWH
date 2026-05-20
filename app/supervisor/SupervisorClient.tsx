@@ -114,7 +114,7 @@ export default function SupervisorPage() {
               <Clock className="w-4 h-4 text-blue-500" />
               Chờ duyệt
             </div>
-            <p className="text-2xl font-bold text-blue-600 items-center">
+            <p className="text-2xl font-bold text-blue-600 align-items: center">
               {countByStatus.submitted}
             </p>
           </div>
@@ -124,7 +124,7 @@ export default function SupervisorPage() {
               <CheckCircle2 className="w-4 h-4 text-green-500" />
               Đã duyệt
             </div>
-            <p className="text-2xl font-bold text-green-600 items-center">
+            <p className="text-2xl font-bold text-green-600 align-items: center">
               {countByStatus.approved}
             </p>
           </div>
@@ -134,7 +134,7 @@ export default function SupervisorPage() {
               <AlertCircle className="w-4 h-4 text-gray-400" />
               Bản nháp
             </div>
-            <p className="text-2xl font-bold text-gray-600 items-center">
+            <p className="text-2xl font-bold text-gray-600 align-items: center">
               {countByStatus.draft}
             </p>
           </div>
