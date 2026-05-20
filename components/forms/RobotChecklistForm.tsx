@@ -197,7 +197,11 @@ export function RobotChecklistForm({
       {/* ✅ LOCK INFO */}
       {isDayLocked(activeDay) && (
         <div className="text-xs text-red-500">
-          🔒 Ngày đã được ký bởi operator - không thể chỉnh sửa
+          🔒 Ngày đã được ký bởi{' '}
+          <span className="font-semibold">
+            {opSigs?.[activeDay]?.user_name || 'operator'}
+          </span>{' '}
+          - không thể chỉnh sửa
         </div>
       )}
 
