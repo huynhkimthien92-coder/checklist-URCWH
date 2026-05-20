@@ -271,7 +271,9 @@ export default function SupervisorPage() {
                         <ExportPDFButton
                           checklistId={cl.id}
                           filename={`XeNang_Tuan${cl.week_number}_${cl.year}_${cl.forklift_number || 'xe'}.pdf`}
-                          //className="btn-secondary text-xs px-2 py-1.5"
+                        >
+                         <Download className="w-3.5 h-3.5" />
+                        </ExportPDFButton>
                         />
                       ) : (
                         <a
