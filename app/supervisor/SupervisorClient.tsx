@@ -274,7 +274,7 @@ export default function SupervisorPage() {
                         >
                          <Download className="w-3.5 h-3.5" />
                         </ExportPDFButton>
-                        />
+                       
                       ) : (
                         <a
                           href={`/api/robot-checklist/${cl.id}/pdf`}
