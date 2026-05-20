@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@/lib/supabase'
 import { getDaysInMonth } from '@/lib/robot-checklist-data'
 
 export default function RobotDashboardPage() {
@@ -16,10 +16,7 @@ export default function RobotDashboardPage() {
     useState<'robot' | 'month' | 'status' | 'fail' | 'signature'>('month')
   const [sortAsc, setSortAsc] = useState(false)
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = createBrowserClient()
 
   // ================= FETCH =================
   useEffect(() => {
@@ -27,11 +24,10 @@ export default function RobotDashboardPage() {
       .from('robot_checklists')
       .select('*')
       .then(({ data }) => {
-        console.log('ROBOT DATA:', data)
         setData(data || [])
         setLoading(false)
       })
-  }, [])
+  }, [supabase])
 
   // ================= PROCESS =================
   useEffect(() => {
@@ -138,7 +134,7 @@ export default function RobotDashboardPage() {
     // ===== FILTER =====
     if (search) {
       result = result.filter(c =>
-        c.robot_number?.toLowerCase().includes(search.toLowerCase())
+       (c.robot_number || '').toLowerCase().includes(search.toLowerCase())
       )
     }
 
