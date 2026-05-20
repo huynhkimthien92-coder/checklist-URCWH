@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Checklist } from '@/types'
 import {
   cn,
   checklistStatusLabel,
@@ -10,7 +9,6 @@ import {
   formatDate
 } from '@/lib/utils'
 import {
-  ShieldCheck,
   Eye,
   Loader2,
   Clock,
@@ -25,10 +23,10 @@ export default function SupervisorPage() {
   const [allChecklists, setAllChecklists] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  const [filter, setFilter] = useState('submitted')     // status
-  const [typeFilter, setTypeFilter] = useState('all')   // type
+  const [filter, setFilter] = useState('submitted')
+  const [typeFilter, setTypeFilter] = useState('all')
 
-  // ================= FETCH ALL =================
+  // ================= FETCH =================
   useEffect(() => {
     Promise.all([
       fetch('/api/checklists').then(r => r.json()),
@@ -50,53 +48,60 @@ export default function SupervisorPage() {
   useEffect(() => {
     setLoading(true)
 
-    Promise.all([
-      fetch('/api/checklists').then(r => r.json()),
-      fetch('/api/robot-checklists').then(r => r.json()),
-    ])
-      .then(([forklift, robot]) => {
+    let merged = [...allChecklists]
 
-        let merged = [
-          ...(Array.isArray(forklift) ? forklift : []).map(c => ({ ...c, type: 'forklift' })),
-          ...(Array.isArray(robot) ? robot : []).map(c => ({ ...c, type: 'robot' })),
-        ]
+    if (filter !== 'all') {
+      merged = merged.filter(c => c.status === filter)
+    }
 
-        // ✅ filter theo status
-        if (filter !== 'all') {
-          merged = merged.filter(c => c.status === filter)
-        }
+    if (typeFilter !== 'all') {
+      merged = merged.filter(c => c.type === typeFilter)
+    }
 
-        // ✅ filter theo type
-        if (typeFilter !== 'all') {
-          merged = merged.filter(c => c.type === typeFilter)
-        }
+    setChecklists(merged)
+    setLoading(false)
 
-        setChecklists(merged)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
+  }, [filter, typeFilter, allChecklists])
 
-  }, [filter, typeFilter])
+  // ================= AUTO FIX FILTER =================
+  useEffect(() => {
+    const hasData = allChecklists.some(c =>
+      (filter === 'all' || c.status === filter) &&
+      (typeFilter === 'all' || c.type === typeFilter)
+    )
+
+    if (!hasData) {
+      setTypeFilter('all') // ✅ tránh filter rỗng
+    }
+  }, [filter, typeFilter, allChecklists])
 
   // ================= COUNT =================
-  const submitted = allChecklists.filter(c => c.status === 'submitted').length
-  const approved  = allChecklists.filter(c => c.status === 'approved').length
-  const draft     = allChecklists.filter(c => c.status === 'draft').length
+  const countByStatus = {
+    submitted: allChecklists.filter(c => c.status === 'submitted').length,
+    approved: allChecklists.filter(c => c.status === 'approved').length,
+    draft: allChecklists.filter(c => c.status === 'draft').length,
+    all: allChecklists.length
+  }
+
+  const countByType = {
+    forklift: allChecklists.filter(c => c.type === 'forklift').length,
+    robot: allChecklists.filter(c => c.type === 'robot').length,
+    all: allChecklists.length
+  }
 
   // ================= UI =================
   return (
     <div className="min-h-screen bg-slate-50">
-
       <Navbar />
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-5">
 
-        {/* HEADER */}
+        {/* ===== HEADER ===== */}
         <div>
           <h1 className="text-xl font-bold">Kiểm tra & Xét duyệt</h1>
         </div>
 
-        {/* STATS */}
+        {/* ===== STATS ===== */}
         <div className="grid grid-cols-3 gap-3">
 
           <div className="card p-4">
@@ -105,7 +110,7 @@ export default function SupervisorPage() {
               Chờ duyệt
             </div>
             <p className="text-2xl font-bold text-blue-600">
-              {submitted}
+              {countByStatus.submitted}
             </p>
           </div>
 
@@ -115,7 +120,7 @@ export default function SupervisorPage() {
               Đã duyệt
             </div>
             <p className="text-2xl font-bold text-green-600">
-              {approved}
+              {countByStatus.approved}
             </p>
           </div>
 
@@ -125,7 +130,7 @@ export default function SupervisorPage() {
               Bản nháp
             </div>
             <p className="text-2xl font-bold text-gray-600">
-              {draft}
+              {countByStatus.draft}
             </p>
           </div>
 
@@ -137,20 +142,28 @@ export default function SupervisorPage() {
             { key: 'submitted', label: 'Chờ duyệt' },
             { key: 'approved', label: 'Đã duyệt' },
             { key: 'all', label: 'Tất cả' }
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              className={cn(
-                'flex-1 py-1.5 rounded text-sm',
-                filter === key
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              )}
-            >
-              {label}
-            </button>
-          ))}
+          ].map(({ key, label }) => {
+
+            const count = countByStatus[key as keyof typeof countByStatus]
+
+            return (
+              <button
+                key={key}
+                onClick={() => setFilter(key)}
+                disabled={count === 0}
+                className={cn(
+                  'flex-1 py-1.5 rounded text-sm flex justify-center gap-1',
+                  count === 0 && 'opacity-40',
+                  filter === key
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                )}
+              >
+                {label}
+                <span>({count})</span>
+              </button>
+            )
+          })}
         </div>
 
         {/* ===== TYPE FILTER ===== */}
@@ -159,20 +172,33 @@ export default function SupervisorPage() {
             { key: 'all', label: 'Tất cả' },
             { key: 'forklift', label: '🚜 Xe nâng' },
             { key: 'robot', label: '🤖 Robot' }
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setTypeFilter(key)}
-              className={cn(
-                'flex-1 py-1.5 rounded text-sm',
-                typeFilter === key
-                  ? 'bg-slate-800 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              )}
-            >
-              {label}
-            </button>
-          ))}
+          ].map(({ key, label }) => {
+
+            const count = countByType[key as keyof typeof countByType]
+
+            return (
+              <button
+                key={key}
+                onClick={() => setTypeFilter(key)}
+                disabled={count === 0}
+                className={cn(
+                  'flex-1 py-1.5 rounded text-sm flex justify-center gap-1',
+                  count === 0 && 'opacity-40',
+                  typeFilter === key
+                    ? 'bg-slate-800 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                )}
+              >
+                {label}
+                <span>({count})</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* ===== INFO ===== */}
+        <div className="text-xs text-gray-500">
+          Đang hiển thị: <b>{filter}</b> / <b>{typeFilter}</b>
         </div>
 
         {/* ===== LIST ===== */}
@@ -182,7 +208,7 @@ export default function SupervisorPage() {
           </div>
         ) : checklists.length === 0 ? (
           <div className="text-center py-10 text-gray-400">
-            Không có dữ liệu
+            Không có checklist phù hợp với bộ lọc hiện tại
           </div>
         ) : (
           <div className="space-y-3">
@@ -196,10 +222,7 @@ export default function SupervisorPage() {
                 , 0) || 0
 
               return (
-                <div
-                  key={cl.id}
-                  className="card p-4 hover:shadow"
-                >
+                <div key={cl.id} className="card p-4 hover:shadow">
 
                   <div className="flex justify-between">
 
@@ -210,27 +233,20 @@ export default function SupervisorPage() {
                         <span className="font-semibold">
                           {cl.week_number
                             ? `Tuần ${cl.week_number}/${cl.year}`
-                            : `Tháng ${cl.month}/${cl.year}`
-                          }
+                            : `Tháng ${cl.month}/${cl.year}`}
                         </span>
 
-                        {/* TYPE */}
                         <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">
-                          {cl.type === 'robot'
-                            ? '🤖 Robot'
-                            : '🚜 Xe nâng'}
+                          {cl.type === 'robot' ? '🤖 Robot' : '🚜 Xe nâng'}
                         </span>
 
-                        <span className={cn(
-                          'badge',
-                          checklistStatusColor(cl.status)
-                        )}>
+                        <span className={cn('badge', checklistStatusColor(cl.status))}>
                           {checklistStatusLabel(cl.status)}
                         </span>
 
                         {failCount > 0 && (
                           <span className="text-red-600 text-xs">
-                            ⚠ {failCount} lỗi
+                            ⚠ {failCount}
                           </span>
                         )}
 
@@ -242,14 +258,11 @@ export default function SupervisorPage() {
 
                     </div>
 
-                    {/* LINK */}
                     <Link
-                      href={
-                        cl.type === 'robot'
-                          ? `/robot-checklist/${cl.id}`
-                          : `/supervisor/${cl.id}`
-                      }
-                      className="btn-primary text-sm px-3"
+                      href={cl.type === 'robot'
+                        ? `/robot-checklist/${cl.id}`
+                        : `/supervisor/${cl.id}`}
+                      className="btn-primary text-sm px-3 py-1.5"
                     >
                       <Eye className="w-4 h-4" />
                       Xem
