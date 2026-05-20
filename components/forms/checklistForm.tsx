@@ -228,6 +228,16 @@ const isDayLocked = (day: string) => {
         </div>
       </div>
 
+      {isDayLocked(activeDay) && (
+        <div className="text-xs text-red-500">
+          🔒 Ngày đã được ký bởi{' '}
+          <span className="font-semibold">
+            {opSigs?.[activeDay]?.user_name || 'operator'}
+          </span>{' '}
+          - không thể chỉnh sửa
+        </div>
+      )}
+
       {/* Items table */}
       {[
         { label: 'KIỂM TRA QUAN SÁT', labelEn: 'OBSERVATION CHECK', items: obsItems, color: 'bg-blue-600' },
