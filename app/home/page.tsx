@@ -68,11 +68,27 @@ const MENU: MenuItem[] = [
 // ===== COMPONENT =====
 export default function HomePage() {
 
+  // ✅ HOOK LUÔN NẰM TOP
   const { data: session, status } = useSession()
-
   const [pending, setPending] = useState(0)
 
-  // ✅ loading session
+  // ✅ useEffect luôn gọi (không condition)
+  useEffect(() => {
+    if (!session) return
+
+    fetch('/api/checklists')
+      .then(r => r.json())
+      .then(data => {
+        const count =
+          (data || []).filter((c: any) => c.status === 'submitted').length
+
+        setPending(count)
+      })
+      .catch(() => {})
+  }, [session])
+
+  // ✅ SAU KHI hooks xong mới return condition
+
   if (status === 'loading') {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -81,23 +97,11 @@ export default function HomePage() {
     )
   }
 
-  // ✅ chưa login
   if (!session) return null
 
   const role = (session.user as any)?.role
 
-  // ✅ lấy số checklist chờ duyệt
-  useEffect(() => {
-    fetch('/api/checklists')
-      .then(r => r.json())
-      .then(data => {
-        const count = (data || []).filter((c: any) => c.status === 'submitted').length
-        setPending(count)
-      })
-      .catch(() => {})
-  }, [])
-
-  // ✅ gán badge
+  // ✅ inject badge
   const menuWithBadge = MENU.map(item => {
     if (item.href === '/supervisor') {
       return { ...item, badge: pending }
@@ -118,16 +122,6 @@ export default function HomePage() {
 
       <main className="max-w-5xl mx-auto px-4 py-6 pb-16">
 
-        {/* HEADER */}
-        <div className="mb-6">
-          <h1 className="text-xl font-bold text-slate-900">
-            Xin chào 👋
-          </h1>
-          <p className="text-sm text-slate-500">
-            Chọn chức năng bạn muốn sử dụng
-          </p>
-        </div>
-
         {/* GRID */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
 
@@ -138,8 +132,8 @@ export default function HomePage() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="relative card p-4 flex flex-col items-center justify-center text-center
-                           hover:shadow-lg hover:-translate-y-1 active:scale-95 transition"
+                className="card relative p-4 flex flex-col items-center justify-center text-center
+                           hover:shadow-xl hover:-translate-y-1 active:scale-95 transition"
               >
 
                 {/* ICON */}
@@ -159,8 +153,11 @@ export default function HomePage() {
 
                 {/* BADGE */}
                 {item.badge && item.badge > 0 && (
-                  <div className="absolute top-2 right-2 bg-red-500 text-white
-                                  text-xs px-1.5 py-0.5 rounded-full">
+                  <div className="
+                    absolute top-2 right-2
+                    bg-red-500 text-white text-xs
+                    px-2 py-0.5 rounded-full
+                  ">
                     {item.badge}
                   </div>
                 )}
