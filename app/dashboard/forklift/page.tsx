@@ -1,5 +1,7 @@
-// app/dashboard/forklift/page.tsx// app/dashboard createServiceClient } from '@/lib/supabase'
+// app/dashboard/forklift/page.tsx
+
 import { createServiceClient } from '@/lib/supabase'
+
 export const dynamic = 'force-dynamic'
 
 // ======================= PAGE =======================
@@ -30,7 +32,8 @@ export default async function ForkliftDashboardPage() {
             <th className="p-2 border">Tuần</th>
             <th className="p-2 border">Trạng thái</th>
             <th className="p-2 border">Tiến độ</th>
-            <th className="p-2 border">Ngày có data</th>
+            <th className="p-2 border">Ngày</th>
+            <th className="p-2 border">Lỗi</th>
             <th className="p-2 border">Chưa ký</th>
           </tr>
         </thead>
@@ -38,87 +41,127 @@ export default async function ForkliftDashboardPage() {
         <tbody>
           {data?.map((c) => {
 
-            const items = Array.isArray(c.items)
-              ? c.items
-              : JSON.parse(c.items || '[]')
+            const items = (() => {
+              try {
+                return Array.isArray(c.items)
+                  ? c.items
+                  : JSON.parse(c.items || '[]')
+              } catch {
+                return []
+              }
+            })()
 
-            // ✅ map thứ → index (mon → sun)
-            const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+            const opSigns = (() => {
+              try {
+                return typeof c.operator_signatures === 'string'
+                  ? JSON.parse(c.operator_signatures || '{}')
+                  : c.operator_signatures || {}
+              } catch {
+                return {}
+              }
+            })()
 
-            const daysWithData = new Set<string>()
+            const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
 
-            items.forEach((item: any) => {
-              Object.entries(item.days || {}).forEach(([day, v]: any) => {
-                if (
-                  DAYS.includes(day) &&
-                  (v?.status === 'pass' || v?.status === 'fail')
-                ) {
-                  daysWithData.add(day)
+            const daysSet = new Set<string>()
+            const failSet = new Set<string>()
+
+            items.forEach((item:any)=>{
+              Object.entries(item.days || {}).forEach(([day,entry]:any)=>{
+                const status =
+                  typeof entry === 'string'
+                    ? entry
+                    : entry?.status || ''
+
+                if (DAYS.includes(day) && (status==='pass' || status==='fail')) {
+                  daysSet.add(day)
+                }
+
+                if (status==='fail') {
+                  failSet.add(day)
                 }
               })
             })
 
-            const daysArray = Array.from(daysWithData)
+            const daysArray = Array.from(daysSet)
 
-            // ✅ check unsigned operator
-            const unsigned = daysArray.filter(
-              d => !c.operator_signatures?.[d]?.data_url
-            )
+            const unsigned = daysArray.filter(d => !opSigns?.[d]?.data_url)
 
-            const percent =
-              DAYS.length > 0
-                ? Math.round((daysArray.length / DAYS.length) * 100)
-                : 0
+            const percent = Math.round((daysArray.length / DAYS.length) * 100)
 
             return (
-              <tr key={c.id} className="border-t">
+              <tr
+                key={c.id}
+                className={`border-t cursor-pointer hover:bg-gray-50 ${failSet.size>0?'bg-red-50':''}`}
+                onClick={()=> window.location.href = `/checklist/${c.id}`}
+              >
 
-                {/* Forklift */}
                 <td className="p-2 border font-medium">
                   {c.forklift_number}
                 </td>
 
-                {/* Week */}
                 <td className="p-2 border">
                   {c.week_number}/{c.year}
                 </td>
 
-                {/* Status */}
                 <td className="p-2 border">
                   <span className={
-                    c.status === 'approved' ? 'text-green-600 font-bold' :
-                    c.status === 'submitted' ? 'text-blue-600' :
-                    'text-gray-500'
+                    c.status === 'approved'
+                      ? 'text-green-600 font-bold'
+                      : c.status === 'submitted'
+                      ? 'text-blue-600'
+                      : 'text-gray-500'
                   }>
                     {c.status}
                   </span>
                 </td>
 
-                {/* Progress */}
+                {/* PROGRESS */}
                 <td className="p-2 border">
                   <div className="w-full bg-gray-200 h-2 rounded">
                     <div
-                      className="bg-blue-500 h-2 rounded"
+                      className={`h-2 rounded ${
+                        percent === 100
+                          ? 'bg-green-500'
+                          : percent > 50
+                          ? 'bg-blue-500'
+                          : 'bg-yellow-500'
+                      }`}
                       style={{ width: `${percent}%` }}
                     />
                   </div>
                   <div className="text-xs mt-1">
-                    {percent}% ({daysArray.length}/7 ngày)
+                    {percent}% ({daysArray.length}/7)
                   </div>
                 </td>
 
-                {/* Days */}
+                {/* DAYS */}
                 <td className="p-2 border text-xs">
-                  {daysArray.length > 0
-                    ? daysArray.join(', ')
-                    : '-'}
+                  {daysArray.map(d=>(
+                    <span
+                      key={d}
+                      className={`mr-1 px-1 rounded ${
+                        failSet.has(d)
+                          ? 'bg-red-200 text-red-700'
+                          : 'bg-green-100 text-green-700'
+                      }`}
+                    >
+                      {d}
+                    </span>
+                  ))}
                 </td>
 
-                {/* Unsigned */}
+                {/* FAIL */}
+                <td className="p-2 border text-center">
+                  {failSet.size>0
+                    ? <span className="text-red-600 font-bold">⚠ {failSet.size}</span>
+                    : <span className="text-green-600">OK</span>
+                  }
+                </td>
+
+                {/* UNSIGNED */}
                 <td className="p-2 border text-xs text-red-600">
-                  {unsigned.length > 0
-                    ? unsigned.join(', ')
-                    : '✅'}
+                  {unsigned.length>0 ? unsigned.join(', ') : '✅'}
                 </td>
 
               </tr>
@@ -130,4 +173,3 @@ export default async function ForkliftDashboardPage() {
     </div>
   )
 }
-
