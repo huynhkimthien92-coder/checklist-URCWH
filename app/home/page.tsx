@@ -1,15 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { Navbar } from '@/components/layout/Navbar'
 import {
   UserCog,
   Shield,
   Bot,
   Truck,
   ClipboardList,
-  Loader2
+  Loader2,
+  LayoutGrid // ✅ 5S icon
 } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 import { useEffect, useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
@@ -24,7 +25,7 @@ type MenuItem = {
   roles?: string[]
 }
 
-// ===== MENU CONFIG =====
+// ===== MENU =====
 const MENU: MenuItem[] = [
   {
     label: 'Admin',
@@ -68,19 +69,30 @@ const MENU: MenuItem[] = [
     color: 'bg-slate-100 text-slate-600',
     roles: ['admin', 'supervisor','operator'],
   },
+
+  // ✅ ✅ ✅ 5S
+  {
+    label: '5S Management',
+    href: '/5s',
+    icon: LayoutGrid,
+    color: 'bg-indigo-100 text-indigo-600',
+    roles: ['admin', 'supervisor','operator'],
+  },
 ]
 
 // ===== COMPONENT =====
 export default function HomePage() {
 
-  // ✅ HOOK LUÔN NẰM TOP
   const { data: session, status } = useSession()
-  const [pending, setPending] = useState(0)
 
-  // ✅ useEffect luôn gọi (không condition)
+  const [pending, setPending] = useState(0) // checklist
+  const [open5S, setOpen5S] = useState(0)  // ✅ 5S open issue
+
+  // ===== FETCH DATA =====
   useEffect(() => {
     if (!session) return
 
+    // ✅ checklist
     fetch('/api/checklists')
       .then(r => r.json())
       .then(data => {
@@ -90,10 +102,21 @@ export default function HomePage() {
         setPending(count)
       })
       .catch(() => {})
+
+    // ✅ ✅ 5S OPEN (FIX CHÍNH)
+    fetch('/api/issues')
+      .then(r => r.json())
+      .then(data => {
+        const count =
+          (data || []).filter((i: any) => i.status === 'open').length
+
+        setOpen5S(count)
+      })
+      .catch(() => {})
+
   }, [session])
 
-  // ✅ SAU KHI hooks xong mới return condition
-
+  // ===== LOADING =====
   if (status === 'loading') {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -106,15 +129,21 @@ export default function HomePage() {
 
   const role = (session.user as any)?.role
 
-  // ✅ inject badge
+  // ===== INJECT BADGE =====
   const menuWithBadge = MENU.map(item => {
+
     if (item.href === '/supervisor') {
       return { ...item, badge: pending }
     }
+
+    if (item.href === '/5s') {
+      return { ...item, badge: open5S }
+    }
+
     return item
   })
 
-  // ✅ filter role
+  // ===== FILTER ROLE =====
   const menu = menuWithBadge.filter(item => {
     if (!item.roles) return true
     return item.roles.includes(role)
@@ -122,7 +151,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/*<Navbar />*/}
 
       <main className="max-w-5xl mx-auto px-4 py-6 pb-16">
 
@@ -139,7 +167,6 @@ export default function HomePage() {
                 className="card relative p-4 flex flex-col items-center justify-center text-center
                            hover:shadow-xl hover:-translate-y-1 active:scale-95 transition"
               >
-
                 {/* ICON */}
                 <div
                   className={cn(
@@ -171,16 +198,22 @@ export default function HomePage() {
           })}
 
         </div>
-        {/* LOGOUT */}
+
+        {/* ✅ LOGOUT (FIX REDIRECT) */}
         <div className="mt-8">
           <button
-            onClick={() => signOut()}
+            onClick={() =>
+              signOut({
+                callbackUrl: '/auth/login' // ✅ quay về login
+              })
+            }
             className="w-full py-3 rounded-xl bg-red-50 text-red-600 font-medium
                        hover:bg-red-100 transition"
           >
             Đăng xuất
           </button>
         </div>
+
       </main>
     </div>
   )
