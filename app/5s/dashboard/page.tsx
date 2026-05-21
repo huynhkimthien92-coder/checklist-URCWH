@@ -3,26 +3,15 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+// ===== TYPES (✅ dùng chung) =====
+import { Issue } from '@/types/issue'
+
 // ===== DASHBOARD COMPONENTS =====
 import { SummaryCards } from '@/components/5s/dashboard/SummaryCards'
 import { KPICharts } from '@/components/5s/dashboard/KPICharts'
 import { IssueTrend } from '@/components/5s/dashboard/IssueTrend'
 import AssigneePerformance from '@/components/5s/dashboard/AssigneePerformance'
 import { AreaHeatmap } from '@/components/5s/dashboard/AreaHeatmap'
-
-// ===== TYPES =====
-type Issue = {
-  id: string
-  title: string
-  description?: string
-  status: 'open' | 'in_progress' | 'done'
-  priority: 'low' | 'medium' | 'high'
-  due_date?: string
-  assigned_to?: string
-  created_at?: string
-  closed_at?: string
-  area?: string
-}
 
 // ===== PAGE =====
 export default function DashboardPage() {
@@ -118,8 +107,13 @@ export default function DashboardPage() {
           {/* ===== KPI CHARTS ===== */}
           <KPICharts issues={filtered} />
 
-          {/* ===== TREND ===== */}
-          <IssueTrend issues={filtered} />
+          {/* ===== TREND ===== ✅ FIX LỖI */}
+          <IssueTrend
+            issues={filtered.map(i => ({
+              ...i,
+              created_at: i.created_at ?? '' // ✅ FIX undefined
+            }))}
+          />
 
           {/* ===== MAIN GRID ===== */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
