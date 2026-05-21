@@ -24,4 +24,8 @@ export interface Issue {
   x_percent?: number
   y_percent?: number
 
+  image_before?: string;
+  image_after?: string;
+
+
 }
