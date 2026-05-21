@@ -1,7 +1,8 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { IssueMarker } from '@/components/5s/IssueMarker'
+import { MapHeatmap } from '@/components/5s/MapHeatmap'
 
 // ===== TYPES =====
 type Issue = {
@@ -32,7 +33,10 @@ export function MapView({
 
   const mapRef = useRef<HTMLDivElement>(null)
 
-  // ===== CLICK MAP → ADD ISSUE =====
+  // ✅ toggle heatmap
+  const [showHeatmap, setShowHeatmap] = useState(true)
+
+  // ===== CLICK MAP =====
   const handleClick = (e: React.MouseEvent) => {
 
     if (!mapRef.current) return
@@ -46,23 +50,48 @@ export function MapView({
   }
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full space-y-2">
 
-      {/* MAP CONTAINER */}
+      {/* ===== HEADER / TOOLBAR ===== */}
+      <div className="flex justify-between items-center text-sm">
+
+        <div className="font-semibold">
+          5S Map View
+        </div>
+
+        <div className="flex items-center gap-2">
+
+          {/* 🔥 toggle heatmap */}
+          <button
+            onClick={() => setShowHeatmap(prev => !prev)}
+            className="px-2 py-1 border rounded hover:bg-gray-100 text-xs"
+          >
+            {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
+          </button>
+
+        </div>
+      </div>
+
+      {/* ===== MAP CONTAINER ===== */}
       <div
         ref={mapRef}
         onClick={handleClick}
-        className="relative w-full h-[500px] border rounded overflow-hidden cursor-crosshair bg-gray-100"
+        className="relative w-full h-[500px] border rounded overflow-hidden bg-gray-100 cursor-crosshair"
       >
 
-        {/* MAP IMAGE */}
+        {/* ===== MAP IMAGE ===== */}
         <img
           src="/map.png"
           alt="map"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover select-none pointer-events-none"
         />
 
-        {/* MARKERS */}
+        {/* ===== HEATMAP LAYER ===== */}
+        {showHeatmap && (
+          <MapHeatmap issues={issues} />
+        )}
+
+        {/* ===== MARKERS ===== */}
         {issues.map(issue => (
           <IssueMarker
             key={issue.id}
@@ -74,8 +103,8 @@ export function MapView({
 
       </div>
 
-      {/* LEGEND */}
-      <div className="mt-2 text-xs flex gap-4 text-gray-600">
+      {/* ===== LEGEND ===== */}
+      <div className="flex flex-wrap gap-4 text-xs text-gray-600">
 
         <div className="flex items-center gap-1">
           <span>🔴</span> Open
@@ -91,6 +120,10 @@ export function MapView({
 
         <div className="flex items-center gap-1">
           <span>⚠️</span> Overdue
+        </div>
+
+        <div className="flex items-center gap-1">
+          <span>🔥</span> Heatmap active issues
         </div>
 
       </div>
