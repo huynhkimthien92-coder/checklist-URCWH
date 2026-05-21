@@ -153,7 +153,13 @@ export default function Page() {
       {/* ===== ISSUE DETAIL ===== */}
       {selected && (
         <IssueModal
-          issue={selected}
+          issue={{
+            ...selected,
+            title: selected.title ?? 'No title',
+            x_percent: selected.x_percent ?? 0,
+            y_percent: selected.y_percent ?? 0,
+            image_before: selected.image_before ?? ''
+          }}
           onClose={() => setSelected(null)}
           onUpdated={fetchIssues}
         />
