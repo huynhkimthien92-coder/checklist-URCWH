@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { getIssueStyle } from '@/lib/issueStatus'
 
 // ===== TYPES =====
 type User = {
@@ -20,6 +21,7 @@ type Issue = {
   created_at?: string
   completed_by?: string
   closed_at?: string
+  due_date?: string
 }
 
 type Props = {
@@ -35,10 +37,7 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
   const [preview, setPreview] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // ✅ user list
   const [users, setUsers] = useState<User[]>([])
-
-  // ✅ zoom
   const [zoomImage, setZoomImage] = useState<string | null>(null)
 
   // ===== FETCH USERS =====
@@ -51,6 +50,9 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
   // ===== MAP USER =====
   const assignedUser = users.find(u => u.id === current.assigned_to)
   const completedUser = users.find(u => u.id === current.completed_by)
+
+  // ===== STYLE (DESIGN SYSTEM ✅)
+  const style = getIssueStyle(current)
 
   // ===== FORMAT DATE =====
   const formatDate = (d?: string) => {
@@ -163,11 +165,22 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
 
         {/* INFO */}
         <div className="text-sm space-y-1">
-          <div>Status: <b>{current.status}</b></div>
+
+          {/* ✅ STATUS dùng system */}
+          <div>
+            Status:{' '}
+            <b className={style.text}>
+              {style.icon} {style.label}
+            </b>
+          </div>
+
           <div>
             Created: <b>{formatDate(current.created_at)}</b>
           </div>
-          <div>Priority: <b>{current.priority}</b></div>
+
+          <div>
+            Priority: <b>{current.priority}</b>
+          </div>
 
           <div>
             Assigned to: <b>{assignedUser?.name || 'Unassigned'}</b>
@@ -180,6 +193,7 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
           <div>
             Completed: <b>{formatDate(current.closed_at)}</b>
           </div>
+
         </div>
 
         {/* IMAGES */}
@@ -208,6 +222,7 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
                 No image
               </div>
             )}
+
           </div>
 
         </div>
@@ -258,7 +273,7 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
 
       </div>
 
-      {/* ✅ ZOOM MODAL */}
+      {/* ZOOM */}
       {zoomImage && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[999]">
 
@@ -269,7 +284,6 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
               className="max-h-[90vh] max-w-[90vw] rounded"
             />
 
-            {/* ✅ CLOSE BUTTON */}
             <button
               onClick={() => setZoomImage(null)}
               className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-sm"
