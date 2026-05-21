@@ -82,7 +82,6 @@ export default function Page() {
 
         <div className="flex gap-2">
 
-          {/* RELOAD */}
           <button
             onClick={fetchIssues}
             className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
@@ -90,7 +89,6 @@ export default function Page() {
             Refresh
           </button>
 
-          {/* GO DASHBOARD */}
           <button
             onClick={() => router.push('/5s/dashboard')}
             className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
@@ -117,7 +115,6 @@ export default function Page() {
             x_percent: i.x_percent ?? 0,
             y_percent: i.y_percent ?? 0
           }))}
-
           selectedIssue={
             selected
               ? {
@@ -128,11 +125,9 @@ export default function Page() {
                 }
               : null
           }
-
-          onSelect={(issue) => setSelected(issue as Issue)})}
+          onSelect={(issue) => setSelected(issue as Issue)}
           onAdd={handleAdd}
         />
-      
       )}
 
       {/* ===== EMPTY STATE ===== */}
