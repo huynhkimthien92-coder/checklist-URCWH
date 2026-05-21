@@ -37,8 +37,8 @@ export default function LoginPage() {
                 d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">Checklist Xe Nâng</h1>
-          <p className="text-blue-300 text-sm mt-1">Hệ thống kiểm tra an toàn hàng ngày</p>
+          <h1 className="text-2xl font-bold text-white">Checklist & 5S</h1>
+          <p className="text-blue-300 text-sm mt-1">Hệ thống kiểm tra an toàn & 5S hàng ngày</p>
         </div>
 
         {/* Form card */}
@@ -98,9 +98,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-blue-400 mt-6">
-          WH-SOP01-FR01 · Safety Checklist System
-        </p>
       </div>
     </div>
   )
