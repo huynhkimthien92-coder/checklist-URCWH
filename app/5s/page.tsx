@@ -156,8 +156,8 @@ export default function Page() {
           issue={{
             ...selected,
             title: selected.title ?? 'No title',
-            x_percent: selected.x_percent ?? 0,
-            y_percent: selected.y_percent ?? 0,
+            //x_percent: selected.x_percent ?? 0,
+            //y_percent: selected.y_percent ?? 0,
             image_before: selected.image_before ?? ''
           }}
           onClose={() => setSelected(null)}
