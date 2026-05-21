@@ -20,4 +20,8 @@ export interface Issue {
   // Cho chart/recharts dễ dùng
   value?: number;
   area?: string
+
+  x_percent?: number
+  y_percent?: number
+
 }
