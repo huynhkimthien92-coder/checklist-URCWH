@@ -1,6 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+type User = {
+  id: string
+  name: string
+}
 
 type Props = {
   x: number
@@ -15,11 +20,31 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('medium')
   const [dueDate, setDueDate] = useState('')
-  const [assignedTo, setAssignedTo] = useState('')
+
+  // ✅ assignee
+  const [users, setUsers] = useState<User[]>([])
+  const [search, setSearch] = useState('')
+  const [assignedTo, setAssignedTo] = useState<string | null>(null)
+  const [showDropdown, setShowDropdown] = useState(false)
+
+  // ✅ image
   const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string>('')
 
   const [loading, setLoading] = useState(false)
-  const [preview, setPreview] = useState<string>('')
+
+  // ===== FETCH USERS =====
+  useEffect(() => {
+    fetch('/api/users/search')
+      .then(res => res.json())
+      .then(data => setUsers(data || []))
+      .catch(() => setUsers([]))
+  }, [])
+
+  // ===== FILTER =====
+  const filteredUsers = users.filter(u =>
+    u.name?.toLowerCase().includes(search.toLowerCase())
+  )
 
   // ===== IMAGE PREVIEW =====
   const handleFile = (f: File) => {
@@ -27,7 +52,7 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
     setPreview(URL.createObjectURL(f))
   }
 
-  // ===== RESIZE =====
+  // ===== RESIZE IMAGE =====
   const resizeImage = (file: File): Promise<Blob> => {
     return new Promise(resolve => {
       const img = new Image()
@@ -52,9 +77,8 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
     })
   }
 
-  // ===== UPLOAD =====
+  // ===== UPLOAD IMAGE =====
   const uploadImage = async (file: File, issueId: string) => {
-
     const resized = await resizeImage(file)
 
     const formData = new FormData()
@@ -87,7 +111,6 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
     setLoading(true)
 
     try {
-      // ✅ tạo ID tạm (để dùng folder)
       const tempId = crypto.randomUUID()
 
       // ✅ upload ảnh
@@ -104,7 +127,7 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
           image_before: imageUrl,
           priority,
           due_date: dueDate || null,
-          assigned_to: assignedTo || null,
+          assigned_to: assignedTo, // ✅ lấy id từ dropdown
           x_percent: x,
           y_percent: y
         })
@@ -134,7 +157,7 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
           onChange={e => setTitle(e.target.value)}
         />
 
-        {/* DESC */}
+        {/* DESCRIPTION */}
         <textarea
           className="input w-full"
           placeholder="Mô tả"
@@ -161,13 +184,41 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
           onChange={e => setDueDate(e.target.value)}
         />
 
-        {/* ASSIGNEE */}
-        <input
-          className="input w-full"
-          placeholder="Assign user id"
-          value={assignedTo}
-          onChange={e => setAssignedTo(e.target.value)}
-        />
+        {/* ✅ ASSIGNEE SEARCH */}
+        <div className="relative">
+
+          <input
+            className="input w-full"
+            placeholder="Search assignee..."
+            value={search}
+            onChange={e => {
+              setSearch(e.target.value)
+              setShowDropdown(true)
+            }}
+            onFocus={() => setShowDropdown(true)}
+          />
+
+          {showDropdown && filteredUsers.length > 0 && (
+            <div className="absolute z-10 w-full bg-white border rounded mt-1 max-h-40 overflow-auto">
+
+              {filteredUsers.map(user => (
+                <div
+                  key={user.id}
+                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    setAssignedTo(user.id)
+                    setSearch(user.name)
+                    setShowDropdown(false)
+                  }}
+                >
+                  {user.name}
+                </div>
+              ))}
+
+            </div>
+          )}
+
+        </div>
 
         {/* IMAGE */}
         <div>
