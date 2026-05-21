@@ -178,7 +178,7 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
           </div>
 
           <div>
-            Created: <b>{formatDate(current.closed_at)}</b>
+            Completed: <b>{formatDate(current.closed_at)}</b>
           </div>
         </div>
 
