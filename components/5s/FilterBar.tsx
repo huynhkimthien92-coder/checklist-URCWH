@@ -12,7 +12,8 @@ type Props = {
     status?: string
     assignee?: string
     priority?: string
-    search?: string
+    fromDate?: string
+    toDate?: string
   }) => void
 }
 
@@ -20,9 +21,12 @@ export function FilterBar({ onChange }: Props) {
 
   const [status, setStatus] = useState('')
   const [priority, setPriority] = useState('')
-  const [search, setSearch] = useState('')
 
-  // ✅ assignee search
+  // ✅ date
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+
+  // ✅ assignee
   const [users, setUsers] = useState<User[]>([])
   const [assignee, setAssignee] = useState<string | undefined>(undefined)
   const [assigneeName, setAssigneeName] = useState('')
@@ -41,18 +45,49 @@ export function FilterBar({ onChange }: Props) {
     u.name.toLowerCase().includes(assigneeName.toLowerCase())
   )
 
-  // ===== APPLY FILTER =====
+  // ===== DATE HELPER =====
+  const formatDate = (date: Date) => {
+    return date.toISOString().split('T')[0]
+  }
+
+  // ===== PRESETS =====
+  const setToday = () => {
+    const today = formatDate(new Date())
+
+    setFromDate(today)
+    setToDate(today)
+
+    apply(status, assignee, priority, today, today)
+  }
+
+  const setLast7Days = () => {
+    const today = new Date()
+    const last7 = new Date()
+    last7.setDate(today.getDate() - 6)
+
+    const from = formatDate(last7)
+    const to = formatDate(today)
+
+    setFromDate(from)
+    setToDate(to)
+
+    apply(status, assignee, priority, from, to)
+  }
+
+  // ===== APPLY =====
   const apply = (
     nextStatus = status,
     nextAssignee = assignee,
     nextPriority = priority,
-    nextSearch = search
+    nextFrom = fromDate,
+    nextTo = toDate
   ) => {
     onChange({
       status: nextStatus || undefined,
       assignee: nextAssignee || undefined,
       priority: nextPriority || undefined,
-      search: nextSearch || undefined,
+      fromDate: nextFrom || undefined,
+      toDate: nextTo || undefined,
     })
   }
 
@@ -60,7 +95,8 @@ export function FilterBar({ onChange }: Props) {
   const reset = () => {
     setStatus('')
     setPriority('')
-    setSearch('')
+    setFromDate('')
+    setToDate('')
     setAssignee(undefined)
     setAssigneeName('')
     onChange({})
@@ -78,7 +114,7 @@ export function FilterBar({ onChange }: Props) {
           value={status}
           onChange={e => {
             setStatus(e.target.value)
-            apply(e.target.value, assignee, priority, search)
+            apply(e.target.value)
           }}
         >
           <option value="">All Status</option>
@@ -93,7 +129,7 @@ export function FilterBar({ onChange }: Props) {
           value={priority}
           onChange={e => {
             setPriority(e.target.value)
-            apply(status, assignee, e.target.value, search)
+            apply(status, assignee, e.target.value)
           }}
         >
           <option value="">All Priority</option>
@@ -102,7 +138,7 @@ export function FilterBar({ onChange }: Props) {
           <option value="low">🟢 Low</option>
         </select>
 
-        {/* ✅ ASSIGNEE SEARCH */}
+        {/* ASSIGNEE */}
         <div className="relative min-w-[150px]">
 
           <input
@@ -113,7 +149,7 @@ export function FilterBar({ onChange }: Props) {
               setAssigneeName(e.target.value)
               setAssignee(undefined)
               setShowDropdown(true)
-              apply(status, undefined, priority, search)
+              apply(status, undefined, priority)
             }}
             onFocus={() => setShowDropdown(true)}
           />
@@ -126,10 +162,10 @@ export function FilterBar({ onChange }: Props) {
                   key={user.id}
                   className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-sm"
                   onClick={() => {
-                    setAssignee(user.id)        // ✅ filter bằng ID
-                    setAssigneeName(user.name)  // ✅ hiển thị tên
+                    setAssignee(user.id)
+                    setAssigneeName(user.name)
                     setShowDropdown(false)
-                    apply(status, user.id, priority, search)
+                    apply(status, user.id, priority)
                   }}
                 >
                   {user.name}
@@ -141,24 +177,55 @@ export function FilterBar({ onChange }: Props) {
 
         </div>
 
-        {/* SEARCH TITLE */}
+      </div>
+
+      {/* ✅ ROW 2: DATE */}
+      <div className="flex flex-wrap gap-2 items-center">
+
         <input
-          className="border px-2 py-1 text-sm rounded flex-1 min-w-[150px]"
-          placeholder="Search title..."
-          value={search}
+          type="date"
+          className="border px-2 py-1 text-sm rounded"
+          value={fromDate}
           onChange={e => {
-            setSearch(e.target.value)
-            apply(status, assignee, priority, e.target.value)
+            setFromDate(e.target.value)
+            apply(status, assignee, priority, e.target.value, toDate)
           }}
         />
 
+        <span className="text-sm text-gray-400">→</span>
+
+        <input
+          type="date"
+          className="border px-2 py-1 text-sm rounded"
+          value={toDate}
+          onChange={e => {
+            setToDate(e.target.value)
+            apply(status, assignee, priority, fromDate, e.target.value)
+          }}
+        />
+
+        {/* ✅ PRESET BUTTONS */}
+        <button
+          onClick={setToday}
+          className="text-xs px-2 py-1 border rounded hover:bg-gray-100"
+        >
+          Today
+        </button>
+
+        <button
+          onClick={setLast7Days}
+          className="text-xs px-2 py-1 border rounded hover:bg-gray-100"
+        >
+          Last 7 days
+        </button>
+
       </div>
 
-      {/* ACTION ROW */}
+      {/* ACTION */}
       <div className="flex justify-between items-center">
 
         <div className="text-xs text-gray-400">
-          Filter issues theo trạng thái, ưu tiên, người phụ trách hoặc tìm kiếm
+          Filter theo trạng thái, ưu tiên, người phụ trách và thời gian
         </div>
 
         <button
