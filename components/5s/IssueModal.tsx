@@ -2,26 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { getIssueStyle } from '@/lib/issueStatus'
+import { Issue } from '@/types/issue'   // ✅ FIX TYPE
 
 // ===== TYPES =====
 type User = {
   id: string
   name: string
-}
-
-type Issue = {
-  id: string
-  title: string
-  description?: string
-  status: 'open' | 'in_progress' | 'done'
-  priority: string
-  image_before: string
-  image_after?: string
-  assigned_to?: string
-  created_at?: string
-  completed_by?: string
-  closed_at?: string
-  due_date?: string
 }
 
 type Props = {
@@ -51,7 +37,7 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
   const assignedUser = users.find(u => u.id === current.assigned_to)
   const completedUser = users.find(u => u.id === current.completed_by)
 
-  // ===== STYLE (DESIGN SYSTEM ✅)
+  // ✅ DESIGN SYSTEM
   const style = getIssueStyle(current)
 
   // ===== FORMAT DATE =====
@@ -166,7 +152,7 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
         {/* INFO */}
         <div className="text-sm space-y-1">
 
-          {/* ✅ STATUS dùng system */}
+          {/* ✅ STATUS (SYNC WITH MAP) */}
           <div>
             Status:{' '}
             <b className={style.text}>
@@ -222,7 +208,6 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
                 No image
               </div>
             )}
-
           </div>
 
         </div>
