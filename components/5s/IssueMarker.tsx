@@ -1,15 +1,7 @@
 'use client'
 
 import { memo } from 'react'
-
-// ===== TYPES =====
-type Issue = {
-  id: string
-  status: 'open' | 'in_progress' | 'done'
-  x_percent: number
-  y_percent: number
-  due_date?: string
-}
+import { Issue } from '@/types/issue' // ✅ dùng type global
 
 // ===== PROPS =====
 type Props = {
@@ -35,7 +27,7 @@ const getIcon = (issue: Issue) => {
   return '🔴'
 }
 
-// ✅ COLOR CLASS (optional nâng cao UI)
+// ✅ COLOR CLASS
 const getColorClass = (issue: Issue) => {
   if (isOverdue(issue)) return 'bg-red-500 animate-pulse'
   if (issue.status === 'done') return 'bg-green-500'
@@ -45,7 +37,6 @@ const getColorClass = (issue: Issue) => {
 
 // ===== COMPONENT =====
 function IssueMarkerComponent({ issue, selected, onClick }: Props) {
-
   return (
     <div
       onClick={(e) => {
@@ -59,8 +50,8 @@ function IssueMarkerComponent({ issue, selected, onClick }: Props) {
         ${selected ? 'scale-125 ring-2 ring-blue-500 z-20' : 'z-10'}
       `}
       style={{
-        left: `${issue.x_percent * 100}%`,
-        top: `${issue.y_percent * 100}%`,
+        left: `${(issue.x_percent ?? 0) * 100}%`,  // ✅ FIX undefined
+        top: `${(issue.y_percent ?? 0) * 100}%`,
         transform: 'translate(-50%, -50%)'
       }}
     >
