@@ -5,16 +5,13 @@ import { Issue } from '@/types/issue'
 import { IssueMarker } from '@/components/5s/IssueMarker'
 import { MapHeatmap } from '@/components/5s/MapHeatmap'
 
-// ===== PROPS =====
 type Props = {
   issues: Issue[]
   selectedIssue?: Issue | null
-
   onSelect: (issue: Issue) => void
   onAdd: (pos: { x: number; y: number }) => void
 }
 
-// ===== COMPONENT =====
 export function MapView({
   issues,
   selectedIssue,
@@ -22,20 +19,17 @@ export function MapView({
   onAdd
 }: Props) {
 
-  const mapRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
 
-  // ===== STATE =====
   const [showHeatmap, setShowHeatmap] = useState(true)
 
-  // zoom + pan
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
 
-  // mouse drag
   const [dragging, setDragging] = useState(false)
   const [lastPos, setLastPos] = useState({ x: 0, y: 0 })
 
-  // touch
   const [lastTouchDist, setLastTouchDist] = useState(0)
   const [lastTouchCenter, setLastTouchCenter] = useState<{ x: number; y: number } | null>(null)
 
@@ -51,14 +45,14 @@ export function MapView({
     y: (touches[0].clientY + touches[1].clientY) / 2
   })
 
-  // ===== ZOOM (wheel) =====
+  // ===== ZOOM =====
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault()
     const newZoom = Math.min(Math.max(zoom - e.deltaY * 0.001, 0.5), 3)
     setZoom(newZoom)
   }
 
-  // ===== PAN (mouse) =====
+  // ===== MOUSE PAN =====
   const handleMouseDown = (e: React.MouseEvent) => {
     setDragging(true)
     setLastPos({ x: e.clientX, y: e.clientY })
@@ -131,14 +125,14 @@ export function MapView({
     setLastTouchCenter(null)
   }
 
-  // ===== CLICK ADD =====
+  // ===== CLICK (FIX CHUẨN) =====
   const handleClick = (e: React.MouseEvent) => {
-    if (!mapRef.current) return
+    if (!imgRef.current) return
 
-    const rect = mapRef.current.getBoundingClientRect()
+    const rect = imgRef.current.getBoundingClientRect()
 
-    const x = (e.clientX - rect.left - pan.x) / (rect.width * zoom)
-    const y = (e.clientY - rect.top - pan.y) / (rect.height * zoom)
+    const x = (e.clientX - rect.left) / rect.width
+    const y = (e.clientY - rect.top) / rect.height
 
     if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
       onAdd({ x, y })
@@ -146,7 +140,7 @@ export function MapView({
   }
 
   return (
-    <div className="relative w-full space-y-2">
+    <div className="space-y-2">
 
       {/* HEADER */}
       <div className="flex justify-between items-center text-sm">
@@ -174,8 +168,8 @@ export function MapView({
 
       {/* MAP */}
       <div
-        ref={mapRef}
-        className="relative w-full h-[500px] border rounded overflow-hidden bg-gray-100 cursor-crosshair"
+        ref={containerRef}
+        className="relative w-full h-[500px] border rounded overflow-hidden bg-gray-100"
 
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
@@ -190,23 +184,24 @@ export function MapView({
         onClick={handleClick}
       >
 
-        {/* TRANSFORM LAYER */}
+        {/* TRANSFORM */}
         <div
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: 'top left'
           }}
-          className="absolute top-0 left-0 w-full h-full"
+          className="absolute top-0 left-0"
         >
 
-          {/* MAP IMAGE */}
+          {/* ✅ IMAGE LÀ GỐC */}
           <img
+            ref={imgRef}
             src="/map.png"
             alt="map"
-            className="w-full h-full object-contain select-none pointer-events-none"
+            className="block select-none pointer-events-none"
           />
 
-          {/* HEATMAP */}
+          {/* ✅ HEATMAP */}
           {showHeatmap && (
             <MapHeatmap
               issues={issues.map(i => ({
@@ -215,33 +210,33 @@ export function MapView({
                 y_percent: i.y_percent ?? 0
               }))}
             />
-
           )}
 
-          {/* MARKERS */}
-          {issues.map(issue => (
-            <IssueMarker
-              key={issue.id}
-              issue={{
-                ...issue,
-                x_percent: issue.x_percent ?? 0,
-                y_percent: issue.y_percent ?? 0
-              }}
-              selected={selectedIssue?.id === issue.id}
-              onClick={onSelect}
-            />
-          ))}
+          {/* ✅ MARKER GẮN THEO IMAGE */}
+          {issues.map(issue => {
+            const x = issue.x_percent ?? 0
+            const y = issue.y_percent ?? 0
 
+            return (
+              <div
+                key={issue.id}
+                style={{
+                  position: 'absolute',
+                  left: `${x * 100}%`,
+                  top: `${y * 100}%`,
+                  transform: 'translate(-50%, -50%)'
+                }}
+              >
+                <IssueMarker
+                  issue={issue}
+                  selected={selectedIssue?.id === issue.id}
+                  onClick={onSelect}
+                />
+              </div>
+            )
+          })}
         </div>
-      </div>
 
-      {/* LEGEND */}
-      <div className="flex flex-wrap gap-4 text-xs text-gray-600">
-        <div>🔴 Open</div>
-        <div>🟡 In Progress</div>
-        <div>🟢 Done</div>
-        <div>⚠️ Overdue</div>
-        <div>🔥 Heatmap</div>
       </div>
 
     </div>
