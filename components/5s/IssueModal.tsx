@@ -19,6 +19,7 @@ type Issue = {
   assigned_to?: string
   created_at?: string
   completed_by?: string
+  closed_at?: string
 }
 
 type Props = {
@@ -163,6 +164,9 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
         {/* INFO */}
         <div className="text-sm space-y-1">
           <div>Status: <b>{current.status}</b></div>
+          <div>
+            Created: <b>{formatDate(current.created_at)}</b>
+          </div>
           <div>Priority: <b>{current.priority}</b></div>
 
           <div>
@@ -174,7 +178,7 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
           </div>
 
           <div>
-            Created: <b>{formatDate(current.created_at)}</b>
+            Created: <b>{formatDate(current.closed_at)}</b>
           </div>
         </div>
 
