@@ -129,7 +129,7 @@ export default function Page() {
               : null
           }
 
-          onSelect={(issue) => setSelected(issue)}
+          onSelect={(issue) => setSelected(issue as Issue)})}
           onAdd={handleAdd}
         />
       
