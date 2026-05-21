@@ -24,73 +24,56 @@ export const isLate = (issue: Issue) => {
 
 // ===== LEVEL =====
 export const getIssueLevel = (issue: Issue) => {
-
-  if (issue.status === 'done') return 'completed'   // ✅ đổi tên
-
+  if (issue.status === 'done') return 'completed'
   if (isOverdue(issue)) return 'overdue'
   if (isLate(issue)) return 'late'
-
   if (issue.status === 'in_progress') return 'in_progress'
-
   return 'open'
 }
 
-// ===== COLOR =====
-export const getIssueColor = (issue: Issue) => {
-  switch (getIssueLevel(issue)) {
+// ===== STYLE OBJECT (✅ QUAN TRỌNG) =====
+export const getIssueStyle = (issue: Issue) => {
+  const level = getIssueLevel(issue)
+
+  switch (level) {
     case 'completed':
-      return 'bg-green-500 text-green-600'
+      return {
+        bg: 'bg-green-500',
+        text: 'text-green-600',
+        icon: '✅',
+        label: 'Completed'
+      }
 
     case 'overdue':
-      return 'bg-red-600 text-red-600'
+      return {
+        bg: 'bg-red-600 animate-pulse',
+        text: 'text-red-600',
+        icon: '⚠️',
+        label: 'Overdue'
+      }
 
     case 'late':
-      return 'bg-orange-400 text-orange-500'
+      return {
+        bg: 'bg-orange-400',
+        text: 'text-orange-500',
+        icon: '🟠',
+        label: 'Late'
+      }
 
     case 'in_progress':
-      return 'bg-yellow-400 text-yellow-500'
+      return {
+        bg: 'bg-yellow-400',
+        text: 'text-yellow-500',
+        icon: '🟡',
+        label: 'In Progress'
+      }
 
     default:
-      return 'bg-red-500 text-red-500'
-  }
-}
-
-// ===== ICON =====
-export const getIssueIcon = (issue: Issue) => {
-  switch (getIssueLevel(issue)) {
-    case 'completed':
-      return '✅'   // ✅ đổi từ 🟢 → dễ hiểu hơn
-
-    case 'overdue':
-      return '⚠️'
-
-    case 'late':
-      return '🟠'
-
-    case 'in_progress':
-      return '🟡'
-
-    default:
-      return '🔴'
-  }
-}
-
-// ===== LABEL (bonus) =====
-export const getIssueLabel = (issue: Issue) => {
-  switch (getIssueLevel(issue)) {
-    case 'completed':
-      return 'Completed'
-
-    case 'overdue':
-      return 'Overdue'
-
-    case 'late':
-      return 'Late'
-
-    case 'in_progress':
-      return 'In Progress'
-
-    default:
-      return 'Open'
+      return {
+        bg: 'bg-red-500',
+        text: 'text-red-500',
+        icon: '🔴',
+        label: 'Open'
+      }
   }
 }
