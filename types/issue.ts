@@ -27,5 +27,7 @@ export interface Issue {
   image_before?: string;
   image_after?: string;
 
+  completed_by?: string;
+
 
 }
