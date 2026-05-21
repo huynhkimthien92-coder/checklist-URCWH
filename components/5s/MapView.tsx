@@ -1,18 +1,9 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { Issue } from '@/types/issue' // ✅ IMPORT CHUẨN
 import { IssueMarker } from '@/components/5s/IssueMarker'
 import { MapHeatmap } from '@/components/5s/MapHeatmap'
-
-// ===== TYPES =====
-type Issue = {
-  id: string
-  title: string
-  status: 'open' | 'in_progress' | 'done'
-  x_percent: number
-  y_percent: number
-  due_date?: string
-}
 
 // ===== PROPS =====
 type Props = {
@@ -38,7 +29,6 @@ export function MapView({
 
   // ===== CLICK MAP =====
   const handleClick = (e: React.MouseEvent) => {
-
     if (!mapRef.current) return
 
     const rect = mapRef.current.getBoundingClientRect()
@@ -61,7 +51,6 @@ export function MapView({
 
         <div className="flex items-center gap-2">
 
-          {/* 🔥 toggle heatmap */}
           <button
             onClick={() => setShowHeatmap(prev => !prev)}
             className="px-2 py-1 border rounded hover:bg-gray-100 text-xs"
