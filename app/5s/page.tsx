@@ -117,10 +117,22 @@ export default function Page() {
             x_percent: i.x_percent ?? 0,
             y_percent: i.y_percent ?? 0
           }))}
-          selectedIssue={selected}
+
+          selectedIssue={
+            selected
+              ? {
+                  ...selected,
+                  title: selected.title ?? 'No title',
+                  x_percent: selected.x_percent ?? 0,
+                  y_percent: selected.y_percent ?? 0
+                }
+              : null
+          }
+
           onSelect={setSelected}
           onAdd={handleAdd}
         />
+      
       )}
 
       {/* ===== EMPTY STATE ===== */}
