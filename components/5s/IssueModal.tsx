@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getIssueStyle } from '@/lib/issueStatus'
-import { Issue } from '@/types/issue'   // ✅ FIX TYPE
+import { Issue } from '@/types/issue'
 
 // ===== TYPES =====
 type User = {
@@ -152,7 +152,6 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
         {/* INFO */}
         <div className="text-sm space-y-1">
 
-          {/* ✅ STATUS (SYNC WITH MAP) */}
           <div>
             Status:{' '}
             <b className={style.text}>
@@ -185,15 +184,17 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
         {/* IMAGES */}
         <div className="grid grid-cols-2 gap-2">
 
+          {/* BEFORE */}
           <div>
             <p className="text-xs">Before</p>
             <img
               src={current.image_before}
               className="w-full h-32 object-cover rounded cursor-pointer"
-              onClick={() => setZoomImage(current.image_before)}
+              onClick={() => setZoomImage(current.image_before ?? null)}  // ✅ FIX
             />
           </div>
 
+          {/* AFTER */}
           <div>
             <p className="text-xs">After</p>
 
@@ -201,7 +202,7 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
               <img
                 src={current.image_after}
                 className="w-full h-32 object-cover rounded cursor-pointer"
-                onClick={() => setZoomImage(current.image_after!)}
+                onClick={() => setZoomImage(current.image_after ?? null)} // ✅ FIX
               />
             ) : (
               <div className="border h-32 flex items-center justify-center text-xs text-gray-400">
@@ -258,7 +259,7 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
 
       </div>
 
-      {/* ZOOM */}
+      {/* ✅ ZOOM */}
       {zoomImage && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[999]">
 
