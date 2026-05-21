@@ -69,11 +69,13 @@ export function MapView({
       >
 
         {/* ===== MAP IMAGE ===== */}
-        <img
-          src="/map.png"
-          alt="map"
-          className="w-full h-full object-cover select-none pointer-events-none"
-        />
+        <div className="relative w-full h-full flex items-center justify-center">
+          <img
+            src="/map.png"
+            alt="map"
+            className="w-full h-full object-cover select-none pointer-events-none"
+          />
+        </div>
 
         {/* ===== HEATMAP LAYER ===== */}
         {showHeatmap && (
