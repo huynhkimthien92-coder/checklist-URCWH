@@ -19,7 +19,9 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('medium')
-  const [dueDate, setDueDate] = useState('')
+
+  // ✅ deadline theo số ngày
+  const [deadlineDays, setDeadlineDays] = useState('')
 
   // ✅ assignee
   const [users, setUsers] = useState<User[]>([])
@@ -41,18 +43,18 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
       .catch(() => setUsers([]))
   }, [])
 
-  // ===== FILTER =====
+  // ===== FILTER USERS =====
   const filteredUsers = users.filter(u =>
     u.name?.toLowerCase().includes(search.toLowerCase())
   )
 
-  // ===== IMAGE PREVIEW =====
+  // ===== IMAGE =====
   const handleFile = (f: File) => {
     setFile(f)
     setPreview(URL.createObjectURL(f))
   }
 
-  // ===== RESIZE IMAGE =====
+  // ===== RESIZE =====
   const resizeImage = (file: File): Promise<Blob> => {
     return new Promise(resolve => {
       const img = new Image()
@@ -69,7 +71,6 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
         canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.7)
-
         URL.revokeObjectURL(img.src)
       }
 
@@ -77,7 +78,7 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
     })
   }
 
-  // ===== UPLOAD IMAGE =====
+  // ===== UPLOAD =====
   const uploadImage = async (file: File, issueId: string) => {
     const resized = await resizeImage(file)
 
@@ -95,7 +96,7 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
     return data.url
   }
 
-  // ===== CREATE ISSUE =====
+  // ===== CREATE =====
   const create = async () => {
 
     if (!title.trim()) {
@@ -116,7 +117,25 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
       // ✅ upload ảnh
       const imageUrl = await uploadImage(file, tempId)
 
-      // ✅ save DB
+      // ✅ TÍNH DUE DATE TỪ SỐ NGÀY
+      let dueDate: string | null = null
+
+      if (deadlineDays) {
+        const days = parseInt(deadlineDays)
+
+        if (!isNaN(days) && days >= 0) {
+          const d = new Date()
+
+          d.setDate(d.getDate() + days)
+
+          // ✅ end of day
+          d.setHours(23, 59, 59, 999)
+
+          dueDate = d.toISOString()
+        }
+      }
+
+      // ✅ SAVE DB
       await fetch('/api/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -126,8 +145,8 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
           description,
           image_before: imageUrl,
           priority,
-          due_date: dueDate || null,
-          assigned_to: assignedTo, // ✅ lấy id từ dropdown
+          due_date: dueDate,
+          assigned_to: assignedTo,
           x_percent: x,
           y_percent: y
         })
@@ -176,15 +195,27 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
           <option value="high">High</option>
         </select>
 
-        {/* DUE DATE */}
+        {/* ✅ DEADLINE DAYS */}
         <input
-          type="date"
+          type="number"
+          min="0"
           className="input w-full"
-          value={dueDate}
-          onChange={e => setDueDate(e.target.value)}
+          placeholder="Deadline (số ngày)"
+          value={deadlineDays}
+          onChange={e => setDeadlineDays(e.target.value)}
         />
 
-        {/* ✅ ASSIGNEE SEARCH */}
+        {/* ✅ PREVIEW DEADLINE */}
+        {deadlineDays && (
+          <div className="text-xs text-gray-500">
+            Deadline:{' '}
+            {new Date(
+              Date.now() + Number(deadlineDays) * 86400000
+            ).toLocaleDateString()}
+          </div>
+        )}
+
+        {/* ASSIGNEE */}
         <div className="relative">
 
           <input
@@ -200,7 +231,6 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
 
           {showDropdown && filteredUsers.length > 0 && (
             <div className="absolute z-10 w-full bg-white border rounded mt-1 max-h-40 overflow-auto">
-
               {filteredUsers.map(user => (
                 <div
                   key={user.id}
@@ -214,10 +244,8 @@ export function AddIssueModal({ x, y, onClose, onCreated }: Props) {
                   {user.name}
                 </div>
               ))}
-
             </div>
           )}
-
         </div>
 
         {/* IMAGE */}
