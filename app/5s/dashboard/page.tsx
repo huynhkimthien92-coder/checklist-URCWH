@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 
 // ===== TYPES =====
 import { Issue } from '@/types/issue'
-import { Task } from '@/types/task' // ✅ thêm dòng này
+import { Task } from '@/types/task'
 
-// ===== DASHBOARD COMPONENTS =====
+// ===== COMPONENTS =====
 import { SummaryCards } from '@/components/5s/dashboard/SummaryCards'
 import { KPICharts } from '@/components/5s/dashboard/KPICharts'
 import { IssueTrend } from '@/components/5s/dashboard/IssueTrend'
@@ -23,7 +23,10 @@ export default function DashboardPage() {
   const [selectedArea, setSelectedArea] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // ===== FETCH =====
+  // ✅ USERS (FIX ASSIGNEE)
+  const [users, setUsers] = useState<{ id: string; name: string }[]>([])
+
+  // ===== FETCH ISSUES =====
   const fetchIssues = async () => {
     setLoading(true)
     try {
@@ -37,25 +40,48 @@ export default function DashboardPage() {
     }
   }
 
+  // ===== FETCH USERS =====
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch('/api/users/search')
+      const data = await res.json()
+      setUsers(data || [])
+    } catch {
+      setUsers([])
+    }
+  }
+
   useEffect(() => {
     fetchIssues()
+    fetchUsers()
   }, [])
+
+  // ===== MAP USER NAME =====
+  const getUserName = (id?: string) => {
+    if (!id) return 'Unassigned'
+    const user = users.find(u => u.id === id)
+    return user?.name || 'Unknown'
+  }
 
   // ===== FILTER BY AREA =====
   const filtered = selectedArea
     ? issues.filter(i => i.area === selectedArea)
     : issues
 
-  // ===== CONVERT TO TASK ✅ FIX TYPE =====
+  // ===== CONVERT TO TASK (FIX ASSIGNEE NAME) =====
   const tasks: Task[] = filtered.map(i => ({
-    id: String(i.id), // ✅ đảm bảo string
-    assignee: i.assigned_to || 'Unassigned',
+    id: String(i.id),
+
+    // ✅ FIX CHÍNH Ở ĐÂY
+    assignee: getUserName(i.assigned_to),
+
     status:
       i.status === 'open'
         ? 'todo'
         : i.status === 'in_progress'
         ? 'in_progress'
         : 'done',
+
     createdAt: i.created_at || '',
     completedAt: i.closed_at
   }))
@@ -63,7 +89,7 @@ export default function DashboardPage() {
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
 
-      {/* ===== HEADER ===== */}
+      {/* HEADER */}
       <div className="flex justify-between items-center">
 
         <div>
@@ -75,7 +101,6 @@ export default function DashboardPage() {
 
         <div className="flex gap-2">
 
-          {/* REFRESH */}
           <button
             onClick={fetchIssues}
             className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
@@ -83,7 +108,6 @@ export default function DashboardPage() {
             Refresh
           </button>
 
-          {/* BACK TO MAP */}
           <button
             onClick={() => router.push('/5s')}
             className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
@@ -92,23 +116,22 @@ export default function DashboardPage() {
           </button>
 
         </div>
-
       </div>
 
-      {/* ===== LOADING ===== */}
+      {/* LOADING */}
       {loading ? (
         <div className="text-center py-20 text-gray-400">
           Loading dashboard...
         </div>
       ) : (
         <>
-          {/* ===== SUMMARY ===== */}
+          {/* SUMMARY */}
           <SummaryCards issues={filtered} />
 
-          {/* ===== KPI CHARTS ===== */}
+          {/* KPI */}
           <KPICharts issues={filtered} />
 
-          {/* ===== TREND (fix undefined) */}
+          {/* TREND */}
           <IssueTrend
             issues={filtered.map(i => ({
               ...i,
@@ -116,15 +139,15 @@ export default function DashboardPage() {
             }))}
           />
 
-          {/* ===== MAIN GRID ===== */}
+          {/* GRID */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* LEFT: ASSIGNEE PERFORMANCE */}
+            {/* ASSIGNEE PERFORMANCE */}
             <div className="lg:col-span-2">
               <AssigneePerformance tasks={tasks} />
             </div>
 
-            {/* RIGHT: AREA HEATMAP */}
+            {/* AREA */}
             <div>
               <AreaHeatmap
                 issues={issues}
@@ -135,7 +158,7 @@ export default function DashboardPage() {
 
           </div>
 
-          {/* ===== EMPTY STATE ===== */}
+          {/* EMPTY */}
           {issues.length === 0 && (
             <div className="text-center text-gray-400 py-10">
               No issue data available
