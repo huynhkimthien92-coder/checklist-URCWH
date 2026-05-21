@@ -15,7 +15,7 @@ export async function PATCH(
 ) {
   const session = await getServerSession(authOptions)
 
-  // ✅ FIX CHUẨN (check user)
+  // ✅ check session + user
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -24,10 +24,9 @@ export async function PATCH(
   const issueId = params.id
 
   const body = await req.json()
-
   const supabase = createServiceClient()
 
-  // ✅ Validate status
+  // ✅ validate status
   const allowedStatus = ['open', 'in_progress', 'done']
   if (body.status && !allowedStatus.includes(body.status)) {
     return NextResponse.json(
@@ -36,14 +35,14 @@ export async function PATCH(
     )
   }
 
-  // ✅ Prepare update data
+  // ✅ build update data
   const updateData: Record<string, any> = {
     ...body,
     updated_at: new Date().toISOString(),
     updated_by: userId
   }
 
-  // ✅ Auto fill when done
+  // ✅ auto set when done
   if (body.status === 'done') {
     updateData.closed_at = new Date().toISOString()
     updateData.completed_by = userId
@@ -83,7 +82,7 @@ export async function DELETE(
 ) {
   const session = await getServerSession(authOptions)
 
-  // ✅ FIX CHUẨN (check user)
+  // ✅ check session + user
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
