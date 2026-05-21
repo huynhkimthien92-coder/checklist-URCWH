@@ -77,7 +77,14 @@ export function MapView({
 
         {/* ===== HEATMAP LAYER ===== */}
         {showHeatmap && (
-          <MapHeatmap issues={issues} />
+          <MapHeatmap
+            issues={issues.map(i => ({
+              ...i,
+              x_percent: i.x_percent ?? 0,
+              y_percent: i.y_percent ?? 0
+            }))}
+          />
+          
         )}
 
         {/* ===== MARKERS ===== */}
