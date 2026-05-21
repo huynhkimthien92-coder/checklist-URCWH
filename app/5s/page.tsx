@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-// ===== TYPES (✅ dùng chung) =====
+// ===== TYPES =====
 import { Issue } from '@/types/issue'
 
 // ===== COMPONENTS =====
@@ -111,7 +111,13 @@ export default function Page() {
         </div>
       ) : (
         <MapView
-          issues={filtered}
+          ✅
+          issues={filtered.map(i => ({
+            ...i,
+            title: i.title ?? 'No title',          // ✅ FIX lỗi title
+            x_percent: i.x_percent ?? 0,           // ✅ FIX nếu thiếu tọa độ
+            y_percent: i.y_percent ?? 0
+          }))}
           selectedIssue={selected}
           onSelect={setSelected}
           onAdd={handleAdd}
