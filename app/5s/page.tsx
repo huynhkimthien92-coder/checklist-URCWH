@@ -3,29 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+// ===== TYPES (✅ dùng chung) =====
+import { Issue } from '@/types/issue'
+
 // ===== COMPONENTS =====
 import { MapView } from '@/components/5s/MapView'
 import { FilterBar } from '@/components/5s/FilterBar'
 import { AddIssueModal } from '@/components/5s/AddIssueModal'
 import { IssueModal } from '@/components/5s/IssueModal'
-
-// ===== TYPES =====
-type Issue = {
-  id: string
-  title: string
-  description?: string
-  status: 'open' | 'in_progress' | 'done'
-  priority: 'low' | 'medium' | 'high'
-  x_percent: number
-  y_percent: number
-  due_date?: string
-  assigned_to?: string
-  image_before: string
-  image_after?: string
-  created_at?: string
-  closed_at?: string
-  area?: string
-}
 
 export default function Page() {
 
@@ -71,7 +56,7 @@ export default function Page() {
       (filters.assignee ? i.assigned_to === filters.assignee : true) &&
       (filters.priority ? i.priority === filters.priority : true) &&
       (filters.search
-        ? i.title.toLowerCase().includes(filters.search.toLowerCase())
+        ? i.title?.toLowerCase().includes(filters.search.toLowerCase())
         : true)
     )
   })
