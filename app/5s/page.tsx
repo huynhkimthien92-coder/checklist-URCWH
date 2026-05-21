@@ -1,19 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 // ===== COMPONENTS =====
 import { MapView } from '@/components/5s/MapView'
 import { FilterBar } from '@/components/5s/FilterBar'
 import { AddIssueModal } from '@/components/5s/AddIssueModal'
 import { IssueModal } from '@/components/5s/IssueModal'
-
-// ===== DASHBOARD =====
-import { SummaryCards } from '@/components/5s/dashboard/SummaryCards'
-import { KPICharts } from '@/components/5s/dashboard/KPICharts'
-import { IssueTrend } from '@/components/5s/dashboard/IssueTrend'
-import AssigneePerformance from '@/components/5s/dashboard/AssigneePerformance'
-import { AreaHeatmap } from '@/components/5s/dashboard/AreaHeatmap'
 
 // ===== TYPES =====
 type Issue = {
@@ -33,13 +27,11 @@ type Issue = {
   area?: string
 }
 
-// ===== PAGE =====
 export default function Page() {
 
-  // ===== STATE =====
-  const [issues, setIssues] = useState<Issue[]>([])
-  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
+  const [issues, setIssues] = useState<Issue[]>([])
   const [selected, setSelected] = useState<Issue | null>(null)
 
   const [showAdd, setShowAdd] = useState(false)
@@ -52,14 +44,17 @@ export default function Page() {
     search?: string
   }>({})
 
-  const [selectedArea, setSelectedArea] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // ===== FETCH API =====
+  // ===== FETCH =====
   const fetchIssues = async () => {
+    setLoading(true)
     try {
-      const res = await fetch('/api/issues')
+      const res = await fetch('/api/issues', { cache: 'no-store' })
       const data = await res.json()
       setIssues(data || [])
+    } catch (err) {
+      console.error('Fetch issues error', err)
     } finally {
       setLoading(false)
     }
@@ -77,8 +72,7 @@ export default function Page() {
       (filters.priority ? i.priority === filters.priority : true) &&
       (filters.search
         ? i.title.toLowerCase().includes(filters.search.toLowerCase())
-        : true) &&
-      (selectedArea ? i.area === selectedArea : true)
+        : true)
     )
   })
 
@@ -88,77 +82,65 @@ export default function Page() {
     setShowAdd(true)
   }
 
-  // ===== ASSIGNEE TASK DATA =====
-  const tasks = issues.map(i => ({
-    id: i.id,
-    assignee: i.assigned_to || 'Unassigned',
-    status:
-      i.status === 'open'
-        ? 'todo'
-        : i.status === 'in_progress'
-        ? 'in_progress'
-        : 'done',
-    createdAt: i.created_at || '',
-    completedAt: i.closed_at
-  }))
-
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-4 bg-gray-50 min-h-screen">
 
       {/* ===== HEADER ===== */}
-      <div>
-        <h1 className="text-2xl font-bold">5S Smart Dashboard</h1>
-        <p className="text-gray-500">
-          Map + Analytics + Issue Tracking
-        </p>
-      </div>
+      <div className="flex justify-between items-center">
 
-      {/* ===== LOADING ===== */}
-      {loading && (
-        <div className="text-center text-gray-400">Loading...</div>
-      )}
-
-      {/* ===== SUMMARY ===== */}
-      <SummaryCards issues={issues} />
-
-      {/* ===== KPI ===== */}
-      <KPICharts issues={issues} />
-
-      {/* ===== TREND ===== */}
-      <IssueTrend issues={issues} />
-
-      {/* ===== ASSIGNEE PERFORMANCE ===== */}
-      <AssigneePerformance tasks={tasks} />
-
-      {/* ===== MAIN GRID ===== */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* ===== MAP SIDE ===== */}
-        <div className="lg:col-span-2 space-y-4">
-
-          {/* FILTER BAR */}
-          <FilterBar onChange={setFilters} />
-
-          {/* MAP VIEW */}
-          <MapView
-            issues={filtered}
-            selectedIssue={selected}
-            onSelect={setSelected}
-            onAdd={handleAdd}
-          />
-
+        <div>
+          <h1 className="text-2xl font-bold">5S Operations</h1>
+          <p className="text-gray-500 text-sm">
+            Manage issues directly on the layout map
+          </p>
         </div>
 
-        {/* ===== AREA HEATMAP ===== */}
-        <AreaHeatmap
-          issues={issues}
-          selectedArea={selectedArea}
-          onSelectArea={setSelectedArea}
-        />
+        <div className="flex gap-2">
 
+          {/* RELOAD */}
+          <button
+            onClick={fetchIssues}
+            className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
+          >
+            Refresh
+          </button>
+
+          {/* GO DASHBOARD */}
+          <button
+            onClick={() => router.push('/5s/dashboard')}
+            className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
+          >
+            Dashboard →
+          </button>
+
+        </div>
       </div>
 
-      {/* ===== ADD ISSUE MODAL ===== */}
+      {/* ===== FILTER ===== */}
+      <FilterBar onChange={setFilters} />
+
+      {/* ===== LOADING ===== */}
+      {loading ? (
+        <div className="text-center py-20 text-gray-400">
+          Loading issues...
+        </div>
+      ) : (
+        <MapView
+          issues={filtered}
+          selectedIssue={selected}
+          onSelect={setSelected}
+          onAdd={handleAdd}
+        />
+      )}
+
+      {/* ===== EMPTY STATE ===== */}
+      {!loading && filtered.length === 0 && (
+        <div className="text-center text-gray-400 py-10">
+          No issues found
+        </div>
+      )}
+
+      {/* ===== ADD ISSUE ===== */}
       {showAdd && newPos && (
         <AddIssueModal
           x={newPos.x}
@@ -166,12 +148,12 @@ export default function Page() {
           onClose={() => setShowAdd(false)}
           onCreated={() => {
             setShowAdd(false)
-            fetchIssues() // reload từ API
+            fetchIssues()
           }}
         />
       )}
 
-      {/* ===== ISSUE DETAIL MODAL ===== */}
+      {/* ===== ISSUE DETAIL ===== */}
       {selected && (
         <IssueModal
           issue={selected}
