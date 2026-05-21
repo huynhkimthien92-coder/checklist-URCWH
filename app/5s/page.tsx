@@ -22,11 +22,13 @@ export default function Page() {
   const [showAdd, setShowAdd] = useState(false)
   const [newPos, setNewPos] = useState<{ x: number; y: number } | null>(null)
 
+  // ✅ UPDATED FILTER TYPE
   const [filters, setFilters] = useState<{
     status?: string
     assignee?: string
     priority?: string
-    search?: string
+    fromDate?: string
+    toDate?: string
   }>({})
 
   const [loading, setLoading] = useState(true)
@@ -49,15 +51,24 @@ export default function Page() {
     fetchIssues()
   }, [])
 
-  // ===== FILTER =====
+  // ===== FILTER (FIX CHÍNH Ở ĐÂY) =====
   const filtered = issues.filter(i => {
+
+    const created = i.created_at ? new Date(i.created_at) : null
+
+    const from = filters.fromDate ? new Date(filters.fromDate) : null
+    const to = filters.toDate ? new Date(filters.toDate + 'T23:59:59') : null
+
     return (
       (filters.status ? i.status === filters.status : true) &&
       (filters.assignee ? i.assigned_to === filters.assignee : true) &&
       (filters.priority ? i.priority === filters.priority : true) &&
-      (filters.search
-        ? i.title?.toLowerCase().includes(filters.search.toLowerCase())
-        : true)
+
+      // ✅ FROM DATE
+      (from && created ? created >= from : true) &&
+
+      // ✅ TO DATE
+      (to && created ? created <= to : true)
     )
   })
 
@@ -156,8 +167,6 @@ export default function Page() {
           issue={{
             ...selected,
             title: selected.title ?? 'No title',
-            //x_percent: selected.x_percent ?? 0,
-            //y_percent: selected.y_percent ?? 0,
             image_before: selected.image_before ?? ''
           }}
           onClose={() => setSelected(null)}
