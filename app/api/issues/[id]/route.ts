@@ -39,7 +39,7 @@ export async function PATCH(
   const updateData: Record<string, any> = {
     ...body,
     updated_at: new Date().toISOString(),
-    updated_by: userId
+    completed_by: userId
   }
 
   // ✅ auto set when done
