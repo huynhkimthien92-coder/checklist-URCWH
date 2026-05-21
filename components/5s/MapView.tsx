@@ -91,7 +91,11 @@ export function MapView({
         {issues.map(issue => (
           <IssueMarker
             key={issue.id}
-            issue={issue}
+            issue={{
+              ...issue,
+              x_percent: issue.x_percent ?? 0,
+              y_percent: issue.y_percent ?? 0
+            }}
             selected={selectedIssue?.id === issue.id}
             onClick={onSelect}
           />
