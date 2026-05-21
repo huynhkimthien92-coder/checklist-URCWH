@@ -1,6 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+// ===== TYPES =====
+type User = {
+  id: string
+  name: string
+}
 
 type Issue = {
   id: string
@@ -28,6 +34,29 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
   const [preview, setPreview] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // ✅ user list
+  const [users, setUsers] = useState<User[]>([])
+
+  // ✅ zoom
+  const [zoomImage, setZoomImage] = useState<string | null>(null)
+
+  // ===== FETCH USERS =====
+  useEffect(() => {
+    fetch('/api/users/search')
+      .then(res => res.json())
+      .then(data => setUsers(data || []))
+  }, [])
+
+  // ===== MAP USER =====
+  const assignedUser = users.find(u => u.id === current.assigned_to)
+  const completedUser = users.find(u => u.id === current.completed_by)
+
+  // ===== FORMAT DATE =====
+  const formatDate = (d?: string) => {
+    if (!d) return '-'
+    return new Date(d).toLocaleString()
+  }
+
   // ===== RESIZE =====
   const resizeImage = (file: File): Promise<Blob> => {
     return new Promise(resolve => {
@@ -45,7 +74,6 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
         canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.7)
-
         URL.revokeObjectURL(img.src)
       }
 
@@ -71,16 +99,14 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
     return data.url
   }
 
-  // ===== START WORKING =====
+  // ===== START =====
   const startWorking = async () => {
     setLoading(true)
 
     await fetch(`/api/issues/${current.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        status: 'in_progress'
-      })
+      body: JSON.stringify({ status: 'in_progress' })
     })
 
     setCurrent(prev => ({ ...prev, status: 'in_progress' }))
@@ -90,7 +116,6 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
 
   // ===== COMPLETE =====
   const complete = async () => {
-
     if (!file) {
       alert('⚠️ Cần ảnh AFTER')
       return
@@ -119,21 +144,6 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
     onUpdated()
   }
 
-  // ===== ASSIGN =====
-  const assign = async (userId: string) => {
-
-    await fetch(`/api/issues/${current.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        assigned_to: userId
-      })
-    })
-
-    setCurrent(prev => ({ ...prev, assigned_to: userId }))
-    onUpdated()
-  }
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
 
@@ -150,19 +160,22 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
           <p className="text-sm text-gray-600">{current.description}</p>
         )}
 
-        {/* STATUS */}
-        <div className="text-sm">
-          Status: <b>{current.status}</b>
-        </div>
+        {/* INFO */}
+        <div className="text-sm space-y-1">
+          <div>Status: <b>{current.status}</b></div>
+          <div>Priority: <b>{current.priority}</b></div>
 
-        {/* ASSIGNEE */}
-        <div>
-          <input
-            placeholder="Assign user id"
-            className="input w-full"
-            value={current.assigned_to || ''}
-            onChange={e => assign(e.target.value)}
-          />
+          <div>
+            Assigned to: <b>{assignedUser?.name || 'Unassigned'}</b>
+          </div>
+
+          <div>
+            Completed by: <b>{completedUser?.name || '-'}</b>
+          </div>
+
+          <div>
+            Created: <b>{formatDate(current.created_at)}</b>
+          </div>
         </div>
 
         {/* IMAGES */}
@@ -172,7 +185,8 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
             <p className="text-xs">Before</p>
             <img
               src={current.image_before}
-              className="w-full h-32 object-cover rounded"
+              className="w-full h-32 object-cover rounded cursor-pointer"
+              onClick={() => setZoomImage(current.image_before)}
             />
           </div>
 
@@ -182,7 +196,8 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
             {current.image_after ? (
               <img
                 src={current.image_after}
-                className="w-full h-32 object-cover rounded"
+                className="w-full h-32 object-cover rounded cursor-pointer"
+                onClick={() => setZoomImage(current.image_after!)}
               />
             ) : (
               <div className="border h-32 flex items-center justify-center text-xs text-gray-400">
@@ -193,7 +208,7 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
 
         </div>
 
-        {/* UPLOAD AFTER */}
+        {/* UPLOAD */}
         {current.status !== 'done' && (
           <div>
             <input
@@ -220,35 +235,48 @@ export function IssueModal({ issue, onClose, onUpdated }: Props) {
         <div className="flex gap-2">
 
           {current.status === 'open' && (
-            <button
-              onClick={startWorking}
-              className="btn-primary flex-1"
-              disabled={loading}
-            >
+            <button onClick={startWorking} className="btn-primary flex-1">
               Start Working
             </button>
           )}
 
           {current.status !== 'done' && (
-            <button
-              onClick={complete}
-              className="btn-success flex-1"
-              disabled={loading}
-            >
+            <button onClick={complete} className="btn-success flex-1">
               Mark Done
             </button>
           )}
 
-          <button
-            onClick={onClose}
-            className="btn-secondary flex-1"
-          >
+          <button onClick={onClose} className="btn-secondary flex-1">
             Close
           </button>
 
         </div>
 
       </div>
+
+      {/* ✅ ZOOM MODAL */}
+      {zoomImage && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[999]">
+
+          <div className="relative">
+
+            <img
+              src={zoomImage}
+              className="max-h-[90vh] max-w-[90vw] rounded"
+            />
+
+            {/* ✅ CLOSE BUTTON */}
+            <button
+              onClick={() => setZoomImage(null)}
+              className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-sm"
+            >
+              ✕
+            </button>
+
+          </div>
+
+        </div>
+      )}
 
     </div>
   )
