@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-// ===== TYPES (✅ dùng chung) =====
+// ===== TYPES =====
 import { Issue } from '@/types/issue'
+import { Task } from '@/types/task' // ✅ thêm dòng này
 
 // ===== DASHBOARD COMPONENTS =====
 import { SummaryCards } from '@/components/5s/dashboard/SummaryCards'
@@ -45,9 +46,9 @@ export default function DashboardPage() {
     ? issues.filter(i => i.area === selectedArea)
     : issues
 
-  // ===== CONVERT TO TASK =====
-  const tasks = filtered.map(i => ({
-    id: i.id,
+  // ===== CONVERT TO TASK ✅ FIX TYPE =====
+  const tasks: Task[] = filtered.map(i => ({
+    id: String(i.id), // ✅ đảm bảo string
     assignee: i.assigned_to || 'Unassigned',
     status:
       i.status === 'open'
@@ -107,11 +108,11 @@ export default function DashboardPage() {
           {/* ===== KPI CHARTS ===== */}
           <KPICharts issues={filtered} />
 
-          {/* ===== TREND ===== ✅ FIX LỖI */}
+          {/* ===== TREND (fix undefined) */}
           <IssueTrend
             issues={filtered.map(i => ({
               ...i,
-              created_at: i.created_at ?? '' // ✅ FIX undefined
+              created_at: i.created_at ?? ''
             }))}
           />
 
