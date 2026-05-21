@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+type User = {
+  id: string
+  name: string
+}
 
 type Props = {
-  status?: string
-  assignee?: string
-  priority?: string
-
   onChange: (filters: {
     status?: string
     assignee?: string
@@ -18,10 +19,29 @@ type Props = {
 export function FilterBar({ onChange }: Props) {
 
   const [status, setStatus] = useState('')
-  const [assignee, setAssignee] = useState('')
   const [priority, setPriority] = useState('')
   const [search, setSearch] = useState('')
 
+  // ✅ assignee search
+  const [users, setUsers] = useState<User[]>([])
+  const [assignee, setAssignee] = useState<string | undefined>(undefined)
+  const [assigneeName, setAssigneeName] = useState('')
+  const [showDropdown, setShowDropdown] = useState(false)
+
+  // ===== FETCH USERS =====
+  useEffect(() => {
+    fetch('/api/users/search')
+      .then(res => res.json())
+      .then(data => setUsers(data || []))
+      .catch(() => setUsers([]))
+  }, [])
+
+  // ===== FILTER USERS =====
+  const filteredUsers = users.filter(u =>
+    u.name.toLowerCase().includes(assigneeName.toLowerCase())
+  )
+
+  // ===== APPLY FILTER =====
   const apply = (
     nextStatus = status,
     nextAssignee = assignee,
@@ -36,11 +56,13 @@ export function FilterBar({ onChange }: Props) {
     })
   }
 
+  // ===== RESET =====
   const reset = () => {
     setStatus('')
-    setAssignee('')
     setPriority('')
     setSearch('')
+    setAssignee(undefined)
+    setAssigneeName('')
     onChange({})
   }
 
@@ -80,18 +102,46 @@ export function FilterBar({ onChange }: Props) {
           <option value="low">🟢 Low</option>
         </select>
 
-        {/* ASSIGNEE */}
-        <input
-          className="border px-2 py-1 text-sm rounded"
-          placeholder="Assignee ID"
-          value={assignee}
-          onChange={e => {
-            setAssignee(e.target.value)
-            apply(status, e.target.value, priority, search)
-          }}
-        />
+        {/* ✅ ASSIGNEE SEARCH */}
+        <div className="relative min-w-[150px]">
 
-        {/* SEARCH */}
+          <input
+            className="border px-2 py-1 text-sm rounded w-full"
+            placeholder="Assignee..."
+            value={assigneeName}
+            onChange={e => {
+              setAssigneeName(e.target.value)
+              setAssignee(undefined)
+              setShowDropdown(true)
+              apply(status, undefined, priority, search)
+            }}
+            onFocus={() => setShowDropdown(true)}
+          />
+
+          {showDropdown && assigneeName && filteredUsers.length > 0 && (
+            <div className="absolute z-20 w-full bg-white border rounded mt-1 max-h-40 overflow-auto">
+
+              {filteredUsers.map(user => (
+                <div
+                  key={user.id}
+                  className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-sm"
+                  onClick={() => {
+                    setAssignee(user.id)        // ✅ filter bằng ID
+                    setAssigneeName(user.name)  // ✅ hiển thị tên
+                    setShowDropdown(false)
+                    apply(status, user.id, priority, search)
+                  }}
+                >
+                  {user.name}
+                </div>
+              ))}
+
+            </div>
+          )}
+
+        </div>
+
+        {/* SEARCH TITLE */}
         <input
           className="border px-2 py-1 text-sm rounded flex-1 min-w-[150px]"
           placeholder="Search title..."
@@ -108,7 +158,7 @@ export function FilterBar({ onChange }: Props) {
       <div className="flex justify-between items-center">
 
         <div className="text-xs text-gray-400">
-          Filter issues by status, priority, assignee hoặc tìm kiếm
+          Filter issues theo trạng thái, ưu tiên, người phụ trách hoặc tìm kiếm
         </div>
 
         <button
