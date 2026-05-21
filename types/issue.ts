@@ -10,6 +10,7 @@ export interface Issue {
   assigned_to?: string
   
   created_at?: string;
+  closed_at?: string;
 
   updated_at?: string;
 
