@@ -1,0 +1,15 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Issue {
+  id           String  @id @default(uuid())
+  status       String
+  priority     String
+  due_date     String?
+  assigned_to  String?
+}
