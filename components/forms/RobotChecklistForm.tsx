@@ -53,15 +53,33 @@ export function RobotChecklistForm({
   const days = Array.from({ length: daysInMonth }, (_, i) => String(i + 1))
 
   // ================= ✅ LOCK LOGIC =================
-  const isDaySignedByOperator = (day: string) => {
-    return !!opSigs?.[day]?.data_url
-  }
+  const hasCheckedData = (day: string) =>
+    items.some(i => {
+      const st = i.days?.[day]?.status
+      return st === 'pass' || st === 'fail'
+    })
+  
+  const missingOperatorSig = (day: string) =>
+    hasCheckedData(day) && !opSigs?.[day]?.data_url
+  
+  const missingSupervisorSig = (day: string) =>
+    hasCheckedData(day) && !supSigs?.[day]?.data_url
 
-  const isDayLocked = (day: string) => {
-    return isDaySignedByOperator(day) // giống forklift
-  }
+
+
+
+  
+  //const isDaySignedByOperator = (day: string) => {
+   // return !!opSigs?.[day]?.data_url
+ // }
+
+  
+  const isDayLocked = (day: string) =>
+    !!opSigs?.[day]?.data_url
+
 
   const isDisabled = readOnly || isDayLocked(activeDay)
+  const grouped = groupByCategory(items)
 
   // ================= UPDATE =================
   const updateStatus = (itemId: string) => {
@@ -156,17 +174,6 @@ export function RobotChecklistForm({
     router.refresh()
   }
 
-  // ================= STATE =================
-  const hasData = (day: string) =>
-    items.some(i =>
-      ['pass', 'fail'].includes(i.days?.[day]?.status || '')
-    )
-
-  const isSigned = (day: string) =>
-    opSigs?.[day]?.data_url || supSigs?.[day]?.data_url
-
-  const grouped = groupByCategory(items)
-
   // ================= UI =================
   return (
     <div className="space-y-4">
@@ -174,21 +181,26 @@ export function RobotChecklistForm({
       {/* ===== DAY PICKER ===== */}
       <div className="flex flex-wrap gap-1">
         {days.map(day => {
-          const has = hasData(day)
-          const signed = isSigned(day)
-
+          const has = hasCheckedData(day)
+          const opSigned = !!opSigs?.[day]?.data_url
+          const supSigned = !!supSigs?.[day]?.data_url
           return (
             <button
               key={day}
               onClick={() => setActiveDay(day)}
               className={`
-                w-8 h-8 text-xs rounded
+                relative w-8 h-8 text-xs rounded
                 ${activeDay === day ? 'bg-blue-600 text-white' : ''}
-                ${has && !signed ? 'bg-yellow-200' : ''}
-                ${has && signed ? 'bg-green-200' : ''}
+                ${has && !opSigned ? 'bg-yellow-200' : ''}
+              
+                ${has && opSigned ? 'bg-green-200' : ''}
               `}
             >
               {day}
+              {missingSupervisorSig(day) && (
+                <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full" />
+              )}
+
             </button>
           )
         })}
@@ -335,13 +347,25 @@ export function RobotChecklistForm({
           </button>
 
           {!isSupervisor && (
-            <button onClick={() => save({ status: 'submitted' })} className="bg-blue-600 text-white px-3 py-1 rounded">
+            <button onClick={() =>{
+              const invalid = days.filter(day => missingOperatorSig(day))
+              if (invalid.length) {
+                alert(`⚠️ Chưa ký các ngày: ${invalid.join(', ')}`)
+                return
+              }
+              save({ status: 'submitted' })} className="bg-blue-600 text-white px-3 py-1 rounded">
               Submit
             </button>
           )}
 
           {isSupervisor && (
-            <button onClick={() => save({ status: 'approved' })} className="bg-green-600 text-white px-3 py-1 rounded">
+            <button onClick={() => {
+              const invalid = days.filter(day => missingSupervisorSig(day))
+              if (invalid.length) {
+                alert(`⚠️ Supervisor chưa ký: ${invalid.join(', ')}`)
+                return
+              } 
+              save({ status: 'approved' })} className="bg-green-600 text-white px-3 py-1 rounded">
               Approve
             </button>
           )}
