@@ -70,7 +70,7 @@ export default function AdminChecklistsPage() {
             <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
           </div>
         ) : (
-          <div className="card overflow-hidden">
+          <div className="card overflow-scroll">
             <table className="w-full">
               <thead>
                 <tr>
