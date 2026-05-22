@@ -186,9 +186,7 @@ export function RobotChecklistForm({
               `}
             >
               {day}
-              {missingSupervisorSig(day) && (
-                <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full" />
-              )}
+              {missingSupervisorSig(day) && (<span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full" />)}
 
             </button>
           )
