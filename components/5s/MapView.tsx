@@ -46,10 +46,13 @@ export function MapView({
       isFirstLoad.current = false
 
       const maxTime = Math.max(
-        ...issues.map(i =>
-          i.created_at ? new Date(i.created_at).getTime() : 0
-        )
+        ...issues.map(i => {
+          if (!i.created_at) return 0
+          const t = new Date(i.created_at).getTime()
+          return isNaN(t) ? 0 : t
+        })
       )
+
 
 
       lastSeenTime.current = maxTime
@@ -60,8 +63,11 @@ export function MapView({
     const added = issues.filter(i => {
       if (!i.created_at) return false
 
-      const createdTime = new Date(i.created_at).getTime()
-      return createdTime > lastSeenTime.current
+      const t = new Date(i.created_at).getTime()
+
+      if (isNaN(t)) return false
+
+      return t > lastSeenTime.current
     })
 
     if (added.length > 0) {
