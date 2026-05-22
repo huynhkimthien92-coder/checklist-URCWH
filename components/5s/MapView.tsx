@@ -33,23 +33,46 @@ export function MapView({
   const [lastTouchDist, setLastTouchDist] = useState(0)
   const [lastTouchCenter, setLastTouchCenter] = useState<{ x: number; y: number } | null>(null)
 
-  // ✅ ===== NEW: TRACK ISSUE MỚI =====
-  const prevIds = useRef<string[]>([])
+  // ✅ ===== PRO: DETECT ISSUE MỚI THEO created_at =====
+  const lastSeenTime = useRef<number>(Date.now())
+  const isFirstLoad = useRef(true)
   const [newIssues, setNewIssues] = useState<string[]>([])
 
   useEffect(() => {
-    const currentIds = issues.map(i => i.id)
+    if (!issues || issues.length === 0) return
 
-    const added = currentIds.filter(id => !prevIds.current.includes(id))
+    // ✅ bỏ qua lần load đầu
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false
 
-    if (added.length > 0) {
-      setNewIssues(added)
+      const maxTime = Math.max(
+        ...issues.map(i => new Date(i.created_at).getTime())
+      )
+
+      lastSeenTime.current = maxTime
+      return
     }
 
-    prevIds.current = currentIds
+    // ✅ detect issue mới
+    const added = issues.filter(i => {
+      if (!i.created_at) return false
+      return new Date(i.created_at).getTime() > lastSeenTime.current
+    })
+
+    if (added.length > 0) {
+      setNewIssues(added.map(i => i.id))
+    }
+
+    // ✅ update mốc mới nhất
+    const maxTime = Math.max(
+      ...issues.map(i => new Date(i.created_at).getTime())
+    )
+
+    lastSeenTime.current = maxTime
+
   }, [issues])
 
-  // ✅ auto clear sau 10s
+  // ✅ auto clear highlight sau 10s
   useEffect(() => {
     if (newIssues.length === 0) return
 
@@ -75,11 +98,10 @@ export function MapView({
   // ===== ZOOM =====
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault()
-    const newZoom = Math.min(Math.max(zoom - e.deltaY * 0.001, 0.5), 3)
-    setZoom(newZoom)
+    setZoom(prev => Math.min(Math.max(prev - e.deltaY * 0.001, 0.5), 3))
   }
 
-  // ===== MOUSE PAN =====
+  // ===== PAN =====
   const handleMouseDown = (e: React.MouseEvent) => {
     setDragging(true)
     setLastPos({ x: e.clientX, y: e.clientY })
@@ -101,7 +123,6 @@ export function MapView({
 
   const handleMouseUp = () => setDragging(false)
 
-  // ===== TOUCH =====
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       setLastTouchDist(getDistance(e.touches))
@@ -121,9 +142,7 @@ export function MapView({
       const newDist = getDistance(e.touches)
       const scale = newDist / lastTouchDist
 
-      const newZoom = Math.min(Math.max(zoom * scale, 0.5), 3)
-      setZoom(newZoom)
-
+      setZoom(prev => Math.min(Math.max(prev * scale, 0.5), 3))
       setLastTouchDist(newDist)
     }
 
@@ -195,17 +214,14 @@ export function MapView({
       <div
         ref={containerRef}
         className="relative w-full h-[500px] border rounded overflow-hidden bg-gray-100"
-
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-
         onClick={handleClick}
       >
 
@@ -235,7 +251,7 @@ export function MapView({
             />
           )}
 
-          {/* MARKERS */}
+          {/* ✅ MARKERS */}
           {issues.map(issue => {
 
             const x = issue.x_percent ?? 0
@@ -253,23 +269,30 @@ export function MapView({
                   transform: 'translate(-50%, -50%)'
                 }}
               >
-                {/* ✅ WRAP để thêm hiệu ứng */}
-                <div
-                  className={
-                    isNew
-                      ? 'animate-pulse scale-110'
-                      : ''
-                  }
-                >
-                  <IssueMarker
-                    issue={issue}
-                    selected={selectedIssue?.id === issue.id}
-                    onClick={onSelect}
-                  />
+                <div className="relative flex items-center justify-center">
+
+                  {isNew && (
+                    <>
+                      {/* radar outer */}
+                      <span className="absolute w-10 h-10 rounded-full bg-red-400 opacity-50 animate-ping" />
+                      {/* radar inner */}
+                      <span className="absolute w-6 h-6 rounded-full bg-red-500 opacity-80 animate-pulse" />
+                    </>
+                  )}
+
+                  <div className={isNew ? 'scale-125 z-10' : ''}>
+                    <IssueMarker
+                      issue={issue}
+                      selected={selectedIssue?.id === issue.id}
+                      onClick={onSelect}
+                    />
+                  </div>
+
                 </div>
               </div>
             )
           })}
+
         </div>
 
       </div>
