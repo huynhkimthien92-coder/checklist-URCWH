@@ -29,6 +29,24 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
 
   const user = session?.user as any
   const isOp = !isSupervisor
+  
+  const hasCheckedData = (day: string) => {
+    return items.some(item => {
+      const st = item.days[day]?.status
+      return st === 'pass' || st === 'fail'
+    })
+  }
+
+  const isMissingSupervisorSig = (day: string) => {
+    const hasData = items.some(item => {
+      const st = item.days[day]?.status
+      return st === 'pass' || st === 'fail'
+    })
+
+    const hasSig = !!supSigs[day]?.data_url
+
+    return hasData && !hasSig
+  }
 
   const updateStatus = useCallback((itemId: string, day: string, status: CheckStatus) => {
     setItems(prev => prev.map(item =>
@@ -81,7 +99,7 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
  /**
  * Rules:
  * - Operator: ký được nếu checklist ở trạng thái 'draft' hoặc 'submitted'
- * - Supervisor: ký được nếu checklist ở trạng thái 'submitted'
+ * - Supervisor: ký được nếu checklist ở trạng thái 'submitted'& 'draft'
  * - Có thể ký lại (re-sign) ngay cả khi đã ký rồi
  */
   const canSignDay = (day: string, isSuper: boolean): boolean => {
@@ -147,26 +165,26 @@ const isDayLocked = (day: string) => {
   }
 
   const approve = async () => {
-    // ✅ NEW: Kiểm tra xem tất cả ngày đã ký xong chưa
-    const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] // Import từ lib/checklist-data
-    const allDaysSigned = DAYS.every(day => {
-      const dayEntry = items.some(item => item.days[day]?.status !== undefined)
-      if (!dayEntry) return true // Ngày chưa có dữ liệu, bỏ qua
-    
-      return supSigs[day]?.data_url // Phải có chữ ký supervisor
-    })
-    if (!allDaysSigned) {
-      const unsigned = DAYS.filter(day => {
-        const dayEntry = items.some(item => item.days[day]?.status !== undefined)
-        return dayEntry && !supSigs[day]?.data_url
-      })
-      alert(`⚠️ Vui lòng ký xác nhận cho các ngày: ${unsigned.join(', ')}`)
+  const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+
+  const allDaysSigned = DAYS.every(day => {
+    if (!hasCheckedData(day)) return true
+    return !!supSigs[day]?.data_url
+  })
+
+  if (!allDaysSigned) {
+    const unsigned = DAYS.filter(day =>
+      hasCheckedData(day) && !supSigs[day]?.data_url
+    )
+
+    alert(`⚠️ Vui lòng ký xác nhận cho các ngày: ${unsigned.join(', ')}`)
     return
-    }
-    await save('approved')
-    router.push('/supervisor')
-    router.refresh()
   }
+
+  await save('approved')
+  router.push('/supervisor')
+  router.refresh()
+}
 
   // Stats for active day
   const passCount = items.filter(i => i.days[activeDay]?.status === 'pass').length
@@ -182,30 +200,44 @@ const isDayLocked = (day: string) => {
       <div className="card p-1">
         <div className="flex gap-0.5 overflow-x-auto">
           {DAYS.map(day => {
+
             const dayPass = items.filter(i => i.days[day]?.status === 'pass').length
             const dayFail = items.filter(i => i.days[day]?.status === 'fail').length
             const isActive = activeDay === day
+
+            const hasWarning = isMissingSupervisorSig(day)
+
             return (
               <button
                 key={day}
                 onClick={() => setActiveDay(day)}
                 className={cn(
-                  'flex-1 min-w-[60px] flex flex-col items-center py-2 px-2 rounded-lg text-xs font-medium transition-all',
+                  'relative flex-1 min-w-[60px] flex flex-col items-center py-2 px-2 rounded-lg text-xs font-medium transition-all',
                   isActive
                     ? 'bg-blue-600 text-white shadow'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    : hasWarning
+                      ? 'bg-red-50 text-red-600 border border-red-200'
+                      : 'text-slate-600 hover:bg-slate-100'
                 )}
               >
                 <span className="font-semibold">{DAY_SHORT[day]}</span>
+
                 {(dayPass > 0 || dayFail > 0) && (
                   <div className="flex items-center gap-0.5 mt-0.5">
                     {dayPass > 0 && <span className={cn('text-[10px]', isActive ? 'text-green-200' : 'text-green-600')}>✓{dayPass}</span>}
                     {dayFail > 0 && <span className={cn('text-[10px]', isActive ? 'text-red-200' : 'text-red-500')}>✗{dayFail}</span>}
                   </div>
                 )}
+
+                {/* ✅ BADGE WARNING */}
+                {hasWarning && (
+                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
+                )}
+
               </button>
             )
           })}
+          
         </div>
       </div>
 
@@ -359,10 +391,9 @@ const isDayLocked = (day: string) => {
 
         </div>
         {/* Thông báo trạng thái signature */}
-        {isSupervisor && checklist.status !== 'submitted' && (
-          <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
-            <span>ⓘ</span>
-            <span>Chỉ ký được khi checklist ở trạng thái "Đã nộp"</span>
+        {isSupervisor && !hasCheckedData(activeDay) && (
+          <div className="text-xs text-slate-500">
+            ⓘ Chỉ ký khi ngày này có dữ liệu kiểm tra
           </div>
         )}
         {/* Signature Pad Component */}
