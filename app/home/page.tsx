@@ -138,7 +138,7 @@ export default function HomePage() {
         // ✅ sound notification
         if (hasNew) {
           try {
-            new Audio('/notification.mp3').play()
+            new Audio('/notification.wav').play()
           } catch {}
         }
 
