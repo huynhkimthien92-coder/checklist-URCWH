@@ -46,8 +46,11 @@ export function MapView({
       isFirstLoad.current = false
 
       const maxTime = Math.max(
-        ...issues.map(i => new Date(i.created_at).getTime())
+        ...issues.map(i =>
+          i.created_at ? new Date(i.created_at).getTime() : 0
+        )
       )
+
 
       lastSeenTime.current = maxTime
       return
@@ -56,7 +59,9 @@ export function MapView({
     // ✅ detect issue mới
     const added = issues.filter(i => {
       if (!i.created_at) return false
-      return new Date(i.created_at).getTime() > lastSeenTime.current
+
+      const createdTime = new Date(i.created_at).getTime()
+      return createdTime > lastSeenTime.current
     })
 
     if (added.length > 0) {
