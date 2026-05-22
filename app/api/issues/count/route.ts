@@ -21,7 +21,7 @@ export async function GET() {
     const now = new Date()
 
     // ✅ query nhẹ (chỉ lấy field cần)
-    const issues = await prisma.issue.findMany({
+    const issues = await prisma.issues.findMany({
       where: {
         assigned_to: userId,
         status: {
