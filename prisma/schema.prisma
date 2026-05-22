@@ -4,12 +4,16 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")  // ✅ BẮT BUỘC với Prisma 5
 }
 
 model Issue {
-  id           String  @id @default(uuid())
+  id           String   @id @default(uuid())
   status       String
   priority     String
   due_date     String?
   assigned_to  String?
+
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
 }
