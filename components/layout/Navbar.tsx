@@ -70,7 +70,7 @@ export function Navbar() {
   // ===== ROLE LABEL =====
   const roleLabel: Record<string, string> = {
     admin: 'Quản trị viên',
-    operator: 'Tài xế',
+    operator: 'Operator',
     supervisor: 'Giám sát',
   }
 
@@ -127,7 +127,7 @@ export function Navbar() {
                       className="block px-3 py-2 text-sm hover:bg-gray-100"
                       onClick={() => setDashboardOpen(false)}
                     >
-                      🤖 Robot Dashboard
+                      📊 Robot Dashboard
                     </Link>
 
                     <Link
@@ -135,7 +135,7 @@ export function Navbar() {
                       className="block px-3 py-2 text-sm hover:bg-gray-100"
                       onClick={() => setDashboardOpen(false)}
                     >
-                      🚜 Forklift Dashboard
+                       📊 Forklift Dashboard
                     </Link>
 
                   </div>
@@ -210,14 +210,14 @@ export function Navbar() {
                 href="/dashboard/robot"
                 className="block px-3 py-2 text-sm hover:bg-gray-100"
               >
-                🤖 Robot Dashboard
+                    📊 Robot Dashboard
               </Link>
 
               <Link
                 href="/dashboard/forklift"
                 className="block px-3 py-2 text-sm hover:bg-gray-100"
               >
-                🚜 Forklift Dashboard
+                 📊 Forklift Dashboard
               </Link>
             </>
           )}
