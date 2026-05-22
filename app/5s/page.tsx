@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+// ICONS
+import { Home, RefreshCw, LayoutDashboard } from 'lucide-react'
+
 // ===== TYPES =====
 import { Issue } from '@/types/issue'
 
@@ -22,7 +25,6 @@ export default function Page() {
   const [showAdd, setShowAdd] = useState(false)
   const [newPos, setNewPos] = useState<{ x: number; y: number } | null>(null)
 
-  // ✅ UPDATED FILTER TYPE
   const [filters, setFilters] = useState<{
     status?: string
     assignee?: string
@@ -32,10 +34,13 @@ export default function Page() {
   }>({})
 
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   // ===== FETCH =====
-  const fetchIssues = async () => {
-    setLoading(true)
+  const fetchIssues = async (isManual = false) => {
+    if (isManual) setRefreshing(true)
+    else setLoading(true)
+
     try {
       const res = await fetch('/api/issues', { cache: 'no-store' })
       const data = await res.json()
@@ -44,6 +49,7 @@ export default function Page() {
       console.error('Fetch issues error', err)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -51,7 +57,16 @@ export default function Page() {
     fetchIssues()
   }, [])
 
-  // ===== FILTER (FIX CHÍNH Ở ĐÂY) =====
+  // ✅ optional: polling nhẹ 30s (giúp highlight chạy)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchIssues(true)
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // ===== FILTER =====
   const filtered = issues.filter(i => {
 
     const created = i.created_at ? new Date(i.created_at) : null
@@ -64,10 +79,7 @@ export default function Page() {
       (filters.assignee ? i.assigned_to === filters.assignee : true) &&
       (filters.priority ? i.priority === filters.priority : true) &&
 
-      // ✅ FROM DATE
       (from && created ? created >= from : true) &&
-
-      // ✅ TO DATE
       (to && created ? created <= to : true)
     )
   })
@@ -91,20 +103,42 @@ export default function Page() {
           </p>
         </div>
 
+        {/* ✅ NEW BUTTON UI */}
         <div className="flex gap-2">
 
+          {/* HOME */}
           <button
-            onClick={fetchIssues}
-            className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
+            onClick={() => router.push('/home')}
+            className="flex items-center gap-1 text-sm px-3 py-1.5 
+                       bg-white border rounded-md shadow-sm
+                       hover:bg-gray-50 transition"
           >
+            <Home className="w-4 h-4" />
+            Home
+          </button>
+
+          {/* REFRESH */}
+          <button
+            onClick={() => fetchIssues(true)}
+            className="flex items-center gap-1 text-sm px-3 py-1.5
+                       bg-white border rounded-md shadow-sm
+                       hover:bg-gray-50 transition"
+          >
+            <RefreshCw
+              className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
+            />
             Refresh
           </button>
 
+          {/* DASHBOARD */}
           <button
             onClick={() => router.push('/5s/dashboard')}
-            className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
+            className="flex items-center gap-1 text-sm px-3 py-1.5
+                       bg-indigo-500 text-white rounded-md shadow-sm
+                       hover:bg-indigo-600 transition"
           >
-            Dashboard →
+            <LayoutDashboard className="w-4 h-4" />
+            Dashboard
           </button>
 
         </div>
@@ -156,7 +190,7 @@ export default function Page() {
           onClose={() => setShowAdd(false)}
           onCreated={() => {
             setShowAdd(false)
-            fetchIssues()
+            fetchIssues(true)
           }}
         />
       )}
@@ -170,7 +204,7 @@ export default function Page() {
             image_before: selected.image_before ?? ''
           }}
           onClose={() => setSelected(null)}
-          onUpdated={fetchIssues}
+          onUpdated={() => fetchIssues(true)}
         />
       )}
 
