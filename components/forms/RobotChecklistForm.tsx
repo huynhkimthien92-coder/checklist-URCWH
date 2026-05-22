@@ -78,7 +78,7 @@ export function RobotChecklistForm({
     !!opSigs?.[day]?.data_url
 
 
-  const isDisabled = readOnly || isDayLocked(activeDay)
+  const isDisabled = readOnly || (!isSupervisor && isDayLocked(activeDay))
   const grouped = groupByCategory(items)
 
   // ================= UPDATE =================
@@ -177,7 +177,6 @@ export function RobotChecklistForm({
   // ================= UI =================
   return (
     <div className="space-y-4">
-
       {/* ===== DAY PICKER ===== */}
       <div className="flex flex-wrap gap-1">
         {days.map(day => {
