@@ -1,20 +1,14 @@
-import pkg from '@prisma/client'
-
-const { PrismaClient } = pkg
+import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: ReturnType<typeof createPrismaClient> | undefined
-}
-
-function createPrismaClient() {
-  return new PrismaClient({
-    datasourceUrl: process.env.DATABASE_URL
-  })
+  prisma: PrismaClient | undefined
 }
 
 export const prisma =
   globalForPrisma.prisma ??
-  createPrismaClient()
+  new PrismaClient({
+    datasourceUrl: process.env.DATABASE_URL // ✅ Prisma 7 config
+  })
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma
