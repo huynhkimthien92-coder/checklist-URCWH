@@ -64,16 +64,6 @@ export function RobotChecklistForm({
   
   const missingSupervisorSig = (day: string) =>
     hasCheckedData(day) && !supSigs?.[day]?.data_url
-
-
-
-
-  
-  //const isDaySignedByOperator = (day: string) => {
-   // return !!opSigs?.[day]?.data_url
- // }
-
-  
   const isDayLocked = (day: string) =>
     !!opSigs?.[day]?.data_url
 
