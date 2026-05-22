@@ -209,7 +209,6 @@ export function RobotChecklistForm({
         <tbody>
           {Object.entries(grouped).map(([category, list]) => (
             <React.Fragment key={category}>
-
               <tr>
                 <td colSpan={3} className="bg-indigo-600 text-white px-2 py-1">
                   {category}
