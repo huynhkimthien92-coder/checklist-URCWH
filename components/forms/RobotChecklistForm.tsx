@@ -208,7 +208,7 @@ export function RobotChecklistForm({
       <table className="w-full border text-sm table-fixed">
         <tbody>
           {Object.entries(grouped).map(([category, list]) => (
-            <React.Fragment key={category}>
+            <tbody key={category}>
               <tr>
                 <td colSpan={3} className="bg-indigo-600 text-white px-2 py-1">
                   {category}
@@ -264,7 +264,7 @@ export function RobotChecklistForm({
                   </tr>
                 )
               })}
-            </React.Fragment>
+            </tbody>
           ))}
         </tbody>
       </table>
