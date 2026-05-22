@@ -87,7 +87,7 @@ export function ChecklistForm({ checklist, readOnly = false, isSupervisor = fals
   const canSignDay = (day: string, isSuper: boolean): boolean => {
     if (readOnly) return false
       if (isSuper) {
-        return checklist.status === 'submitted'
+        return checklist.status === 'submitted' || checklist.status === 'draft'
       }
     // operator
     return checklist.status === 'draft'
