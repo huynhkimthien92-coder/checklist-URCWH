@@ -33,7 +33,14 @@ export function MapView({
   const [lastTouchDist, setLastTouchDist] = useState(0)
   const [lastTouchCenter, setLastTouchCenter] = useState<{ x: number; y: number } | null>(null)
 
-  // ✅ ===== PRO: DETECT ISSUE MỚI THEO created_at =====
+  // ✅ ===== HELPER ANTI-ERROR =====
+  const getTimeSafe = (date?: string) => {
+    if (!date) return 0
+    const t = new Date(date).getTime()
+    return isNaN(t) ? 0 : t
+  }
+
+  // ✅ ===== DETECT ISSUE MỚI =====
   const lastSeenTime = useRef<number>(Date.now())
   const isFirstLoad = useRef(true)
   const [newIssues, setNewIssues] = useState<string[]>([])
@@ -41,34 +48,22 @@ export function MapView({
   useEffect(() => {
     if (!issues || issues.length === 0) return
 
-    // ✅ bỏ qua lần load đầu
+    // ✅ lần đầu → không highlight
     if (isFirstLoad.current) {
       isFirstLoad.current = false
 
       const maxTime = Math.max(
-        ...issues.map(i => {
-          if (!i.created_at) return 0
-          const t = new Date(i.created_at).getTime()
-          return isNaN(t) ? 0 : t
-        })
+        ...issues.map(i => getTimeSafe(i.created_at))
       )
-
-
 
       lastSeenTime.current = maxTime
       return
     }
 
     // ✅ detect issue mới
-    const added = issues.filter(i => {
-      if (!i.created_at) return false
-
-      const t = new Date(i.created_at).getTime()
-
-      if (isNaN(t)) return false
-
-      return t > lastSeenTime.current
-    })
+    const added = issues.filter(
+      i => getTimeSafe(i.created_at) > lastSeenTime.current
+    )
 
     if (added.length > 0) {
       setNewIssues(added.map(i => i.id))
@@ -76,16 +71,16 @@ export function MapView({
 
     // ✅ update mốc mới nhất
     const maxTime = Math.max(
-      ...issues.map(i => new Date(i.created_at).getTime())
+      ...issues.map(i => getTimeSafe(i.created_at))
     )
 
     lastSeenTime.current = maxTime
 
   }, [issues])
 
-  // ✅ auto clear highlight sau 10s
+  // ✅ auto clear highlight
   useEffect(() => {
-    if (newIssues.length === 0) return
+    if (!newIssues.length) return
 
     const timer = setTimeout(() => {
       setNewIssues([])
@@ -251,7 +246,6 @@ export function MapView({
             className="block select-none pointer-events-none"
           />
 
-          {/* ✅ HEATMAP */}
           {showHeatmap && (
             <MapHeatmap
               issues={issues.map(i => ({
@@ -262,12 +256,10 @@ export function MapView({
             />
           )}
 
-          {/* ✅ MARKERS */}
           {issues.map(issue => {
 
             const x = issue.x_percent ?? 0
             const y = issue.y_percent ?? 0
-
             const isNew = newIssues.includes(issue.id)
 
             return (
@@ -284,9 +276,7 @@ export function MapView({
 
                   {isNew && (
                     <>
-                      {/* radar outer */}
                       <span className="absolute w-10 h-10 rounded-full bg-red-400 opacity-50 animate-ping" />
-                      {/* radar inner */}
                       <span className="absolute w-6 h-6 rounded-full bg-red-500 opacity-80 animate-pulse" />
                     </>
                   )}
