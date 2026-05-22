@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Issue } from '@/types/issue'
 import { IssueMarker } from '@/components/5s/IssueMarker'
 import { MapHeatmap } from '@/components/5s/MapHeatmap'
@@ -32,6 +32,33 @@ export function MapView({
 
   const [lastTouchDist, setLastTouchDist] = useState(0)
   const [lastTouchCenter, setLastTouchCenter] = useState<{ x: number; y: number } | null>(null)
+
+  // ✅ ===== NEW: TRACK ISSUE MỚI =====
+  const prevIds = useRef<string[]>([])
+  const [newIssues, setNewIssues] = useState<string[]>([])
+
+  useEffect(() => {
+    const currentIds = issues.map(i => i.id)
+
+    const added = currentIds.filter(id => !prevIds.current.includes(id))
+
+    if (added.length > 0) {
+      setNewIssues(added)
+    }
+
+    prevIds.current = currentIds
+  }, [issues])
+
+  // ✅ auto clear sau 10s
+  useEffect(() => {
+    if (newIssues.length === 0) return
+
+    const timer = setTimeout(() => {
+      setNewIssues([])
+    }, 10000)
+
+    return () => clearTimeout(timer)
+  }, [newIssues])
 
   // ===== HELPER =====
   const getDistance = (touches: React.TouchList) => {
@@ -90,7 +117,6 @@ export function MapView({
   const handleTouchMove = (e: React.TouchEvent) => {
     e.preventDefault()
 
-    // pinch zoom
     if (e.touches.length === 2) {
       const newDist = getDistance(e.touches)
       const scale = newDist / lastTouchDist
@@ -101,7 +127,6 @@ export function MapView({
       setLastTouchDist(newDist)
     }
 
-    // pan
     if (e.touches.length === 1 && lastTouchCenter) {
       const touch = e.touches[0]
 
@@ -125,7 +150,7 @@ export function MapView({
     setLastTouchCenter(null)
   }
 
-  // ===== CLICK (FIX CHUẨN) =====
+  // ===== CLICK =====
   const handleClick = (e: React.MouseEvent) => {
     if (!imgRef.current) return
 
@@ -184,7 +209,6 @@ export function MapView({
         onClick={handleClick}
       >
 
-        {/* TRANSFORM */}
         <div
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
@@ -193,7 +217,6 @@ export function MapView({
           className="absolute top-0 left-0"
         >
 
-          {/* ✅ IMAGE LÀ GỐC */}
           <img
             ref={imgRef}
             src="/map.png"
@@ -201,21 +224,18 @@ export function MapView({
             className="block select-none pointer-events-none"
           />
 
-          {/* ✅ HEATMAP */}
+          {/* HEATMAP */}
           {showHeatmap && (
-            <MapHeatmap
-              issues={issues.map(i => ({
-                ...i,
-                x_percent: i.x_percent ?? 0,
-                y_percent: i.y_percent ?? 0
-              }))}
-            />
+            <MapHeatmap issues={issues} />
           )}
 
-          {/* ✅ MARKER GẮN THEO IMAGE */}
+          {/* MARKERS */}
           {issues.map(issue => {
+
             const x = issue.x_percent ?? 0
             const y = issue.y_percent ?? 0
+
+            const isNew = newIssues.includes(issue.id)
 
             return (
               <div
@@ -227,18 +247,26 @@ export function MapView({
                   transform: 'translate(-50%, -50%)'
                 }}
               >
-                <IssueMarker
-                  issue={issue}
-                  selected={selectedIssue?.id === issue.id}
-                  onClick={onSelect}
-                />
+                {/* ✅ WRAP để thêm hiệu ứng */}
+                <div
+                  className={
+                    isNew
+                      ? 'animate-pulse scale-110'
+                      : ''
+                  }
+                >
+                  <IssueMarker
+                    issue={issue}
+                    selected={selectedIssue?.id === issue.id}
+                    onClick={onSelect}
+                  />
+                </div>
               </div>
             )
           })}
         </div>
 
       </div>
-
     </div>
   )
 }
