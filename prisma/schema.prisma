@@ -11,7 +11,7 @@ model Issue {
   id           String   @id @default(uuid())
   status       String
   priority     String
-  due_date     String?
+  due_date     DateTime?
   assigned_to  String?
 
   created_at   DateTime @default(now())
