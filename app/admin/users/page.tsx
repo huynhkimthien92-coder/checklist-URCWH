@@ -80,7 +80,7 @@ export default function AdminUsersPage() {
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
         ) : (
-          <div className="card overflow-hidden">
+          <div className="card overflow-scroll">
             <table className="w-full">
               <thead>
                 <tr>
@@ -152,7 +152,7 @@ export default function AdminUsersPage() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Vai trò *</label>
                   <select className="input" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
-                    <option value="operator">Tài xế xe nâng</option>
+                    <option value="operator">Operator</option>
                     <option value="supervisor">Giám sát</option>
                     <option value="admin">Quản trị viên</option>
                   </select>
