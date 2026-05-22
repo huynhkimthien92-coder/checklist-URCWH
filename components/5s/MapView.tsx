@@ -224,17 +224,15 @@ export function MapView({
             className="block select-none pointer-events-none"
           />
 
-          {/* HEATMAP */}
+          {/* ✅ HEATMAP */}
           {showHeatmap && (
-            {showHeatmap && (
-              <MapHeatmap
-                issues={issues.map(i => ({
-                  ...i,
-                  x_percent: i.x_percent ?? 0,
-                  y_percent: i.y_percent ?? 0
-                }))}
-              />
-            )}
+            <MapHeatmap
+              issues={issues.map(i => ({
+                ...i,
+                x_percent: i.x_percent ?? 0,
+                y_percent: i.y_percent ?? 0
+              }))}
+            />
           )}
 
           {/* MARKERS */}
