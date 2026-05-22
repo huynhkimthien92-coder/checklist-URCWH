@@ -339,7 +339,7 @@ export function RobotChecklistForm({
                 alert(`⚠️ Chưa ký các ngày: ${invalid.join(', ')}`)
                 return
               }
-              save({ status: 'submitted' })} className="bg-blue-600 text-white px-3 py-1 rounded">
+              save({ status: 'submitted' })}} className="bg-blue-600 text-white px-3 py-1 rounded">
               Submit
             </button>
           )}
@@ -351,7 +351,7 @@ export function RobotChecklistForm({
                 alert(`⚠️ Supervisor chưa ký: ${invalid.join(', ')}`)
                 return
               } 
-              save({ status: 'approved' })} className="bg-green-600 text-white px-3 py-1 rounded">
+              save({ status: 'approved' })}} className="bg-green-600 text-white px-3 py-1 rounded">
               Approve
             </button>
           )}
