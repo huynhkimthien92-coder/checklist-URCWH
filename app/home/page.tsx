@@ -8,7 +8,7 @@ import {
   Truck,
   ClipboardList,
   Loader2,
-  LayoutGrid // ✅ 5S icon
+  LayoutGrid
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -69,8 +69,6 @@ const MENU: MenuItem[] = [
     color: 'bg-slate-100 text-slate-600',
     roles: ['admin', 'supervisor','operator'],
   },
-
-  // ✅ ✅ ✅ 5S
   {
     label: '5S Management',
     href: '/5s',
@@ -85,8 +83,12 @@ export default function HomePage() {
 
   const { data: session, status } = useSession()
 
-  const [pending, setPending] = useState(0) // checklist
-  const [open5S, setOpen5S] = useState(0)  // ✅ 5S open issue
+  const [pending, setPending] = useState(0)
+  const [open5S, setOpen5S] = useState(0)
+
+  // ✅ TYPE-SAFE luôn
+  const userId = session?.user?.id
+  const role = session?.user?.role
 
   // ===== FETCH DATA =====
   useEffect(() => {
@@ -103,18 +105,22 @@ export default function HomePage() {
       })
       .catch(() => {})
 
-    // ✅ ✅ 5S OPEN (FIX CHÍNH)
+    // ✅ ✅ 5S (CHỈ ISSUE CỦA USER)
     fetch('/api/issues')
       .then(r => r.json())
       .then(data => {
+
         const count =
-          (data || []).filter((i: any) => i.status === 'open').length
+          (data || []).filter((i: any) =>
+            i.status === 'open' &&
+            i.assigned_to === userId
+          ).length
 
         setOpen5S(count)
       })
       .catch(() => {})
 
-  }, [session])
+  }, [session, userId])
 
   // ===== LOADING =====
   if (status === 'loading') {
@@ -126,8 +132,6 @@ export default function HomePage() {
   }
 
   if (!session) return null
-
-  const role = (session.user as any)?.role
 
   // ===== INJECT BADGE =====
   const menuWithBadge = MENU.map(item => {
@@ -146,7 +150,7 @@ export default function HomePage() {
   // ===== FILTER ROLE =====
   const menu = menuWithBadge.filter(item => {
     if (!item.roles) return true
-    return item.roles.includes(role)
+    return item.roles.includes(role!)
   })
 
   return (
@@ -167,6 +171,7 @@ export default function HomePage() {
                 className="card relative p-4 flex flex-col items-center justify-center text-center
                            hover:shadow-xl hover:-translate-y-1 active:scale-95 transition"
               >
+
                 {/* ICON */}
                 <div
                   className={cn(
@@ -199,12 +204,12 @@ export default function HomePage() {
 
         </div>
 
-        {/* ✅ LOGOUT (FIX REDIRECT) */}
+        {/* LOGOUT */}
         <div className="mt-8">
           <button
             onClick={() =>
               signOut({
-                callbackUrl: '/auth/login' // ✅ quay về login
+                callbackUrl: '/auth/login'
               })
             }
             className="w-full py-3 rounded-xl bg-red-50 text-red-600 font-medium
