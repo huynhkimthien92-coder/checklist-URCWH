@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 
 // ===== TYPE =====
@@ -80,21 +80,30 @@ const MENU: MenuItem[] = [
 
 // ===== COMPONENT =====
 export default function HomePage() {
-
   const { data: session, status } = useSession()
 
   const [pending, setPending] = useState(0)
-  const [open5S, setOpen5S] = useState(0)
 
-  // ✅ TYPE-SAFE luôn
-  const userId = session?.user?.id
+  // ✅ state mới (từ API /count)
+  const [stats5S, setStats5S] = useState({
+    open: 0,
+    overdue: 0,
+    high: 0
+  })
+
+  // ✅ tránh spam sound
+  const prevRef = useRef({
+    open: 0,
+    overdue: 0,
+    high: 0
+  })
+
   const role = session?.user?.role
 
-  // ===== FETCH DATA =====
+  // ===== FETCH CHECKLIST =====
   useEffect(() => {
     if (!session) return
 
-    // ✅ checklist
     fetch('/api/checklists')
       .then(r => r.json())
       .then(data => {
@@ -104,23 +113,52 @@ export default function HomePage() {
         setPending(count)
       })
       .catch(() => {})
+  }, [session])
 
-    // ✅ ✅ 5S (CHỈ ISSUE CỦA USER)
-    fetch('/api/issues')
-      .then(r => r.json())
-      .then(data => {
+  // ===== ✅ POLLING 5S =====
+  useEffect(() => {
+    if (!session) return
 
-        const count =
-          (data || []).filter((i: any) =>
-            i.status === 'open' &&
-            i.assigned_to === userId
-          ).length
+    const fetch5S = async () => {
+      try {
+        // ✅ chỉ chạy khi tab active
+        if (document.visibilityState !== 'visible') return
 
-        setOpen5S(count)
-      })
-      .catch(() => {})
+        const res = await fetch('/api/issues/count')
+        const data = await res.json()
 
-  }, [session, userId])
+        const prev = prevRef.current
+
+        // ✅ detect change
+        const hasNew =
+          data.open > prev.open ||
+          data.overdue > prev.overdue ||
+          data.high > prev.high
+
+        // ✅ sound notification
+        if (hasNew) {
+          try {
+            new Audio('/notification.mp3').play()
+          } catch {}
+        }
+
+        prevRef.current = data
+        setStats5S(data)
+
+      } catch (err) {
+        console.error('Fetch 5S error:', err)
+      }
+    }
+
+    // ✅ call lần đầu
+    fetch5S()
+
+    // ✅ polling 5 phút
+    const interval = setInterval(fetch5S, 300000)
+
+    return () => clearInterval(interval)
+
+  }, [session])
 
   // ===== LOADING =====
   if (status === 'loading') {
@@ -133,7 +171,7 @@ export default function HomePage() {
 
   if (!session) return null
 
-  // ===== INJECT BADGE =====
+  // ===== BADGE =====
   const menuWithBadge = MENU.map(item => {
 
     if (item.href === '/supervisor') {
@@ -141,7 +179,7 @@ export default function HomePage() {
     }
 
     if (item.href === '/5s') {
-      return { ...item, badge: open5S }
+      return { ...item, badge: stats5S.open } // ✅ badge open
     }
 
     return item
@@ -171,7 +209,6 @@ export default function HomePage() {
                 className="card relative p-4 flex flex-col items-center justify-center text-center
                            hover:shadow-xl hover:-translate-y-1 active:scale-95 transition"
               >
-
                 {/* ICON */}
                 <div
                   className={cn(
@@ -197,7 +234,6 @@ export default function HomePage() {
                     {item.badge}
                   </div>
                 )}
-
               </Link>
             )
           })}
