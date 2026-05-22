@@ -329,7 +329,8 @@ export function RobotChecklistForm({
       {!readOnly && (
         <div className="flex gap-2">
           <button onClick={() => save()} className="bg-gray-600 text-white px-3 py-1 rounded">
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? 'Saving...' : 'Save'}>
+            Save
           </button>
 
           {!isSupervisor && (
