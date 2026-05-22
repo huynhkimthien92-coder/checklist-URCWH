@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql" // hoặc mysql/sqlite (tuỳ bạn)
-
+}
 model Issue {
   id           String  @id @default(uuid())
   status       String
