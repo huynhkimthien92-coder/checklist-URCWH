@@ -30,7 +30,7 @@ export function SignaturePad({
 
   const [isDrawing, setIsDrawing] = useState(false)
   const [hasContent, setHasContent] = useState(false)
-  const [showPad, setShowPad] = useState(false)
+  const [showPad, setShowPad] = useState(autoOpen ?? false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
