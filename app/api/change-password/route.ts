@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   }
 
   // check password cũ
-  const isMatch = await bcrypt.compare(oldPassword, user.password)
+  const isMatch = await bcrypt.compare(oldPassword, user.password_hash)
 
   if (!isMatch) {
     return NextResponse.json({ error: 'Sai mật khẩu cũ' }, { status: 400 })
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   await supabase
     .from('users')
-    .update({ password: hashed })
+    .update({ password_hash: hashed })
     .eq('id', userId)
 
   return NextResponse.json({ success: true })
