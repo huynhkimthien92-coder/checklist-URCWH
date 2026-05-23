@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { uploadToCloudinary } from '@/lib/cloudinary'
+import { createServiceClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -32,6 +33,17 @@ export async function POST(req: NextRequest) {
       'checklist-signatures',
       publicId,
     )
+    const url = result.secure_url
+    // ✅ NEW: lưu chữ ký vào bảng users
+    const supabase = createServiceClient()
+    const userId = (session.user as any)?.id
+    if (userId) {
+      await supabase
+        .from('users')
+        .update({ signature_url: url })
+        .eq('id', userId)
+    }
+    
 
     return NextResponse.json({ url: result.secure_url, public_id: result.public_id })
   } catch (err: any) {
