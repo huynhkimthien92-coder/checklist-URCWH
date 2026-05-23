@@ -37,11 +37,8 @@ interface TruckForm {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// ✅ FIX: phải khớp với requiredRoles trong status/route.ts
-// API yêu cầu: ['driver', 'warehouse', 'approver']
-// 'security' là optional — không bắt buộc để approve
-const REQUIRED_ROLES    = ['driver', 'warehouse', 'approver'] as const
-const OPTIONAL_ROLES    = ['security'] as const
+const REQUIRED_ROLES      = ['driver', 'warehouse', 'approver'] as const
+const OPTIONAL_ROLES      = ['security'] as const
 const ALL_SIGNATURE_ROLES = [...REQUIRED_ROLES, ...OPTIONAL_ROLES] as const
 type SignatureRole = (typeof ALL_SIGNATURE_ROLES)[number]
 
@@ -267,9 +264,11 @@ export default function TruckFormPage() {
   const params = useParams()
   const id = params?.id as string
 
-  const [form, setForm]       = useState<TruckForm | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState('')   // ✅ inline error thay vì alert()
+  const [form, setForm]           = useState<TruckForm | null>(null)
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState('')
+  // ✅ track which item IDs are currently saving (to disable buttons mid-flight)
+  const [savingItems, setSavingItems] = useState<Set<string>>(new Set())
 
   // ─── Load form ─────────────────────────────────────────────────────────────
 
@@ -292,10 +291,25 @@ export default function TruckFormPage() {
     if (id) loadForm()
   }, [id])
 
-  // ─── Handlers ──────────────────────────────────────────────────────────────
+  // ─── Update checklist item (optimistic) ────────────────────────────────────
 
   const updateItem = async (itemId: string, status: 'pass' | 'fail') => {
     setError('')
+
+    // ✅ 1. Optimistic update — cập nhật UI ngay lập tức, không chờ server
+    setForm((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        items: prev.items?.map((item) =>
+          item.id === itemId ? { ...item, status } : item
+        ),
+      }
+    })
+
+    // ✅ 2. Disable button trong lúc đang lưu
+    setSavingItems((prev) => new Set(prev).add(itemId))
+
     try {
       const res  = await fetch('/api/truck/items', {
         method:  'PATCH',
@@ -303,13 +317,35 @@ export default function TruckFormPage() {
         body:    JSON.stringify({ items: [{ id: itemId, status }] }),
       })
       const data = await res.json()
-      // ✅ FIX: check lỗi thay vì im lặng
-      if (!data.success) throw new Error(data.error || 'Failed to update item')
-      loadForm()
+
+      if (!data.success) {
+        // ✅ 3. Rollback nếu server lỗi
+        throw new Error(data.error || 'Failed to update item')
+      }
+      // ✅ Không cần loadForm() — UI đã đúng rồi
     } catch (err: any) {
+      // ✅ 4. Revert optimistic update khi có lỗi
+      setForm((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          items: prev.items?.map((item) =>
+            item.id === itemId ? { ...item, status: null } : item
+          ),
+        }
+      })
       setError(err.message || 'Failed to update checklist item')
+    } finally {
+      // ✅ 5. Bỏ disable button
+      setSavingItems((prev) => {
+        const next = new Set(prev)
+        next.delete(itemId)
+        return next
+      })
     }
   }
+
+  // ─── Save signature ─────────────────────────────────────────────────────────
 
   const saveSignature = async (role: SignatureRole, url: string) => {
     setError('')
@@ -327,11 +363,24 @@ export default function TruckFormPage() {
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.error || 'Failed to save signature')
-      loadForm()
+
+      // ✅ Optimistic update cho signature
+      setForm((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          signatures: {
+            ...prev.signatures,
+            [role]: { signature_url: url },
+          },
+        }
+      })
     } catch (err: any) {
       setError(err.message || 'Failed to save signature')
     }
   }
+
+  // ─── Approve ───────────────────────────────────────────────────────────────
 
   const approve = async () => {
     setError('')
@@ -342,8 +391,9 @@ export default function TruckFormPage() {
         body:    JSON.stringify({ status: 'approved' }),
       })
       const data = await res.json()
-      // ✅ FIX: inline error thay vì alert()
       if (!data.success) throw new Error(data.error || 'Failed to approve')
+
+      // ✅ Chỉ reload sau approve vì status thay đổi ảnh hưởng toàn bộ trang
       loadForm()
     } catch (err: any) {
       setError(err.message || 'Approve failed')
@@ -392,7 +442,6 @@ export default function TruckFormPage() {
             </tr>
           </thead>
           <tbody>
-            {/* ✅ dùng invoice_no làm key thay vì index */}
             {form.orders?.map((o) => (
               <tr key={o.invoice_no}>
                 <td style={styles.td}>{o.invoice_no}</td>
@@ -417,31 +466,37 @@ export default function TruckFormPage() {
             </tr>
           </thead>
           <tbody>
-            {form.items?.map((item) => (
-              <tr key={item.id}>
-                <td style={styles.td}>{item.label_vi || item.label_en}</td>
-                <td style={styles.tdCenter}>
-                  <button
-                    disabled={isApproved}
-                    onClick={() => updateItem(item.id, 'pass')}
-                    style={styles.passBtn(item.status === 'pass', isApproved)}
-                    title="Pass"
-                  >
-                    ✓
-                  </button>
-                </td>
-                <td style={styles.tdCenter}>
-                  <button
-                    disabled={isApproved}
-                    onClick={() => updateItem(item.id, 'fail')}
-                    style={styles.failBtn(item.status === 'fail', isApproved)}
-                    title="Fail"
-                  >
-                    ✕
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {form.items?.map((item) => {
+              // ✅ Disable button nếu đang saving item này
+              const isSaving = savingItems.has(item.id)
+              const isDisabled = isApproved || isSaving
+
+              return (
+                <tr key={item.id}>
+                  <td style={styles.td}>{item.label_vi || item.label_en}</td>
+                  <td style={styles.tdCenter}>
+                    <button
+                      disabled={isDisabled}
+                      onClick={() => updateItem(item.id, 'pass')}
+                      style={styles.passBtn(item.status === 'pass', isDisabled)}
+                      title="Pass"
+                    >
+                      {isSaving && item.status === 'pass' ? '…' : '✓'}
+                    </button>
+                  </td>
+                  <td style={styles.tdCenter}>
+                    <button
+                      disabled={isDisabled}
+                      onClick={() => updateItem(item.id, 'fail')}
+                      style={styles.failBtn(item.status === 'fail', isDisabled)}
+                      title="Fail"
+                    >
+                      {isSaving && item.status === 'fail' ? '…' : '✕'}
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -450,7 +505,6 @@ export default function TruckFormPage() {
       <div style={styles.section}>
         <div style={styles.sectionTitle}>Signatures</div>
         <div style={styles.signaturesRow}>
-          {/* ✅ FIX: render đủ 4 roles, khớp với API */}
           {ALL_SIGNATURE_ROLES.map((role) => {
             const isRequired = (REQUIRED_ROLES as readonly string[]).includes(role)
             return (
