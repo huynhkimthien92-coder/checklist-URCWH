@@ -33,16 +33,6 @@ export async function POST(req: NextRequest) {
       'checklist-signatures',
       publicId,
     )
-    const url = result.secure_url
-    // ✅ NEW: lưu chữ ký vào bảng users
-    const supabase = createServiceClient()
-    const userId = (session.user as any)?.id
-    if (userId) {
-      await supabase
-        .from('users')
-        .update({ signature_url: url })
-        .eq('id', userId)
-    }
     
 
     return NextResponse.json({ url: result.secure_url, public_id: result.public_id })
