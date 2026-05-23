@@ -68,10 +68,14 @@ export function RobotChecklistForm({
 
       return Object.keys(item.days || {}).some(day => {
 
+        // ✅ KHÔNG có trong original → là ngày mới → bỏ qua
+        if (!original?.days?.[day]) return false
+
+        // ✅ chỉ check ngày đã ký
         if (!isDayLocked(day)) return false
 
         const curr = item.days?.[day] || {}
-        const prev = original?.days?.[day] || {}
+        const prev = original.days?.[day] || {}
 
         return (
           (curr.status ?? '') !== (prev.status ?? '') ||
