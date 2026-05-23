@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { SignaturePad } from '@/components/forms>import { SignaturePad } from '@/components/forms/SignaturePad'
+import { SignaturePad } from '@/components/forms/SignaturePad'
           <tr>
             <th style={cellStyle}>Item</th>
             <th style={cellStyle}>Pass</th>
