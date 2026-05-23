@@ -26,6 +26,7 @@ export function SignaturePad({
   checklistId,
   day,
   role,
+  autoOpen,
 }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
