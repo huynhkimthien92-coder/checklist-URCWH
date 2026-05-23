@@ -62,7 +62,7 @@ export async function GET(
       throw new Error(signError.message)
     }
 
-    // ✅ 4. format checklist cho UI
+    // ✅ 4. format checklist
     const formattedItems = (items || []).map((item: any) => ({
       id: item.id,
       status: item.status,
@@ -73,7 +73,15 @@ export async function GET(
       order_index: item.template?.order_index
     }))
 
-    // ✅ 5. GROUP signature theo role
+    // ✅ 5. map ARRAY → orders[]
+    const orders = (form.invoice_nos || []).map((inv: string, index: number) => ({
+      invoice_no: inv,
+      quantity: form.quantities?.[index] || null,
+      dock_no: form.dock_nos?.[index] || null,
+      checked_by: form.checked_bys?.[index] || null
+    }))
+
+    // ✅ 6. group signature theo role
     const signatureMap: Record<string, any> = {
       driver: null,
       security: null,
@@ -86,19 +94,37 @@ export async function GET(
         id: s.id,
         user_id: s.user_id,
         user_name: s.user_name,
-        signed_by_name: s.signed_by_name || null, // ✅ nếu có thêm field này
-        signed_by_role: s.signed_by_role || null, // ✅ optional
+
+        // ✅ phục vụ case thực tế
+        signed_by_name: s.signed_by_name || null,
+        signed_by_role: s.signed_by_role || null,
+
         signature_url: s.signature_url,
         signed_at: s.signed_at
       }
     })
 
-    // ✅ 6. response cuối
+    // ✅ 7. response final
     return NextResponse.json({
       success: true,
       data: {
-        ...form,
+        id: form.id,
+        form_no: form.form_no,
+        date: form.date,
+        truck_no: form.truck_no,
+        truck_size: form.truck_size,
+        driver_name: form.driver_name,
+        customer_name: form.customer_name,
+        status: form.status,
+        remarks: form.remarks,
+
+        // ✅ new structure
+        orders,
+
+        // ✅ checklist
         items: formattedItems,
+
+        // ✅ signatures grouped
         signatures: signatureMap
       }
     })
