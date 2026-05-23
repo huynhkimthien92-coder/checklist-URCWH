@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    // ✅ validate input
+    // ✅ validate basic
     if (!body.truck_no || !body.driver_name) {
       return NextResponse.json(
         { error: 'Missing truck_no or driver_name' },
@@ -15,8 +15,28 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // ✅ extract orders
+    const orders = Array.isArray(body.orders) ? body.orders : []
+
+    // ✅ mapping orders → arrays
+    const invoice_nos = orders.map((o: any) => (o.invoice_no || '').trim())
+    const quantities = orders.map((o: any) => o.quantity ?? null)
+    const dock_nos = orders.map((o: any) => (o.dock_no || '').trim())
+    const checked_bys = orders.map((o: any) => (o.checked_by || '').trim())
+
+    // ✅ validate length consistency
+    if (
+      invoice_nos.length !== quantities.length ||
+      invoice_nos.length !== dock_nos.length ||
+      invoice_nos.length !== checked_bys.length
+    ) {
+      return NextResponse.json(
+        { error: 'Orders data mismatch' },
+        { status: 400 }
+      )
+    }
+
     // ✅ create form
-    // 🚀 form_no sẽ được DB auto generate bằng sequence
     const { data: form, error: formError } = await supabase
       .from('truck_exit_forms')
       .insert([
@@ -28,8 +48,13 @@ export async function POST(req: NextRequest) {
           truck_size: body.truck_size || '',
           driver_name: body.driver_name,
           net_weight: body.net_weight || null,
-          invoice_no: body.invoice_no || '',
-          quantity: body.quantity || 0,
+
+          // ✅ NEW ARRAY FIELDS
+          invoice_nos,
+          quantities,
+          dock_nos,
+          checked_bys,
+
           status: 'draft',
           created_by: body.user_id || null
         }
@@ -41,7 +66,7 @@ export async function POST(req: NextRequest) {
       throw new Error(formError.message)
     }
 
-    // ✅ load template
+    // ✅ load checklist templates
     const { data: templates, error: templateError } = await supabase
       .from('truck_checklist_templates')
       .select('id')
@@ -54,7 +79,7 @@ export async function POST(req: NextRequest) {
       throw new Error('No checklist templates found')
     }
 
-    // ✅ generate checklist rows
+    // ✅ generate checklist
     const rows = templates.map((t) => ({
       form_id: form.id,
       template_id: t.id,
