@@ -39,6 +39,7 @@ const MENU: MenuItem[] = [
 ]
 
 // ===== COMPONENT =====
+const [showChangePassword, setShowChangePassword] = useState(false)
 export default function HomePage() {
   const { data: session, status } = useSession()
 
@@ -167,7 +168,7 @@ export default function HomePage() {
           {openMenu && (
             <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg overflow-hidden text-sm z-50 animate-fade-in">
 
-              <button
+              {/* <button
                 onClick={() => {
                   setShowSignature(true)
                   setOpenMenu(false)
@@ -176,9 +177,13 @@ export default function HomePage() {
               >
                 ✍️ Cập nhật chữ ký
               </button>
+              */}
 
               <button
-                onClick={() => alert('TODO: đổi mật khẩu')}
+                onClick={() =>{
+                  setShowChangePassword(true)
+                  setOpenMenu(false)
+                }}
                 className="w-full text-left px-4 py-2 hover:bg-slate-100"
               >
                 🔒 Đổi mật khẩu
@@ -248,6 +253,10 @@ export default function HomePage() {
           }}
         />
       )}
+      {showChangePassword && (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+      )}
+
 
     </div>
   )
