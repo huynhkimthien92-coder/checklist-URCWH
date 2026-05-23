@@ -45,7 +45,9 @@ export function RobotChecklistForm({
 
   const [opSigs, setOpSigs] = useState(checklist.operator_signatures || {})
   const [supSigs, setSupSigs] = useState(checklist.supervisor_signatures || {})
-  const [originalItems] = useState(checklist.items)
+  const [originalItems] = useState(() =>
+    structuredClone(checklist.items)
+  )
 
   const today = new Date().getDate()
   const [activeDay, setActiveDay] = useState(String(today))
