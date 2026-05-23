@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { useEffect, useRef, useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { SignaturePad } from '@/components/forms/SignaturePad'
+import { ChangePasswordModal } from '@/components/forms/ChangePasswordModal'
 
 // ===== TYPE =====
 type MenuItem = {
