@@ -58,6 +58,9 @@ export async function uploadToCloudinary(
   form.append('signature', signature)
   form.append('folder', folder)
   if (publicId) form.append('public_id', publicId)
+  form.append('format', 'webp')
+  form.append('quality', 'auto:best')
+  form.append('transformation', 'w_1280,c_limit')
 
   // Xử lý nhiều kiểu source
   if (typeof source === 'string' && source.startsWith('data:')) {
