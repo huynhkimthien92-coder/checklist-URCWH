@@ -141,7 +141,7 @@ export function RobotChecklistForm({
   // ================= SAVE =================
   const save = async (extra?: any) => {
 
-    if (isDayLocked(activeDay)) {
+    if (!isSupervisor && isDayLocked(activeDay)) {
       alert('Ngày đã được ký, không thể chỉnh sửa ❌')
       return
     }
