@@ -66,28 +66,16 @@ export function RobotChecklistForm({
 
       return Object.keys(item.days || {}).some(day => {
 
-        // ✅ nếu ngày chưa ký → ignore
         if (!isDayLocked(day)) return false
 
-        const curr = item.days[day]
-        const prev = original?.days?.[day]
+        const curr = item.days?.[day] || {}
+        const prev = original?.days?.[day] || {}
 
-        // ✅ so status
-        if ((curr?.status || '') !== (prev?.status || '')) {
-          return true
-        }
-
-        // ✅ so note
-        if ((curr?.note || '') !== (prev?.note || '')) {
-          return true
-        }
-
-        // ✅ so image
-        if ((curr?.image_url || '') !== (prev?.image_url || '')) {
-          return true
-        }
-
-        return false
+        return (
+          (curr.status ?? '') !== (prev.status ?? '') ||
+          (curr.note ?? '') !== (prev.note ?? '') ||
+          (curr.image_url ?? '') !== (prev.image_url ?? '')
+        )
       })
     })
   }
