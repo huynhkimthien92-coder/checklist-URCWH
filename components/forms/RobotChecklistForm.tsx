@@ -68,20 +68,25 @@ export function RobotChecklistForm({
 
       return Object.keys(item.days || {}).some(day => {
 
-        // ✅ KHÔNG có trong original → là ngày mới → bỏ qua
-        if (!original?.days?.[day]) return false
+        const prev = original?.days?.[day]
+        const curr = item.days?.[day]
 
-        // ✅ chỉ check ngày đã ký
+        // ✅ skip ngày mới
+        if (!prev) return false
+
+        // ✅ skip nếu không phải ngày đã ký
         if (!isDayLocked(day)) return false
 
-        const curr = item.days?.[day] || {}
-        const prev = original.days?.[day] || {}
+        // ✅ skip nếu không thay đổi gì
+        if (
+          (prev?.status ?? '') === (curr?.status ?? '') &&
+          (prev?.note ?? '') === (curr?.note ?? '') &&
+          (prev?.image_url ?? '') === (curr?.image_url ?? '')
+        ) {
+          return false
+        }
 
-        return (
-          (curr.status ?? '') !== (prev.status ?? '') ||
-          (curr.note ?? '') !== (prev.note ?? '') ||
-          (curr.image_url ?? '') !== (prev.image_url ?? '')
-        )
+        return true
       })
     })
   }
