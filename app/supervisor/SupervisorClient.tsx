@@ -133,8 +133,7 @@ export default function SupervisorPage() {
 
           <div className="card p-4">
             <div className="flex gap-2 items-center text-xs sm:text-sm whitespace-nowrap">
-              <AlertCircle className="w-4 h-4 text-gray-400" />
-              Bản nháp
+              📝 Đang làm
             </div>
             <p className="text-2xl font-bold text-gray-600 align-items: center">
               {countByStatus.draft}
@@ -148,6 +147,7 @@ export default function SupervisorPage() {
           {[
             { key: 'submitted', label: 'Chờ duyệt' },
             { key: 'approved', label: 'Đã duyệt' },
+            { key: 'draft', label: 'Đang làm' },
             { key: 'all', label: 'Tất cả' }
           ].map(({ key, label }) => {
 
