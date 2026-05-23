@@ -9,6 +9,7 @@ interface SignaturePadProps {
   existingSignature?: string | null
   label?: string
   disabled?: boolean
+  autoOpen?: boolean
 
   // ✅ OPTIONAL để support 2 mode
   checklistId?: string
