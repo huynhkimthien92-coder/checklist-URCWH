@@ -453,7 +453,7 @@ const isDayLocked = (day: string) => {
             </button>
           )}
 
-          {isSupervisor && checklist.status === 'approved' && (
+          {isSupervisor && checklist.status !== 'approved' && (
             <button onClick={approve} className="btn-success">
               <CheckCircle2 className="w-4 h-4" />
               Xác nhận & Duyệt
