@@ -70,7 +70,7 @@ export async function PATCH(
       }
 
       // ✅ 2.2 kiểm tra chữ ký (KHÔNG cần security)
-      const requiredRoles = ['driver', 'warehouse']
+      const requiredRoles = ['driver', 'warehouse', 'approver']
 
       const { data: signatures } = await supabase
         .from('truck_signatures')
