@@ -46,6 +46,8 @@ export default function HomePage() {
   const [openMenu, setOpenMenu] = useState(false)
   const [showSignature, setShowSignature] = useState(false)
 
+  const menuRef = useRef<HTMLDivElement>(null)
+
   const [stats5S, setStats5S] = useState({
     open: 0,
     overdue: 0,
@@ -59,6 +61,17 @@ export default function HomePage() {
   })
 
   const role = session?.user?.role
+
+  // ===== CLICK OUTSIDE CLOSE DROPDOWN =====
+  useEffect(() => {
+    const handleClickOutside = (e: any) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // ===== FETCH CHECKLIST =====
   useEffect(() => {
@@ -141,7 +154,7 @@ export default function HomePage() {
 
       {/* ===== HEADER USER ===== */}
       <div className="flex justify-end p-4">
-        <div className="relative">
+        <div className="relative" ref={menuRef}>
 
           <button
             onClick={() => setOpenMenu(prev => !prev)}
@@ -152,7 +165,7 @@ export default function HomePage() {
           </button>
 
           {openMenu && (
-            <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg overflow-hidden text-sm z-50">
+            <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg overflow-hidden text-sm z-50 animate-fade-in">
 
               <button
                 onClick={() => {
