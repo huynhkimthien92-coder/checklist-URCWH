@@ -45,9 +45,6 @@ export function RobotChecklistForm({
 
   const [opSigs, setOpSigs] = useState(checklist.operator_signatures || {})
   const [supSigs, setSupSigs] = useState(checklist.supervisor_signatures || {})
-  const [originalItems] = useState(() =>
-    structuredClone(checklist.items)
-  )
 
   const today = new Date().getDate()
   const [activeDay, setActiveDay] = useState(String(today))
@@ -61,35 +58,7 @@ export function RobotChecklistForm({
       const st = i.days?.[day]?.status
       return st === 'pass' || st === 'fail'
     })
-  const isAnyLockedModified = () => {
-    return items.some((item, i) => {
 
-      const original = originalItems[i]
-
-      return Object.keys(item.days || {}).some(day => {
-
-        const prev = original?.days?.[day]
-        const curr = item.days?.[day]
-
-        // ✅ skip ngày mới
-        if (!prev) return false
-
-        // ✅ skip nếu không phải ngày đã ký
-        if (!isDayLocked(day)) return false
-
-        // ✅ skip nếu không thay đổi gì
-        if (
-          (prev?.status ?? '') === (curr?.status ?? '') &&
-          (prev?.note ?? '') === (curr?.note ?? '') &&
-          (prev?.image_url ?? '') === (curr?.image_url ?? '')
-        ) {
-          return false
-        }
-
-        return true
-      })
-    })
-  }
   const missingOperatorSig = (day: string) =>
     hasCheckedData(day) && !opSigs?.[day]?.data_url
   
@@ -172,7 +141,7 @@ export function RobotChecklistForm({
   // ================= SAVE =================
   const save = async (extra?: any) => {
 
-    if (!isSupervisor && isAnyLockedModified()) {
+    if (!isSupervisor && checklist.operator_signatures?.[activeDay]?.data_url) {
       alert('⚠️ Bạn đang chỉnh sửa ngày đã ký ❌')
       return
     }
