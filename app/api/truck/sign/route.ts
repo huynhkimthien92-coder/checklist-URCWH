@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { NextRequest } from '@/lib/supabase'
+import { createServiceClient } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
