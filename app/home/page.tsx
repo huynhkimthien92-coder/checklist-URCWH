@@ -41,9 +41,10 @@ const MENU: MenuItem[] = [
 ]
 
 // ===== COMPONENT =====
-const [showChangePassword, setShowChangePassword] = useState(false)
+
 export default function HomePage() {
   const { data: session, status } = useSession()
+  const [showChangePassword, setShowChangePassword] = useState(false)
 
   const [pending, setPending] = useState(0)
   const [openMenu, setOpenMenu] = useState(false)
