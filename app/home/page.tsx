@@ -241,6 +241,7 @@ export default function HomePage() {
       {showSignature && (
         <SignaturePad
           label="Cập nhật chữ ký"
+          autoOpen
           onSave={() => {
             alert('✅ Đã cập nhật chữ ký')
             setShowSignature(false)
