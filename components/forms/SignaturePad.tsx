@@ -1,4 +1,5 @@
 'use client'
+
 import { useRef, useState } from 'react'
 import { RotateCcw, Check, PenLine, Loader2 } from 'lucide-react'
 
@@ -9,9 +10,10 @@ interface SignaturePadProps {
   label?: string
   disabled?: boolean
 
-  checklistId: string
-  day: string
-  role: 'operator' | 'supervisor'
+  // ✅ OPTIONAL để support 2 mode
+  checklistId?: string
+  day?: string
+  role?: 'operator' | 'supervisor'
 }
 
 // ================= COMPONENT =================
@@ -24,7 +26,6 @@ export function SignaturePad({
   day,
   role,
 }: SignaturePadProps) {
-
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const [isDrawing, setIsDrawing] = useState(false)
@@ -38,7 +39,6 @@ export function SignaturePad({
 
   const getPos = (e: any) => {
     const rect = canvasRef.current!.getBoundingClientRect()
-
     const point = e.touches ? e.touches[0] : e
 
     return {
@@ -50,14 +50,12 @@ export function SignaturePad({
   // ===== drawing =====
   const startDraw = (e: any) => {
     if (disabled) return
-
     setIsDrawing(true)
 
     const ctx = getCtx()
     if (!ctx) return
 
     const { x, y } = getPos(e)
-
     ctx.beginPath()
     ctx.moveTo(x, y)
   }
@@ -82,15 +80,12 @@ export function SignaturePad({
     setHasContent(true)
   }
 
-  const endDraw = () => {
-    setIsDrawing(false)
-  }
+  const endDraw = () => setIsDrawing(false)
 
   // ===== clear =====
   const clear = () => {
     const canvas = canvasRef.current!
     const ctx = getCtx()
-
     if (!ctx) return
 
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -108,10 +103,19 @@ export function SignaturePad({
     try {
       const dataUrl = canvasRef.current!.toDataURL('image/png')
 
+      // ✅ build payload (dual mode)
+      const payload: any = { dataUrl }
+
+      if (checklistId && day && role) {
+        payload.checklistId = checklistId
+        payload.day = day
+        payload.role = role
+      }
+
       const res = await fetch('/api/upload-signature', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataUrl, checklistId, day, role }),
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) {
@@ -178,7 +182,6 @@ export function SignaturePad({
   // ===== MODAL =====
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4">
-
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
 
         {/* HEADER */}
@@ -196,7 +199,6 @@ export function SignaturePad({
 
         {/* BODY */}
         <div className="p-4">
-
           <p className="text-xs text-slate-400 text-center mb-2">
             Ký vào vùng bên dưới
           </p>
@@ -220,7 +222,6 @@ export function SignaturePad({
               {error}
             </p>
           )}
-
         </div>
 
         {/* FOOTER */}
@@ -254,9 +255,7 @@ export function SignaturePad({
           </button>
 
         </div>
-
       </div>
     </div>
   )
 }
-
