@@ -47,7 +47,7 @@ export async function uploadToCloudinary(
 ): Promise<CloudinaryUploadResult> {
   const timestamp = String(Math.round(Date.now() / 1000))
 
-  const sigParams: Record<string, string> = { folder, timestamp }
+  const sigParams: Record<string, string> = { folder, timestamp, format: 'webp',transformation: 'w_1280,c_limit'}
   if (publicId) sigParams.public_id = publicId
 
   const signature = await makeSignature(sigParams)
