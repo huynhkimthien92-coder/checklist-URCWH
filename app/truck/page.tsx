@@ -185,8 +185,12 @@ export default function TruckSearchPage() {
   const [forms, setForms]           = useState<TruckFormSummary[]>([])
   const [message, setMessage]       = useState('')
   const [showScanner, setShowScanner] = useState(false)
+  
 
   const scannedRef = useRef(false)
+  
+  const [statusFilter, setStatusFilter] = useState<FormStatus | 'all'>('all')
+  const [dateFilter, setDateFilter] = useState('')
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
 
@@ -201,7 +205,7 @@ export default function TruckSearchPage() {
     setForms([])
 
     try {
-      const res  = await fetch(`/api/truck/forms/search?truck_no=${value}`)
+      const res  = await fetch(`/api/truck/forms/search?truck_no=${value}&status=${statusFilter}&date=${dateFilter}`)
       const data = await res.json()
 
       if (data.success) {
@@ -312,6 +316,26 @@ export default function TruckSearchPage() {
         <button onClick={handleCreate} disabled={loading} style={styles.btn('primary')}>
           ➕ Create
         </button>
+      </div>
+      -----
+      <div style={styles.inputRow}>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as any)}
+          style={styles.input}
+        >
+          <option value="all">All Status</option>
+          <option value="draft">Draft</option>
+          <option value="submitted">Submitted</option>
+          <option value="approved">Approved</option>
+        </select>
+
+        <input
+          type="date"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          style={styles.input}
+        />
       </div>
 
       {/* Message */}
