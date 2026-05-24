@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
+// ✅ ROLE MAP — business logic thật
+const ROLE_MAP: Record<string, string[]> = {
+  operator: ['driver', 'warehouse', 'security'],
+  supervisor: ['approver'],
+  admin: ['driver', 'warehouse', 'security', 'approver'],
+}
+
+// ─────────────────────────────────────────────────────
+// ✅ DELETE SIGNATURE
+// ─────────────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
   const supabase = createServiceClient()
 
   try {
-    const { form_id, role } = await req.json()
+    const { form_id, role, user_id } = await req.json()
 
     if (!form_id || !role) {
       return NextResponse.json(
@@ -14,7 +24,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    // ✅ check form status
+    // ✅ check form
     const { data: form } = await supabase
       .from('truck_exit_forms')
       .select('status')
@@ -28,6 +38,22 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
+    // ✅ (optional) check user role trước khi xóa
+    if (user_id) {
+      const { data: user } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user_id)
+        .single()
+
+      if (!user || !ROLE_MAP[user.role]?.includes(role)) {
+        return NextResponse.json(
+          { error: 'You are not allowed to remove this signature' },
+          { status: 403 }
+        )
+      }
+    }
+
     await supabase
       .from('truck_signatures')
       .delete()
@@ -37,6 +63,8 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true })
 
   } catch (err: any) {
+    console.error('[DELETE_SIGNATURE_ERROR]', err)
+
     return NextResponse.json(
       { error: err.message },
       { status: 500 }
@@ -44,6 +72,9 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
+// ─────────────────────────────────────────────────────
+// ✅ CREATE / UPDATE SIGNATURE (UPSERT)
+// ─────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
 
@@ -52,23 +83,23 @@ export async function POST(req: NextRequest) {
 
     const {
       form_id,
-      role,
+      role,                // ✅ role của form (driver / warehouse / approver)
       user_id,
       user_name,
       signature_url,
-      signed_by_role,   // ✅ optional
-      signed_by_name    // ✅ optional
+      signed_by_role,      // ✅ role user (operator / supervisor)
+      signed_by_name
     } = body
 
     // ✅ 1. validate input
     if (!form_id || !role || !signature_url) {
       return NextResponse.json(
-        { error: 'Missing required fields (form_id, role, signature_url)' },
+        { error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    const validRoles = ['driver', 'security', 'warehouse', 'approver']
+    const validRoles = ['driver', 'warehouse', 'security', 'approver']
 
     if (!validRoles.includes(role)) {
       return NextResponse.json(
@@ -77,16 +108,40 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ✅ validate signed_by_role (optional)
-    const validActorRoles = ['operator', 'warehouse', 'driver', 'security', 'approver']
-    if (signed_by_role && !validActorRoles.includes(signed_by_role)) {
+    // ✅ 2. lấy role thật từ DB (không tin FE)
+    let userRole: string | null = null
+
+    if (user_id) {
+      const { data: user } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user_id)
+        .single()
+
+      if (!user) {
+        return NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        )
+      }
+
+      userRole = user.role
+    }
+
+    // ✅ fallback nếu chưa truyền user_id
+    if (!userRole) {
+      userRole = signed_by_role || null
+    }
+
+    // ✅ 3. validate quyền ký
+    if (!userRole || !ROLE_MAP[userRole]?.includes(role)) {
       return NextResponse.json(
-        { error: 'Invalid signed_by_role' },
-        { status: 400 }
+        { error: 'You are not allowed to sign this role' },
+        { status: 403 }
       )
     }
 
-    // ✅ 2. check form tồn tại + status
+    // ✅ 4. check form tồn tại
     const { data: form, error: formError } = await supabase
       .from('truck_exit_forms')
       .select('id, status')
@@ -100,7 +155,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ✅ block nếu đã approve
+    // ✅ block approved
     if (form.status === 'approved') {
       return NextResponse.json(
         { error: 'Form already approved. Cannot sign.' },
@@ -108,16 +163,20 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ✅ 3. UPSERT (1 form + 1 role)
+    // ✅ 5. UPSERT
     const payload = {
       form_id,
       role,
       user_id: user_id || null,
       user_name: user_name || null,
+
       signature_url,
-      signed_by_role: signed_by_role || null,
-      signed_by_name: signed_by_name || null,
-      signed_at: new Date().toISOString()
+
+      // ✅ IMPORTANT: lưu role thật của người ký
+      signed_by_role: userRole,
+      signed_by_name: signed_by_name || user_name || null,
+
+      signed_at: new Date().toISOString(),
     }
 
     const { data, error } = await supabase
@@ -132,7 +191,7 @@ export async function POST(req: NextRequest) {
       throw new Error(error.message)
     }
 
-    // ✅ 4. (optional) check signature progress
+    // ✅ 6. progress
     const { data: allSigns } = await supabase
       .from('truck_signatures')
       .select('role')
