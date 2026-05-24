@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
 // ─── GET ──────────────────────────────────────────────────────────────────────
-// (existing GET handler — không thay đổi)
 
 export async function GET(
   req: NextRequest,
@@ -53,11 +52,13 @@ export async function GET(
       order_index: item.template?.order_index,
     }))
 
+    // ✅ include created_by_id per order row for frontend permission check
     const orders = (form.invoice_nos || []).map((inv: string, index: number) => ({
-      invoice_no: inv,
-      quantity:   form.quantities?.[index]  ?? null,
-      dock_no:    form.dock_nos?.[index]    ?? null,
-      checked_by: form.checked_bys?.[index] ?? null,
+      invoice_no:    inv,
+      quantity:      form.quantities?.[index]     ?? null,
+      dock_no:       form.dock_nos?.[index]        ?? null,
+      checked_by:    form.checked_bys?.[index]     ?? null,
+      created_by_id: form.created_by_ids?.[index]  ?? null,  // ✅ NEW
     }))
 
     const signatureMap: Record<string, any> = {
@@ -65,13 +66,13 @@ export async function GET(
     }
     ;(signatures || []).forEach((s: any) => {
       signatureMap[s.role] = {
-        id:              s.id,
-        user_id:         s.user_id,
-        user_name:       s.user_name,
-        signed_by_name:  s.signed_by_name  || null,
-        signed_by_role:  s.signed_by_role  || null,
-        signature_url:   s.signature_url,
-        signed_at:       s.signed_at,
+        id:             s.id,
+        user_id:        s.user_id,
+        user_name:      s.user_name,
+        signed_by_name: s.signed_by_name || null,
+        signed_by_role: s.signed_by_role || null,
+        signature_url:  s.signature_url,
+        signed_at:      s.signed_at,
       }
     })
 
@@ -106,7 +107,6 @@ export async function GET(
 }
 
 // ─── PATCH ────────────────────────────────────────────────────────────────────
-// Updates editable fields + orders arrays. Cannot edit if already approved.
 
 export async function PATCH(
   req: NextRequest,
@@ -119,7 +119,6 @@ export async function PATCH(
       return NextResponse.json({ error: 'Missing form id' }, { status: 400 })
     }
 
-    // ✅ Check current status — không cho sửa nếu đã approved
     const { data: current, error: fetchError } = await supabase
       .from('truck_exit_forms')
       .select('status')
@@ -129,17 +128,12 @@ export async function PATCH(
     if (fetchError || !current) {
       return NextResponse.json({ error: 'Form not found' }, { status: 404 })
     }
-
     if (current.status === 'approved') {
-      return NextResponse.json(
-        { error: 'Cannot edit an approved form' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Cannot edit an approved form' }, { status: 400 })
     }
 
     const body = await req.json()
 
-    // ✅ Chỉ lấy các field được phép update — không cho update status, form_no, truck_no, driver_name ở đây
     const allowedFields: Record<string, unknown> = {}
 
     if (body.customer_name      !== undefined) allowedFields.customer_name      = body.customer_name
@@ -150,12 +144,13 @@ export async function PATCH(
     if (body.start_loading_time !== undefined) allowedFields.start_loading_time = body.start_loading_time ?? null
     if (body.end_loading_time   !== undefined) allowedFields.end_loading_time   = body.end_loading_time   ?? null
 
-    // ✅ Orders — lưu dưới dạng parallel arrays
     if (Array.isArray(body.invoice_nos)) {
-      allowedFields.invoice_nos = body.invoice_nos
-      allowedFields.quantities  = Array.isArray(body.quantities)  ? body.quantities  : []
-      allowedFields.dock_nos    = Array.isArray(body.dock_nos)    ? body.dock_nos    : []
-      allowedFields.checked_bys = Array.isArray(body.checked_bys) ? body.checked_bys : []
+      allowedFields.invoice_nos    = body.invoice_nos
+      allowedFields.quantities     = Array.isArray(body.quantities)     ? body.quantities     : []
+      allowedFields.dock_nos       = Array.isArray(body.dock_nos)       ? body.dock_nos       : []
+      allowedFields.checked_bys    = Array.isArray(body.checked_bys)    ? body.checked_bys    : []
+      // ✅ persist creator per row
+      allowedFields.created_by_ids = Array.isArray(body.created_by_ids) ? body.created_by_ids : []
     }
 
     allowedFields.updated_at = new Date().toISOString()
