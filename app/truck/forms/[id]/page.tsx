@@ -110,26 +110,7 @@ const C = {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-backButtonRow: {
-  display: 'flex',
-  alignItems: 'center',
-  marginBottom: 20,
-} as React.CSSProperties,
 
-backBtn: (disabled: boolean = false) => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  padding: '7px 14px',
-  fontSize: 11,
-  fontWeight: 700,
-  border: `1px solid ${disabled ? 'transparent' : C.borderHi}`,
-  borderRadius: 5,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  transition: 'all 0.15s',
-  // ... more styles
-}) as React.CSSProperties,
-  
 const S = {
   page: {
     padding: '24px 16px 48px',
@@ -141,6 +122,36 @@ const S = {
     color: C.textPri,
     boxSizing: 'border-box' as const,
   } as React.CSSProperties,
+
+  backButtonRow: {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: 20,
+  } as React.CSSProperties,
+  
+  backBtn: (disabled: boolean = false) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '7px 14px',
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase' as const,
+    background: disabled ? C.bg2 : 'transparent',
+    color: disabled ? C.textMut : C.textSec,
+    border: `1px solid ${disabled ? 'transparent' : C.borderHi}`,
+    borderRadius: 5,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 0.15s',
+    opacity: disabled ? 0.5 : 1,
+    '&:hover': !disabled ? {
+      background: C.bg2,
+      borderColor: C.gold,
+      color: C.gold,
+    } : {},
+  }) as React.CSSProperties,
 
   topBar: {
     display: 'flex',
@@ -559,6 +570,7 @@ export default function TruckFormPage() {
   const params            = useParams()
   const id                = params?.id as string
   const { data: session } = useSession()
+  const router = useRouter()
   const userRole          = (session?.user as any)?.role  as string | undefined
   const currentUserId     = (session?.user as any)?.id    as string | undefined
   const currentUserName   = session?.user?.name           ?? 'Unknown'
