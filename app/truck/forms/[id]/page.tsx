@@ -5,7 +5,9 @@ import { useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { SignaturePad } from '@/components/forms/SignaturePad'
 import { QRScanner } from '@/components/forms/QRScanner'
-import { Camera } from 'lucide-react'
+import { Camera , ArrowLeft } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -108,7 +110,26 @@ const C = {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+backButtonRow: {
+  display: 'flex',
+  alignItems: 'center',
+  marginBottom: 20,
+} as React.CSSProperties,
 
+backBtn: (disabled: boolean = false) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '7px 14px',
+  fontSize: 11,
+  fontWeight: 700,
+  border: `1px solid ${disabled ? 'transparent' : C.borderHi}`,
+  borderRadius: 5,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  transition: 'all 0.15s',
+  // ... more styles
+}) as React.CSSProperties,
+  
 const S = {
   page: {
     padding: '24px 16px 48px',
@@ -761,6 +782,27 @@ export default function TruckFormPage() {
 
   return (
     <div style={S.page}>
+      // ✅ Back button row — trước topBar
+      <div style={S.backButtonRow}>
+        <button
+          onClick={() => router.back()}
+          style={S.backBtn(false)}
+          title="Return to truck forms list"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = C.gold
+            e.currentTarget.style.color = C.gold
+            e.currentTarget.style.background = C.bg2
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = C.borderHi
+            e.currentTarget.style.color = C.textSec
+            e.currentTarget.style.background = 'transparent'
+          }}
+        >
+          <ArrowLeft size={14} />
+          Back
+        </button>
+      </div>
 
       {/* Top bar */}
       <div style={S.topBar}>
