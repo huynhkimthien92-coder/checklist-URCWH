@@ -72,7 +72,7 @@ const styles = {
     textTransform: 'uppercase' as const,
     background: 'transparent',
     color: '#cbd5e0',
-    border: `1px solid ${C.borderHi}`,
+    border: `1px solid ${'#3d4f6e'}`,
     borderRadius: 5,
     cursor: 'pointer',
     fontFamily: 'inherit',
@@ -331,7 +331,7 @@ export default function TruckSearchPage() {
             e.currentTarget.style.background = C.bg2
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = C.borderHi
+            e.currentTarget.style.borderColor = '#3d4f6e'
             e.currentTarget.style.color = C.textSec
             e.currentTarget.style.background = 'transparent'
           }}
