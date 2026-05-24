@@ -195,7 +195,7 @@ const S = {
     fontSize: 9,
     letterSpacing: '0.18em',
     textTransform: 'uppercase' as const,
-    color: '#2d3748',
+    color: '#a0aec0',
     fontWeight: 700,
   } as React.CSSProperties,
 
