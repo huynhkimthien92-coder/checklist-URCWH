@@ -82,7 +82,7 @@ const styles = {
   homeBtnHover: {
     borderColor: '#f7c948',
     color: '#f7c948',
-    background: C.bg2,
+    background: '#1a2030',
   } as React.CSSProperties,
 
   btn: (variant: 'default' | 'primary' | 'danger' = 'default') =>
@@ -326,13 +326,13 @@ export default function TruckSearchPage() {
           style={styles.homeBtn}
           title="Return to home"
           onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = C.gold
-            e.currentTarget.style.color = C.gold
-            e.currentTarget.style.background = C.bg2
+            e.currentTarget.style.borderColor = '#f5c842'
+            e.currentTarget.style.color = '#f5c842'
+            e.currentTarget.style.background = '#1a2030'
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = '#3d4f6e'
-            e.currentTarget.style.color = C.textSec
+            e.currentTarget.style.color = '#b8c5e0'
             e.currentTarget.style.background = 'transparent'
           }}
         >
