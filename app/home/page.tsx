@@ -31,6 +31,7 @@ type MenuItem = {
 const MENU: MenuItem[] = [
   { label: 'Admin', href: '/admin', icon: UserCog, color: 'bg-purple-100 text-purple-600', roles: ['admin'] },
   { label: 'Supervisor', href: '/supervisor', icon: Shield, color: 'bg-blue-100 text-blue-600', roles: ['admin', 'supervisor'] },
+  { label: '🚚 Truck Exit System', href: '/truck', icon: Truck, color: 'bg-cyan-100 text-cyan-600', roles: ['admin', 'supervisor', 'operator', 'driver', 'warehouse', 'approver', 'security'] },
   { label: 'Dashboard Xe nâng', href: '/dashboard/forklift', icon: Truck, color: 'bg-green-100 text-green-600', roles: ['admin', 'supervisor'] },
   { label: 'Dashboard Robot', href: '/dashboard/robot', icon: Bot, color: 'bg-pink-100 text-pink-600', roles: ['admin', 'supervisor'] },
   { label: 'Checklist Xe nâng', href: '/checklist', icon: ClipboardList, color: 'bg-orange-100 text-orange-600', roles: ['admin', 'supervisor','operator'] },
@@ -171,7 +172,11 @@ export default function HomePage() {
               'text-xs mt-1 px-2 py-0.5 rounded-full inline-block',
               session.user?.role === 'admin' && 'bg-purple-100 text-purple-700',
               session.user?.role === 'supervisor' && 'bg-blue-100 text-blue-700',
-              session.user?.role === 'operator' && 'bg-green-100 text-green-700'
+              session.user?.role === 'operator' && 'bg-green-100 text-green-700',
+              session.user?.role === 'driver' && 'bg-cyan-100 text-cyan-700',
+              session.user?.role === 'warehouse' && 'bg-cyan-100 text-cyan-700',
+              session.user?.role === 'approver' && 'bg-blue-100 text-blue-700',
+              session.user?.role === 'security' && 'bg-slate-100 text-slate-700'
             )}>
               {session.user?.role}
             </div>
