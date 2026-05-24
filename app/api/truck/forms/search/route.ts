@@ -8,10 +8,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
 
     let truck_no = searchParams.get('truck_no')
-    const date = searchParams.get('date') // optional (YYYY-MM-DD)
-    const limit = Number(searchParams.get('limit') || 5)
+    const date = searchParams.get('date')
+    const status = searchParams.get('status')
+    const limit = Number(searchParams.get('limit') || 10)
 
-    // ✅ validate
     if (!truck_no) {
       return NextResponse.json(
         { error: 'Missing truck_no' },
@@ -19,33 +19,34 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // ✅ normalize truck_no
     truck_no = truck_no.trim().toUpperCase()
 
-    // ✅ build query
+    // ✅ fuzzy search (ILIKE)
     let query = supabase
       .from('truck_exit_forms')
       .select('*')
-      .eq('truck_no', truck_no)
-      .in('status', ['draft', 'submitted']) // chỉ lấy form active
+      .ilike('truck_no', `%${truck_no}%`) // 🔥 fuzzy
       .order('created_at', { ascending: false })
       .limit(limit)
 
-    // ✅ filter theo ngày (optional)
+    // ✅ filter status
+    if (status && status !== 'all') {
+      query = query.eq('status', status)
+    }
+
+    // ✅ filter date
     if (date) {
       query = query.eq('date', date)
     }
 
     const { data, error } = await query
 
-    if (error) {
-      throw new Error(error.message)
-    }
+    if (error) throw new Error(error.message)
 
     if (!data || data.length === 0) {
       return NextResponse.json({
         success: false,
-        message: 'No active forms found',
+        message: 'No forms found',
         data: []
       })
     }
