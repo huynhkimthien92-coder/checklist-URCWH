@@ -71,7 +71,7 @@ const styles = {
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
     background: 'transparent',
-    color: C.textSec,
+    color: '#cbd5e0',
     border: `1px solid ${C.borderHi}`,
     borderRadius: 5,
     cursor: 'pointer',
@@ -80,8 +80,8 @@ const styles = {
   } as React.CSSProperties,
  
   homeBtnHover: {
-    borderColor: C.gold,
-    color: C.gold,
+    borderColor: '#f7c948',
+    color: '#f7c948',
     background: C.bg2,
   } as React.CSSProperties,
 
