@@ -56,36 +56,6 @@ type SignatureRole = (typeof ALL_SIGNATURE_ROLES)[number]
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const clearSignature = async (role: SignatureRole) => {
-  try {
-    const res = await fetch('/api/truck/sign', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        form_id: form?.id,
-        role,
-      }),
-    })
-
-    const data = await res.json()
-    if (!data.success) throw new Error(data.error || 'Failed to clear')
-
-    // ✅ update UI
-    setForm(prev =>
-      prev
-        ? {
-            ...prev,
-            signatures: {
-              ...prev.signatures,
-              [role]: { signature_url: null },
-            },
-          }
-        : prev
-    )
-  } catch (err: any) {
-    setError(err.message)
-  }
-}
 
 // ✅ Fix: Supabase trả "2024-01-15T08:30:00+07:00", datetime-local cần "2024-01-15T08:30"
 function toDatetimeLocal(iso: string | null | undefined): string {
@@ -694,6 +664,37 @@ export default function TruckFormPage() {
       setError(err.message)
     }
   }
+  const clearSignature = async (role: SignatureRole) => {
+    try {
+      const res = await fetch('/api/truck/sign', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          form_id: form?.id,
+          role,
+        }),
+      })
+
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error || 'Failed to clear')
+
+      // ✅ update UI
+      setForm(prev =>
+        prev
+          ? {
+              ...prev,
+              signatures: {
+                ...prev.signatures,
+                [role]: { signature_url: null },
+              },
+            }
+          : prev
+      )
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
 
   // ─── Approve ───────────────────────────────────────────────────────────────
 
