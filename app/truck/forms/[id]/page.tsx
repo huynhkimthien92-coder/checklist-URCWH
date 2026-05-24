@@ -717,7 +717,7 @@ export default function TruckFormPage() {
           <button
             onClick={approve}
             disabled={isApproved || dirty || userRole !== 'supervisor'}
-            style={S.approveBtn(isApproved || dirty)}
+            style={S.approveBtn(isApproved || dirty || user)}
             title={userRole !== 'supervisor'
               ? 'Only supervisor can approve'
               :dirty ? 'Save first' : ''
