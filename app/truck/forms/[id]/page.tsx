@@ -984,7 +984,7 @@ export default function TruckFormPage() {
                   </div>
                   <SignaturePad
                     label={`Sign as ${role}`}
-                    disabled={isApproved || userRole !== role} ✅
+                    disabled={isApproved || userRole !== role}
                     existingSignature={form.signatures?.[role]?.signature_url ?? null}
                     onSave={(url) => saveSignature(role, url)}
                   />
