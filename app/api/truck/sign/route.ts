@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
-// ✅ ROLE MAP — business logic thật
+// ✅ ROLE MAP — business logic thực tế
 const ROLE_MAP: Record<string, string[]> = {
   operator: ['driver', 'warehouse', 'security'],
   supervisor: ['approver'],
   admin: ['driver', 'warehouse', 'security', 'approver'],
 }
 
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // ✅ DELETE SIGNATURE
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
   const supabase = createServiceClient()
 
@@ -24,7 +24,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    // ✅ check form
+    // ✅ check form status
     const { data: form } = await supabase
       .from('truck_exit_forms')
       .select('status')
@@ -38,7 +38,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    // ✅ (optional) check user role trước khi xóa
+    // ✅ check quyền user (optional nhưng nên có)
     if (user_id) {
       const { data: user } = await supabase
         .from('users')
@@ -72,9 +72,9 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// ─────────────────────────────────────────────────────
-// ✅ CREATE / UPDATE SIGNATURE (UPSERT)
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// ✅ CREATE / UPSERT SIGNATURE
+// ─────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
 
@@ -83,12 +83,11 @@ export async function POST(req: NextRequest) {
 
     const {
       form_id,
-      role,                // ✅ role của form (driver / warehouse / approver)
+      role,                // driver | warehouse | approver
       user_id,
       user_name,
       signature_url,
-      signed_by_role,      // ✅ role user (operator / supervisor)
-      signed_by_name
+      signed_by_role,      // FE gửi nhưng KHÔNG trust
     } = body
 
     // ✅ 1. validate input
@@ -108,7 +107,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ✅ 2. lấy role thật từ DB (không tin FE)
+    // ✅ 2. lấy USER ROLE thật từ DB (không tin frontend)
     let userRole: string | null = null
 
     if (user_id) {
@@ -126,10 +125,8 @@ export async function POST(req: NextRequest) {
       }
 
       userRole = user.role
-    }
-
-    // ✅ fallback nếu chưa truyền user_id
-    if (!userRole) {
+    } else {
+      // fallback (ít dùng)
       userRole = signed_by_role || null
     }
 
@@ -141,10 +138,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ✅ 4. check form tồn tại
+    // ✅ 4. check form
     const { data: form, error: formError } = await supabase
       .from('truck_exit_forms')
-      .select('id, status')
+      .select('id, status, driver_name')
       .eq('id', form_id)
       .single()
 
@@ -155,7 +152,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ✅ block approved
     if (form.status === 'approved') {
       return NextResponse.json(
         { error: 'Form already approved. Cannot sign.' },
@@ -163,18 +159,27 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ✅ 5. UPSERT
+    // ✅ 5. DETERMINE signed_by_name (QUAN TRỌNG)
+    let finalSignedName: string | null = user_name || null
+
+    if (role === 'driver') {
+      // ✅ driver không có account → lấy từ form
+      finalSignedName = form.driver_name || null
+    }
+
+    // ✅ 6. UPSERT
     const payload = {
       form_id,
       role,
+
       user_id: user_id || null,
       user_name: user_name || null,
 
       signature_url,
 
-      // ✅ IMPORTANT: lưu role thật của người ký
-      signed_by_role: userRole,
-      signed_by_name: signed_by_name || user_name || null,
+      // ✅ audit chuẩn
+      signed_by_role: userRole,        // operator / supervisor
+      signed_by_name: finalSignedName, // driver_name nếu role=driver
 
       signed_at: new Date().toISOString(),
     }
@@ -182,7 +187,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase
       .from('truck_signatures')
       .upsert([payload], {
-        onConflict: 'form_id,role'
+        onConflict: 'form_id,role',
       })
       .select()
       .single()
@@ -191,7 +196,7 @@ export async function POST(req: NextRequest) {
       throw new Error(error.message)
     }
 
-    // ✅ 6. progress
+    // ✅ 7. progress
     const { data: allSigns } = await supabase
       .from('truck_signatures')
       .select('role')
@@ -204,8 +209,8 @@ export async function POST(req: NextRequest) {
       data,
       meta: {
         signed_roles: signedRoles,
-        total_signed: signedRoles.length
-      }
+        total_signed: signedRoles.length,
+      },
     })
 
   } catch (err: any) {
