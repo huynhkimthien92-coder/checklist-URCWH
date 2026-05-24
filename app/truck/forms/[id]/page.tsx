@@ -115,7 +115,7 @@ const S = {
     gap: '4px 16px',
     flexWrap: 'wrap' as const,
     fontSize: 11,
-    color: '#a0aec0',
+    color: '#cbd5e0',
   } as React.CSSProperties,
 
   metaVal: { color: '#cbd5e0' } as React.CSSProperties,
@@ -184,7 +184,7 @@ const S = {
     background: '#0e1117',
     border: '1px solid #1e2533',
     borderRadius: 7,
-    overflow: 'hidden' as const,
+    overflow: 'auto' as const,
   } as React.CSSProperties,
 
   sectionHead: {
@@ -1019,7 +1019,7 @@ function Field({
         fontSize: 9,
         letterSpacing: '0.14em',
         textTransform: 'uppercase' as const,
-        color: disabled ? '#2d3748' : '#4a5568',
+        color: disabled ? '#2d3748' : '#cbd5e0',
         fontWeight: 700,
       }}>
         {label}
