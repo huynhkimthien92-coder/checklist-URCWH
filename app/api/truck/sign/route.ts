@@ -1,6 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
+export async function DELETE(req: NextRequest) {
+  const supabase = createServiceClient()
+
+  try {
+    const { form_id, role } = await req.json()
+
+    if (!form_id || !role) {
+      return NextResponse.json(
+        { error: 'Missing form_id or role' },
+        { status: 400 }
+      )
+    }
+
+    // ✅ check form status
+    const { data: form } = await supabase
+      .from('truck_exit_forms')
+      .select('status')
+      .eq('id', form_id)
+      .single()
+
+    if (form?.status === 'approved') {
+      return NextResponse.json(
+        { error: 'Cannot modify approved form' },
+        { status: 400 }
+      )
+    }
+
+    await supabase
+      .from('truck_signatures')
+      .delete()
+      .eq('form_id', form_id)
+      .eq('role', role)
+
+    return NextResponse.json({ success: true })
+
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
 
