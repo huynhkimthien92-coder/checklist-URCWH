@@ -218,7 +218,7 @@ const S = {
     fontSize: 9,
     letterSpacing: '0.14em',
     textTransform: 'uppercase' as const,
-    color: '#4a5568',
+    color: '#a0aec0',
     fontWeight: 700,
   } as React.CSSProperties,
 
@@ -340,9 +340,9 @@ const S = {
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
     background: 'transparent',
-    border: '1px dashed #1e2533',
+    border: '1px dashed #4a5568',
     borderRadius: 4,
-    color: '#2d3748',
+    color: '#a0aec0',
     cursor: 'pointer',
     fontFamily: 'inherit',
   } as React.CSSProperties,
@@ -1019,7 +1019,7 @@ function Field({
         fontSize: 9,
         letterSpacing: '0.14em',
         textTransform: 'uppercase' as const,
-        color: disabled ? '#2d3748' : '#cbd5e0',
+        color: disabled ? '#4a5568' : '#a0aec0',
         fontWeight: 700,
       }}>
         {label}
