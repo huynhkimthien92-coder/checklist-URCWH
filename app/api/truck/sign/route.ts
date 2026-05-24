@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase'
 
 // ✅ ROLE MAP — business logic thực tế
 const ROLE_MAP: Record<string, string[]> = {
-  operator: ['driver', 'warehouse', 'security'],
+  operator: ['driver', 'warehouse'],
   supervisor: ['approver'],
   admin: ['driver', 'warehouse', 'security', 'approver'],
 }
