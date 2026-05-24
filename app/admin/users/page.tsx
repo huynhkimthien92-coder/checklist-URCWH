@@ -155,6 +155,7 @@ export default function AdminUsersPage() {
                     <option value="operator">Operator</option>
                     <option value="supervisor">Giám sát</option>
                     <option value="admin">Quản trị viên</option>
+                    <option value="security">Security</option>
                   </select>
                 </div>
               </div>
