@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { QRScanner } from '@/components/forms/QRScanner'
 import { Camera } from 'lucide-react'
+import { useEffect } from 'react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -191,18 +192,30 @@ export default function TruckSearchPage() {
   
   const [statusFilter, setStatusFilter] = useState<FormStatus | 'all'>('all')
   const [dateFilter, setDateFilter] = useState('')
+  useEffect(() => {
+    const cleaned = truckNo.trim().toUpperCase()
+
+    // ❗ empty → clear
+    if (!cleaned) {
+      setForms([])
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      searchByValue(cleaned)
+    }, 400) // debounce
+
+    return () => clearTimeout(timeout)
+  }, [truckNo, statusFilter, dateFilter]) 
+
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
 
   const searchByValue = async (value: string) => {
-    if (!value) {
-      setMessage('Please enter truck number')
-      return
-    }
-
+    if (!value) return 
     setLoading(true)
     setMessage('')
-    setForms([])
+    //setForms([])
 
     try {
       const res  = await fetch(`/api/truck/forms/search?truck_no=${value}&status=${statusFilter}&date=${dateFilter}`)
@@ -317,7 +330,7 @@ export default function TruckSearchPage() {
           ➕ Create
         </button>
       </div>
-      -----
+      
       <div style={styles.inputRow}>
         <select
           value={statusFilter}
