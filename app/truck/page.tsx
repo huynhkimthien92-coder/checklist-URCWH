@@ -405,39 +405,41 @@ export default function TruckSearchPage() {
 
       {/* Results table */}
       {forms.length > 0 && (
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>Form No</th>
-              <th style={styles.th}>Truck No</th>
-              <th style={styles.th}>Driver</th>
-              <th style={styles.th}>Status</th>
-              <th style={styles.th}>Date</th>
-              <th style={styles.th}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {forms.map((f) => (
-              <tr key={f.id}>
-                <td style={styles.td}>{f.form_no}</td>
-                <td style={styles.td}>{f.truck_no}</td>
-                <td style={styles.td}>{f.driver_name}</td>
-                <td style={styles.tdCenter}>
-                  <span style={styles.statusBadge(f.status)}>{f.status}</span>
-                </td>
-                <td style={styles.td}>{f.date}</td>
-                <td style={styles.tdCenter}>
-                  <button
-                    onClick={() => router.push(`/truck/forms/${f.id}`)}
-                    style={styles.openBtn}
-                  >
-                    Open
-                  </button>
-                </td>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Form No</th>
+                <th style={styles.th}>Truck No</th>
+                <th style={styles.th}>Driver</th>
+                <th style={styles.th}>Status</th>
+                <th style={styles.th}>Date</th>
+                <th style={styles.th}>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {forms.map((f) => (
+                <tr key={f.id}>
+                  <td style={styles.td}>{f.form_no}</td>
+                  <td style={styles.td}>{f.truck_no}</td>
+                  <td style={styles.td}>{f.driver_name}</td>
+                  <td style={styles.tdCenter}>
+                    <span style={styles.statusBadge(f.status)}>{f.status}</span>
+                  </td>
+                  <td style={styles.td}>{f.date}</td>
+                  <td style={styles.tdCenter}>
+                    <button
+                      onClick={() => router.push(`/truck/forms/${f.id}`)}
+                      style={styles.openBtn}
+                    >
+                      Open
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* QR Scanner */}
