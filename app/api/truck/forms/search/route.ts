@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
     let truck_no = searchParams.get('truck_no')
     const date = searchParams.get('date')
-    const status = searchParams.get('status')
+    const status = searchParams.get('status') || 'all'
     const limit = Number(searchParams.get('limit') || 10)
 
     if (!truck_no) {
@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
       .from('truck_exit_forms')
       .select('*')
       .ilike('truck_no', `%${truck_no}%`) // 🔥 fuzzy
+      .order('truck_no', { ascending: true })
       .order('created_at', { ascending: false })
       .limit(limit)
 
