@@ -118,7 +118,7 @@ const S = {
     color: '#4a5568',
   } as React.CSSProperties,
 
-  metaVal: { color: '#718096' } as React.CSSProperties,
+  metaVal: { color: '#cbd5e0' } as React.CSSProperties,
 
   topRight: {
     display: 'flex',
