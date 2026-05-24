@@ -53,7 +53,11 @@ const REQUIRED_ROLES      = ['driver', 'warehouse', 'approver'] as const
 const OPTIONAL_ROLES      = ['security'] as const
 const ALL_SIGNATURE_ROLES = [...REQUIRED_ROLES, ...OPTIONAL_ROLES] as const
 type SignatureRole = (typeof ALL_SIGNATURE_ROLES)[number]
-
+const ROLE_MAP: Record<string, SignatureRole[]> = {
+  operator: ['driver', 'warehouse'],
+  supervisor: ['approver'],
+  admin: ['driver', 'warehouse', 'security', 'approver'],
+}
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function toDatetimeLocal(iso: string | null | undefined): string {
@@ -693,8 +697,12 @@ export default function TruckFormPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          form_id: form?.id, role, user_name: currentUserName,
-          signature_url: url, signed_by_role: role,
+          form_id: form?.id,
+          role,
+          user_id: currentUserId,
+          user_name: currentUserName,
+          signature_url: url,
+          signed_by_role: userRole,
         }),
       })
       const data = await res.json()
@@ -712,7 +720,7 @@ export default function TruckFormPage() {
       const res  = await fetch('/api/truck/sign', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ form_id: form?.id, role }),
+        body: JSON.stringify({ form_id: form?.id, role,user_id: currentUserId }),
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.error || 'Failed to clear')
@@ -978,7 +986,7 @@ export default function TruckFormPage() {
             {ALL_SIGNATURE_ROLES.map((role) => {
               const isRequired = (REQUIRED_ROLES as readonly string[]).includes(role)
               const sigUrl     = form.signatures?.[role]?.signature_url ?? null
-              const canSign    = !isApproved && userRole === role
+              const canSign    = !isApproved && ROLE_MAP[userRole || '']?.includes(role)
               return (
                 <div key={role} style={S.signatureCard(isRequired)}>
                   <div style={S.signatureRole}>{role}</div>
@@ -992,6 +1000,12 @@ export default function TruckFormPage() {
                       // Signed: show image + clear button
                       <>
                         <img src={sigUrl} alt={`${role} signature`} style={S.signedImg} />
+                        {role === 'driver' && (
+                          <div style={{ fontSize: 11, color: C.textSec }}>
+                            {form.driver_name || 'Driver'}
+                          </div>
+                        )}
+
                         {canSign && (
                           <button style={S.clearSigBtn} onClick={() => clearSignature(role)}>
                             Ký lại
