@@ -229,7 +229,7 @@ const S = {
     background: C.bg1,
     border: `1px solid ${C.border}`,
     borderRadius: 8,
-    overflow: 'hidden' as const,
+    overflow: 'auto' as const,
   } as React.CSSProperties,
 
   sectionHead: {
