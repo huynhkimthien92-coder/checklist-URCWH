@@ -26,6 +26,7 @@ interface Order {
 
 interface Signature {
   signature_url: string | null
+  signed_by_name?: string | null
 }
 
 interface TruckForm {
@@ -1000,11 +1001,20 @@ export default function TruckFormPage() {
                       // Signed: show image + clear button
                       <>
                         <img src={sigUrl} alt={`${role} signature`} style={S.signedImg} />
-                        {role === 'driver' && (
+                        {role === 'driver' ? (
+                          <>
                           <div style={{ fontSize: 11, color: C.textSec }}>
                             {form.driver_name || 'Driver'}
                           </div>
+                          </>
+                        ) : (
+                        <div style={{ fontSize: 11, color: C.textSec }}>
+                          {form.signatures?.[role]?.signed_by_name || '—'}
+                        </div>
+
                         )}
+                        
+
 
                         {canSign && (
                           <button style={S.clearSigBtn} onClick={() => clearSignature(role)}>
