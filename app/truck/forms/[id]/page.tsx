@@ -115,7 +115,7 @@ const S = {
     gap: '4px 16px',
     flexWrap: 'wrap' as const,
     fontSize: 11,
-    color: '#4a5568',
+    color: '#a0aec0',
   } as React.CSSProperties,
 
   metaVal: { color: '#cbd5e0' } as React.CSSProperties,
@@ -699,9 +699,9 @@ export default function TruckFormPage() {
         <div>
           <div style={S.title}>🚚 Truck Exit Form</div>
           <div style={S.metaRow}>
-            <span>Form <span style={S.metaVal}>{form.form_no}</span></span>
-            <span>Truck <span style={S.metaVal}>{form.truck_no}</span></span>
-            <span>Driver <span style={S.metaVal}>{form.driver_name}</span></span>
+            <span>Form.No <span style={S.metaVal}>{form.form_no}</span></span>
+            <span>Truck.No <span style={S.metaVal}>{form.truck_no}</span></span>
+            <span>Driver Name <span style={S.metaVal}>{form.driver_name}</span></span>
             <span>Date <span style={S.metaVal}>{form.date}</span></span>
           </div>
         </div>
