@@ -1,10 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const session = await getServerSession(authOptions)
+  const user = session?.user as any
+
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+
+
   const supabase = createServiceClient()
 
   try {
@@ -68,6 +81,13 @@ export async function PATCH(
           { status: 400 }
         )
       }
+    if (status === 'approved' && user.role !== 'supervisor') {
+      return NextResponse.json(
+        { error: 'Only supervisor can approve' },
+        { status: 403 }
+      )
+    }
+
 
       // ✅ 2.2 kiểm tra chữ ký (KHÔNG cần security)
       const requiredRoles = ['driver', 'warehouse', 'approver']
