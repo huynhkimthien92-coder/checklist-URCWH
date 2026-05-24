@@ -56,6 +56,36 @@ type SignatureRole = (typeof ALL_SIGNATURE_ROLES)[number]
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+const clearSignature = async (role: SignatureRole) => {
+  try {
+    const res = await fetch('/api/truck/sign', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        form_id: form?.id,
+        role,
+      }),
+    })
+
+    const data = await res.json()
+    if (!data.success) throw new Error(data.error || 'Failed to clear')
+
+    // ✅ update UI
+    setForm(prev =>
+      prev
+        ? {
+            ...prev,
+            signatures: {
+              ...prev.signatures,
+              [role]: { signature_url: null },
+            },
+          }
+        : prev
+    )
+  } catch (err: any) {
+    setError(err.message)
+  }
+}
 
 // ✅ Fix: Supabase trả "2024-01-15T08:30:00+07:00", datetime-local cần "2024-01-15T08:30"
 function toDatetimeLocal(iso: string | null | undefined): string {
@@ -269,7 +299,7 @@ const S = {
     fontSize: 9,
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
-    color: '#2d3748',
+    color: '#a0aec0',
     background: '#0a0c10',
     borderBottom: '1px solid #1e2533',
     textAlign: 'left' as const,
@@ -350,7 +380,7 @@ const S = {
 
   ownerTag: {
     fontSize: 9,
-    color: '#2d3748',
+    color: '#a0aec0',
     letterSpacing: '0.06em',
     marginTop: 1,
     whiteSpace: 'nowrap' as const,
@@ -988,7 +1018,23 @@ export default function TruckFormPage() {
                     existingSignature={form.signatures?.[role]?.signature_url ?? null}
                     onSave={(url) => saveSignature(role, url)}
                   />
-
+                  {userRole === role &&
+                    form.signatures?.[role]?.signature_url &&!isApproved && (
+                      <button
+                        onClick={() => clearSignature(role)}
+                        style={{
+                          marginTop: 6,
+                          fontSize: 10,
+                          border: '1px solid #742a2a',
+                          color: '#fc8181',
+                          background: 'transparent',
+                          padding: '4px 8px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Clear
+                      </button>
+                    )}
                 </div>
               )
             })}
