@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { QRScanner } from '@/components/forms/QRScanner'
-import { Camera } from 'lucide-react'
+import { Camera , Home} from 'lucide-react'
 import { useEffect } from 'react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -59,6 +59,30 @@ const styles = {
     color: '#e2e8f0',
     fontFamily: 'inherit',
     outline: 'none',
+  } as React.CSSProperties,
+
+  homeBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '8px 14px',
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase' as const,
+    background: 'transparent',
+    color: C.textSec,
+    border: `1px solid ${C.borderHi}`,
+    borderRadius: 5,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 0.15s',
+  } as React.CSSProperties,
+ 
+  homeBtnHover: {
+    borderColor: C.gold,
+    color: C.gold,
+    background: C.bg2,
   } as React.CSSProperties,
 
   btn: (variant: 'default' | 'primary' | 'danger' = 'default') =>
@@ -297,6 +321,24 @@ export default function TruckSearchPage() {
   return (
     <div style={styles.page}>
       <div style={styles.title}>🚚 Truck Exit System</div>
+      <button
+          onClick={() => router.push('/home')}
+          style={styles.homeBtn}
+          title="Return to home"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = C.gold
+            e.currentTarget.style.color = C.gold
+            e.currentTarget.style.background = C.bg2
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = C.borderHi
+            e.currentTarget.style.color = C.textSec
+            e.currentTarget.style.background = 'transparent'
+          }}
+        >
+          <Home size={14} />
+          Home
+        </button>
 
       {/* Input row */}
       <div style={styles.inputRow}>
