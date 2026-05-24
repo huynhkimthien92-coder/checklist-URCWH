@@ -21,7 +21,7 @@ interface Order {
   quantity: number | null
   dock_no: string
   checked_by: string
-  created_by_id: string | null   // ✅ phân quyền: ai tạo row này
+  created_by_id: string | null
 }
 
 interface Signature {
@@ -54,40 +54,75 @@ const OPTIONAL_ROLES      = ['security'] as const
 const ALL_SIGNATURE_ROLES = [...REQUIRED_ROLES, ...OPTIONAL_ROLES] as const
 type SignatureRole = (typeof ALL_SIGNATURE_ROLES)[number]
 
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// ✅ Fix: Supabase trả "2024-01-15T08:30:00+07:00", datetime-local cần "2024-01-15T08:30"
 function toDatetimeLocal(iso: string | null | undefined): string {
   if (!iso) return ''
   try {
     const d = new Date(iso)
     if (isNaN(d.getTime())) return ''
-    // offset-aware → local string YYYY-MM-DDTHH:mm
     const pad = (n: number) => String(n).padStart(2, '0')
     return (
-      d.getFullYear() + '-' +
-      pad(d.getMonth() + 1) + '-' +
-      pad(d.getDate()) + 'T' +
-      pad(d.getHours()) + ':' +
-      pad(d.getMinutes())
+      d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+      'T' + pad(d.getHours()) + ':' + pad(d.getMinutes())
     )
-  } catch {
-    return ''
-  }
+  } catch { return '' }
+}
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
+// Dark theme with high contrast — all text visible on dark backgrounds
+
+const C = {
+  // Backgrounds — layered from darkest to lightest
+  bg0:      '#0d0f14',   // page background
+  bg1:      '#131720',   // section card
+  bg2:      '#1a2030',   // section header / table header
+  bg3:      '#1f2840',   // input background
+  bg3h:     '#253047',   // input hover
+
+  // Borders
+  border:   '#2a3550',
+  borderHi: '#3d4f6e',
+
+  // Text — high contrast hierarchy
+  textPri:  '#f0f4ff',   // primary — headings, values
+  textSec:  '#b8c5e0',   // secondary — labels, meta
+  textTer:  '#6e84aa',   // tertiary — placeholders, hints
+  textMut:  '#3d4f6e',   // muted — disabled text
+
+  // Accent
+  gold:     '#f5c842',
+  goldDim:  '#7a6010',
+
+  // Status
+  green:    '#4ade80',
+  greenBg:  '#0d2d1a',
+  greenBdr: '#166534',
+
+  red:      '#f87171',
+  redBg:    '#2d0d0d',
+  redBdr:   '#7f1d1d',
+
+  blue:     '#60a5fa',
+  blueBg:   '#0d1a2d',
+  blueBdr:  '#1e3a5f',
+
+  amber:    '#fbbf24',
+  amberBg:  '#2d1a0d',
+  amberBdr: '#78350f',
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const S = {
   page: {
-    padding: '24px 16px',
+    padding: '24px 16px 48px',
     maxWidth: 980,
     margin: '0 auto',
     fontFamily: "'IBM Plex Mono', 'Courier New', monospace",
-    backgroundColor: '#0a0c10',
+    backgroundColor: C.bg0,
     minHeight: '100vh',
-    color: '#e2e8f0',
+    color: C.textPri,
     boxSizing: 'border-box' as const,
   } as React.CSSProperties,
 
@@ -95,7 +130,7 @@ const S = {
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    borderBottom: '1px solid #1e2533',
+    borderBottom: `1px solid ${C.border}`,
     paddingBottom: 16,
     marginBottom: 20,
     flexWrap: 'wrap' as const,
@@ -103,23 +138,31 @@ const S = {
   } as React.CSSProperties,
 
   title: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: 700,
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
-    color: '#f7c948',
-    marginBottom: 6,
+    color: C.gold,
+    marginBottom: 8,
   } as React.CSSProperties,
 
   metaRow: {
     display: 'flex',
-    gap: '4px 16px',
+    gap: '4px 20px',
     flexWrap: 'wrap' as const,
     fontSize: 11,
-    color: '#cbd5e0',
   } as React.CSSProperties,
 
-  metaVal: { color: '#cbd5e0' } as React.CSSProperties,
+  metaLabel: {
+    color: C.textTer,
+    marginRight: 4,
+    letterSpacing: '0.06em',
+  } as React.CSSProperties,
+
+  metaVal: {
+    color: C.textSec,
+    fontWeight: 600,
+  } as React.CSSProperties,
 
   topRight: {
     display: 'flex',
@@ -130,21 +173,21 @@ const S = {
 
   statusBadge: (status: string) => ({
     display: 'inline-block',
-    padding: '4px 10px',
+    padding: '4px 12px',
     borderRadius: 4,
     fontSize: 10,
     fontWeight: 700,
     letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
     background:
-      status === 'approved' ? '#1a3a2a' :
-      status === 'submitted' ? '#1a2a3a' : '#1e1a10',
+      status === 'approved' ? C.greenBg :
+      status === 'submitted' ? C.blueBg : C.amberBg,
     color:
-      status === 'approved' ? '#48bb78' :
-      status === 'submitted' ? '#63b3ed' : '#f7c948',
+      status === 'approved' ? C.green :
+      status === 'submitted' ? C.blue : C.amber,
     border: `1px solid ${
-      status === 'approved' ? '#276749' :
-      status === 'submitted' ? '#2b6cb0' : '#b7791f'
+      status === 'approved' ? C.greenBdr :
+      status === 'submitted' ? C.blueBdr : C.amberBdr
     }`,
   }) as React.CSSProperties,
 
@@ -154,14 +197,14 @@ const S = {
     fontWeight: 700,
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
-    background: saving ? '#12161f' : dirty ? '#f7c948' : '#12161f',
-    color: saving ? '#4a5568' : dirty ? '#0a0c10' : '#2d3748',
-    border: `1px solid ${dirty && !saving ? '#b7791f' : '#1e2533'}`,
+    background: saving ? C.bg2 : dirty ? C.gold : C.bg2,
+    color: saving ? C.textTer : dirty ? '#0d0f14' : C.textMut,
+    border: `1px solid ${dirty && !saving ? C.goldDim : C.border}`,
     borderRadius: 4,
     cursor: dirty && !saving ? 'pointer' : 'default',
-    transition: 'all 0.2s ease',
     fontFamily: 'inherit',
     whiteSpace: 'nowrap' as const,
+    transition: 'all 0.15s',
   }) as React.CSSProperties,
 
   approveBtn: (disabled: boolean) => ({
@@ -170,89 +213,107 @@ const S = {
     fontWeight: 700,
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
-    background: disabled ? '#12161f' : '#1a3a2a',
-    color: disabled ? '#2d3748' : '#48bb78',
-    border: `1px solid ${disabled ? '#1e2533' : '#276749'}`,
+    background: disabled ? C.bg2 : C.greenBg,
+    color: disabled ? C.textMut : C.green,
+    border: `1px solid ${disabled ? C.border : C.greenBdr}`,
     borderRadius: 4,
     cursor: disabled ? 'not-allowed' : 'pointer',
-    transition: 'all 0.2s ease',
     fontFamily: 'inherit',
     whiteSpace: 'nowrap' as const,
+    transition: 'all 0.15s',
   }) as React.CSSProperties,
 
+  // ── Section card ──
   section: {
     marginBottom: 20,
-    background: '#0e1117',
-    border: '1px solid #1e2533',
-    borderRadius: 7,
-    overflow: 'auto' as const,
+    background: C.bg1,
+    border: `1px solid ${C.border}`,
+    borderRadius: 8,
+    overflow: 'hidden' as const,
   } as React.CSSProperties,
 
   sectionHead: {
-    padding: '8px 14px',
-    background: '#0a0c10',
-    borderBottom: '1px solid #1e2533',
-    fontSize: 9,
-    letterSpacing: '0.18em',
+    padding: '9px 16px',
+    background: C.bg2,
+    borderBottom: `1px solid ${C.border}`,
+    fontSize: 10,
+    letterSpacing: '0.2em',
     textTransform: 'uppercase' as const,
-    color: '#a0aec0',
+    color: C.textSec,        // ✅ legible label color
     fontWeight: 700,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
   } as React.CSSProperties,
 
-  sectionBody: { padding: '12px 14px' } as React.CSSProperties,
+  sectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    background: C.gold,
+    flexShrink: 0,
+  } as React.CSSProperties,
 
-  // ✅ Responsive grid — mobile: 1 col, tablet+: auto-fill
+  sectionBody: {
+    padding: '14px 16px',
+  } as React.CSSProperties,
+
+  // ── Field grid ──
   fieldGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))',
-    gap: '12px 16px',
+    gap: '14px 16px',
   } as React.CSSProperties,
 
   fieldGroup: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 4,
-    minWidth: 0,   // ✅ prevent overflow in grid
+    gap: 5,
+    minWidth: 0,
   } as React.CSSProperties,
 
+  // ✅ Labels — bright enough to read
   label: {
     fontSize: 9,
     letterSpacing: '0.14em',
     textTransform: 'uppercase' as const,
-    color: '#a0aec0',
+    color: C.textSec,
     fontWeight: 700,
   } as React.CSSProperties,
 
+  // ✅ Inputs — clearly visible text
   input: (disabled: boolean) => ({
-    padding: '7px 10px',
+    padding: '8px 10px',
     fontSize: 13,
-    background: disabled ? 'transparent' : '#12161f',
-    border: `1px solid ${disabled ? '#1a1e28' : '#2d3748'}`,
-    borderRadius: 4,
-    color: disabled ? '#4a5568' : '#e2e8f0',
+    background: disabled ? 'transparent' : C.bg3,
+    border: `1px solid ${disabled ? C.bg2 : C.border}`,
+    borderRadius: 5,
+    color: disabled ? C.textTer : C.textPri,
     fontFamily: 'inherit',
     outline: 'none',
     width: '100%',
     boxSizing: 'border-box' as const,
     minWidth: 0,
+    transition: 'border-color 0.15s',
   }) as React.CSSProperties,
 
   textarea: (disabled: boolean) => ({
-    padding: '7px 10px',
+    padding: '8px 10px',
     fontSize: 13,
-    background: disabled ? 'transparent' : '#12161f',
-    border: `1px solid ${disabled ? '#1a1e28' : '#2d3748'}`,
-    borderRadius: 4,
-    color: disabled ? '#4a5568' : '#e2e8f0',
+    background: disabled ? 'transparent' : C.bg3,
+    border: `1px solid ${disabled ? C.bg2 : C.border}`,
+    borderRadius: 5,
+    color: disabled ? C.textTer : C.textPri,
     fontFamily: 'inherit',
     outline: 'none',
     resize: 'vertical' as const,
-    minHeight: 56,
+    minHeight: 60,
     width: '100%',
     boxSizing: 'border-box' as const,
+    lineHeight: 1.5,
   }) as React.CSSProperties,
 
-  // ✅ Mobile: table scrolls horizontally inside wrapper
+  // ── Table ──
   tableWrapper: {
     overflowX: 'auto' as const,
     WebkitOverflowScrolling: 'touch' as const,
@@ -261,35 +322,37 @@ const S = {
   table: {
     width: '100%',
     borderCollapse: 'collapse' as const,
-    minWidth: 520,  // ✅ prevent collapse on tiny screens
+    minWidth: 500,
   } as React.CSSProperties,
 
+  // ✅ Table headers — clearly visible
   th: {
-    padding: '8px 8px',
+    padding: '9px 10px',
     fontSize: 9,
-    letterSpacing: '0.1em',
+    letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
-    color: '#a0aec0',
-    background: '#0a0c10',
-    borderBottom: '1px solid #1e2533',
+    color: C.textSec,
+    background: C.bg2,
+    borderBottom: `1px solid ${C.border}`,
     textAlign: 'left' as const,
     fontWeight: 700,
     whiteSpace: 'nowrap' as const,
   } as React.CSSProperties,
 
   td: {
-    padding: '4px 4px',
-    borderBottom: '1px solid #0e1117',
+    padding: '5px 5px',
+    borderBottom: `1px solid ${C.bg2}`,
     verticalAlign: 'middle' as const,
   } as React.CSSProperties,
 
+  // ✅ Table inputs — clearly visible
   tableInput: (disabled: boolean) => ({
-    padding: '5px 7px',
+    padding: '6px 8px',
     fontSize: 12,
-    background: disabled ? 'transparent' : '#12161f',
-    border: `1px solid ${disabled ? 'transparent' : '#1e2533'}`,
-    borderRadius: 3,
-    color: disabled ? '#4a5568' : '#e2e8f0',
+    background: disabled ? 'transparent' : C.bg3,
+    border: `1px solid ${disabled ? 'transparent' : C.border}`,
+    borderRadius: 4,
+    color: disabled ? C.textSec : C.textPri,
     fontFamily: 'inherit',
     outline: 'none',
     width: '100%',
@@ -297,7 +360,6 @@ const S = {
     minWidth: 0,
   }) as React.CSSProperties,
 
-  // Invoice cell: input + scan button side by side
   invoiceCell: {
     display: 'flex',
     gap: 4,
@@ -311,138 +373,157 @@ const S = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#12161f',
-    border: '1px solid #1e2533',
-    borderRadius: 3,
+    background: C.bg3,
+    border: `1px solid ${C.borderHi}`,
+    borderRadius: 4,
     cursor: 'pointer',
-    color: '#4a5568',
+    color: C.textSec,
+    transition: 'all 0.15s',
   } as React.CSSProperties,
 
   delBtn: (canEdit: boolean) => ({
-    padding: '4px 8px',
+    padding: '5px 9px',
     fontSize: 10,
     fontWeight: 700,
-    border: `1px solid ${canEdit ? '#742a2a' : '#1e2533'}`,
-    borderRadius: 3,
+    border: `1px solid ${canEdit ? C.redBdr : C.border}`,
+    borderRadius: 4,
     cursor: canEdit ? 'pointer' : 'not-allowed',
     fontFamily: 'inherit',
     textTransform: 'uppercase' as const,
     background: 'transparent',
-    color: canEdit ? '#fc8181' : '#2d3748',
+    color: canEdit ? C.red : C.textMut,
     whiteSpace: 'nowrap' as const,
-    opacity: canEdit ? 1 : 0.4,
+    opacity: canEdit ? 1 : 0.5,
   }) as React.CSSProperties,
 
   addRowBtn: {
     marginTop: 10,
-    padding: '6px 14px',
+    padding: '7px 14px',
     fontSize: 10,
     fontWeight: 700,
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
     background: 'transparent',
-    border: '1px dashed #4a5568',
-    borderRadius: 4,
-    color: '#a0aec0',
+    border: `1px dashed ${C.borderHi}`,
+    borderRadius: 5,
+    color: C.textSec,
     cursor: 'pointer',
     fontFamily: 'inherit',
+    transition: 'all 0.15s',
   } as React.CSSProperties,
 
-  ownerTag: {
+  lockedTag: {
     fontSize: 9,
-    color: '#a0aec0',
+    color: C.textTer,
     letterSpacing: '0.06em',
-    marginTop: 1,
-    whiteSpace: 'nowrap' as const,
+    marginTop: 2,
   } as React.CSSProperties,
 
+  // ✅ Checklist buttons — visible even inactive
   passBtn: (active: boolean, disabled: boolean) => ({
-    width: 30,
-    height: 30,
-    borderRadius: 4,
-    border: `1px solid ${active ? '#276749' : '#1e2533'}`,
-    background: active ? '#1a3a2a' : 'transparent',
-    color: active ? '#48bb78' : '#2d3748',
+    width: 32,
+    height: 32,
+    borderRadius: 5,
+    border: `1px solid ${active ? C.greenBdr : C.border}`,
+    background: active ? C.greenBg : 'transparent',
+    color: active ? C.green : C.textTer,
     cursor: disabled ? 'not-allowed' : 'pointer',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: 700,
-    opacity: disabled ? 0.5 : 1,
-    flexShrink: 0,
+    opacity: disabled && !active ? 0.4 : 1,
+    transition: 'all 0.15s',
   }) as React.CSSProperties,
 
   failBtn: (active: boolean, disabled: boolean) => ({
-    width: 30,
-    height: 30,
-    borderRadius: 4,
-    border: `1px solid ${active ? '#742a2a' : '#1e2533'}`,
-    background: active ? '#3b1515' : 'transparent',
-    color: active ? '#fc8181' : '#2d3748',
+    width: 32,
+    height: 32,
+    borderRadius: 5,
+    border: `1px solid ${active ? C.redBdr : C.border}`,
+    background: active ? C.redBg : 'transparent',
+    color: active ? C.red : C.textTer,
     cursor: disabled ? 'not-allowed' : 'pointer',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: 700,
-    opacity: disabled ? 0.5 : 1,
-    flexShrink: 0,
+    opacity: disabled && !active ? 0.4 : 1,
+    transition: 'all 0.15s',
   }) as React.CSSProperties,
 
   signaturesRow: {
     display: 'flex',
-    gap: 10,
+    gap: 12,
     flexWrap: 'wrap' as const,
   } as React.CSSProperties,
 
   signatureCard: (required: boolean) => ({
     flex: '1 1 160px',
     minWidth: 0,
-    background: '#0a0c10',
-    border: `1px solid ${required ? '#1e2533' : '#12161f'}`,
-    borderRadius: 6,
-    padding: 12,
+    background: C.bg0,
+    border: `1px solid ${required ? C.borderHi : C.border}`,
+    borderRadius: 7,
+    padding: 14,
     textAlign: 'center' as const,
   }) as React.CSSProperties,
 
   signatureRole: {
-    fontSize: 9,
-    letterSpacing: '0.16em',
+    fontSize: 10,
+    letterSpacing: '0.14em',
     textTransform: 'uppercase' as const,
-    color: '#4a5568',
+    color: C.textSec,
     fontWeight: 700,
-    marginBottom: 2,
+    marginBottom: 3,
   } as React.CSSProperties,
 
   requiredTag: {
     fontSize: 8,
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
-    color: '#b7791f',
-    marginBottom: 8,
+    color: C.amber,
+    marginBottom: 10,
   } as React.CSSProperties,
 
   optionalTag: {
     fontSize: 8,
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
-    color: '#1e2533',
-    marginBottom: 8,
+    color: C.textMut,
+    marginBottom: 10,
   } as React.CSSProperties,
 
+  clearSigBtn: {
+    marginTop: 8,
+    padding: '4px 10px',
+    fontSize: 10,
+    fontWeight: 700,
+    border: `1px solid ${C.redBdr}`,
+    borderRadius: 4,
+    color: C.red,
+    background: 'transparent',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    letterSpacing: '0.06em',
+  } as React.CSSProperties,
+
+  // ── Alert boxes ──
   errorBox: {
     padding: '10px 14px',
-    background: '#180a0a',
-    border: '1px solid #742a2a',
-    borderRadius: 5,
-    color: '#fc8181',
+    background: C.redBg,
+    border: `1px solid ${C.redBdr}`,
+    borderRadius: 6,
+    color: C.red,
     fontSize: 12,
     marginBottom: 14,
+    letterSpacing: '0.02em',
   } as React.CSSProperties,
 
   successBox: {
     padding: '10px 14px',
-    background: '#0a1810',
-    border: '1px solid #276749',
-    borderRadius: 5,
-    color: '#48bb78',
+    background: C.greenBg,
+    border: `1px solid ${C.greenBdr}`,
+    borderRadius: 6,
+    color: C.green,
     fontSize: 12,
     marginBottom: 14,
+    letterSpacing: '0.02em',
   } as React.CSSProperties,
 
   loadingState: {
@@ -451,22 +532,39 @@ const S = {
     justifyContent: 'center',
     height: '100vh',
     fontFamily: "'IBM Plex Mono', monospace",
-    color: '#2d3748',
+    color: C.textTer,
     fontSize: 13,
-    background: '#0a0c10',
+    background: C.bg0,
     letterSpacing: '0.1em',
+  } as React.CSSProperties,
+
+  // checklist row item text
+  checklistLabel: {
+    paddingLeft: 14,
+    fontSize: 12,
+    color: C.textSec,
+    lineHeight: 1.5,
+  } as React.CSSProperties,
+
+  // empty state
+  emptyRow: {
+    textAlign: 'center' as const,
+    color: C.textMut,
+    fontSize: 12,
+    padding: '20px 0',
+    letterSpacing: '0.04em',
   } as React.CSSProperties,
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TruckFormPage() {
-  const params              = useParams()
-  const id                  = params?.id as string
-  const { data: session }   = useSession()
-  const userRole = (session?.user as any)?.role
-  const currentUserId       = (session?.user as any)?.id   as string | undefined
-  const currentUserName     = session?.user?.name          ?? 'Unknown'
+  const params            = useParams()
+  const id                = params?.id as string
+  const { data: session } = useSession()
+  const userRole          = (session?.user as any)?.role    as string | undefined
+  const currentUserId     = (session?.user as any)?.id      as string | undefined
+  const currentUserName   = session?.user?.name             ?? 'Unknown'
 
   const [form, setForm]               = useState<TruckForm | null>(null)
   const [loading, setLoading]         = useState(true)
@@ -475,8 +573,6 @@ export default function TruckFormPage() {
   const [saving, setSaving]           = useState(false)
   const [dirty, setDirty]             = useState(false)
   const [savingItems, setSavingItems] = useState<Set<string>>(new Set())
-
-  // QR Scanner state: which order row index is scanning
   const [scanningRow, setScanningRow] = useState<number | null>(null)
   const scannedRef                    = useRef(false)
 
@@ -498,9 +594,7 @@ export default function TruckFormPage() {
     }
   }, [id])
 
-  useEffect(() => {
-    if (id) loadForm()
-  }, [id, loadForm])
+  useEffect(() => { if (id) loadForm() }, [id, loadForm])
 
   // ─── Field helpers ─────────────────────────────────────────────────────────
 
@@ -513,14 +607,12 @@ export default function TruckFormPage() {
 
   const handleSave = async () => {
     if (!form || !dirty || saving) return
-    setSaving(true)
-    setError('')
-    setSuccess('')
+    setSaving(true); setError(''); setSuccess('')
     try {
       const res  = await fetch(`/api/truck/forms/${id}`, {
-        method:  'PATCH',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
+        body: JSON.stringify({
           customer_name:      form.customer_name,
           description:        form.description,
           truck_size:         form.truck_size,
@@ -538,7 +630,7 @@ export default function TruckFormPage() {
       const data = await res.json()
       if (!data.success) throw new Error(data.error || 'Save failed')
       setDirty(false)
-      setSuccess('Saved')
+      setSuccess('Saved successfully')
       setTimeout(() => setSuccess(''), 3000)
     } catch (err: any) {
       setError(err.message)
@@ -550,23 +642,13 @@ export default function TruckFormPage() {
   // ─── Orders CRUD ───────────────────────────────────────────────────────────
 
   const addOrder = () => {
-    setForm((prev) => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        orders: [
-          ...(prev.orders ?? []),
-          {
-            invoice_no:    '',
-            quantity:      null,
-            dock_no:       '',
-            // ✅ checked_by tự điền tên user hiện tại
-            checked_by:    currentUserName,
-            created_by_id: currentUserId ?? null,
-          },
-        ],
-      }
-    })
+    setForm((prev) => prev ? {
+      ...prev,
+      orders: [...(prev.orders ?? []), {
+        invoice_no: '', quantity: null, dock_no: '',
+        checked_by: currentUserName, created_by_id: currentUserId ?? null,
+      }],
+    } : prev)
     setDirty(true)
   }
 
@@ -581,29 +663,23 @@ export default function TruckFormPage() {
   }
 
   const deleteOrder = (i: number) => {
-    setForm((prev) => {
-      if (!prev) return prev
-      return { ...prev, orders: prev.orders?.filter((_, idx) => idx !== i) ?? [] }
-    })
+    setForm((prev) => prev
+      ? { ...prev, orders: prev.orders?.filter((_, idx) => idx !== i) ?? [] }
+      : prev
+    )
     setDirty(true)
   }
 
-  // ✅ Ai có thể sửa/xóa order row?
-  // - Người tạo row đó (created_by_id === currentUserId)
-  // - Hoặc row chưa có created_by_id (row cũ chưa migrate)
   const canEditOrder = (order: Order) =>
     !order.created_by_id || order.created_by_id === currentUserId
 
-  // ─── QR Scan per row ───────────────────────────────────────────────────────
+  // ─── QR Scan ───────────────────────────────────────────────────────────────
 
   const handleScan = (value: string) => {
     if (scannedRef.current || scanningRow === null) return
     scannedRef.current = true
-
-    const cleaned = value.replace(/\s/g, '').toUpperCase()
-    updateOrder(scanningRow, 'invoice_no', cleaned)
+    updateOrder(scanningRow, 'invoice_no', value.replace(/\s/g, '').toUpperCase())
     setScanningRow(null)
-
     setTimeout(() => { scannedRef.current = false }, 1000)
   }
 
@@ -611,25 +687,23 @@ export default function TruckFormPage() {
 
   const updateItem = async (itemId: string, status: 'pass' | 'fail') => {
     setError('')
-    setForm((prev) =>
-      prev
-        ? { ...prev, items: prev.items?.map((it) => it.id === itemId ? { ...it, status } : it) }
-        : prev
+    setForm((prev) => prev
+      ? { ...prev, items: prev.items?.map((it) => it.id === itemId ? { ...it, status } : it) }
+      : prev
     )
     setSavingItems((prev) => new Set(prev).add(itemId))
     try {
       const res  = await fetch('/api/truck/items', {
-        method:  'PATCH',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ items: [{ id: itemId, status }] }),
+        body: JSON.stringify({ items: [{ id: itemId, status }] }),
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.error || 'Failed to update item')
     } catch (err: any) {
-      setForm((prev) =>
-        prev
-          ? { ...prev, items: prev.items?.map((it) => it.id === itemId ? { ...it, status: null } : it) }
-          : prev
+      setForm((prev) => prev
+        ? { ...prev, items: prev.items?.map((it) => it.id === itemId ? { ...it, status: null } : it) }
+        : prev
       )
       setError(err.message)
     } finally {
@@ -643,58 +717,38 @@ export default function TruckFormPage() {
     setError('')
     try {
       const res  = await fetch('/api/truck/sign', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          form_id:        form?.id,
-          role,
-          user_name:      currentUserName,
-          signature_url:  url,
-          signed_by_role: role,
+        body: JSON.stringify({
+          form_id: form?.id, role, user_name: currentUserName,
+          signature_url: url, signed_by_role: role,
         }),
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.error || 'Failed to save signature')
-      setForm((prev) =>
-        prev
-          ? { ...prev, signatures: { ...prev.signatures, [role]: { signature_url: url } } }
-          : prev
+      setForm((prev) => prev
+        ? { ...prev, signatures: { ...prev.signatures, [role]: { signature_url: url } } }
+        : prev
       )
-    } catch (err: any) {
-      setError(err.message)
-    }
+    } catch (err: any) { setError(err.message) }
   }
+
   const clearSignature = async (role: SignatureRole) => {
+    setError('')
     try {
-      const res = await fetch('/api/truck/sign', {
+      const res  = await fetch('/api/truck/sign', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          form_id: form?.id,
-          role,
-        }),
+        body: JSON.stringify({ form_id: form?.id, role }),
       })
-
       const data = await res.json()
       if (!data.success) throw new Error(data.error || 'Failed to clear')
-
-      // ✅ update UI
-      setForm(prev =>
-        prev
-          ? {
-              ...prev,
-              signatures: {
-                ...prev.signatures,
-                [role]: { signature_url: null },
-              },
-            }
-          : prev
+      setForm((prev) => prev
+        ? { ...prev, signatures: { ...prev.signatures, [role]: { signature_url: null } } }
+        : prev
       )
-    } catch (err: any) {
-      setError(err.message)
-    }
+    } catch (err: any) { setError(err.message) }
   }
-
 
   // ─── Approve ───────────────────────────────────────────────────────────────
 
@@ -703,16 +757,14 @@ export default function TruckFormPage() {
     setError('')
     try {
       const res  = await fetch(`/api/truck/forms/${id}/status`, {
-        method:  'PATCH',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ status: 'approved' }),
+        body: JSON.stringify({ status: 'approved' }),
       })
       const data = await res.json()
       if (!data.success) throw new Error(data.error || 'Failed to approve')
       loadForm()
-    } catch (err: any) {
-      setError(err.message)
-    }
+    } catch (err: any) { setError(err.message) }
   }
 
   // ─── Guards ────────────────────────────────────────────────────────────────
@@ -720,38 +772,51 @@ export default function TruckFormPage() {
   if (loading) return <div style={S.loadingState}>Loading…</div>
   if (!form)   return <div style={S.loadingState}>Form not found.</div>
 
-  const isApproved = form.status === 'approved'
+  const isApproved   = form.status === 'approved'
+  const canApprove   = userRole === 'supervisor' && !isApproved && !dirty
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div style={S.page}>
 
-      {/* Top bar */}
+      {/* ── Top bar ── */}
       <div style={S.topBar}>
         <div>
           <div style={S.title}>🚚 Truck Exit Form</div>
           <div style={S.metaRow}>
-            <span>Form.No <span style={S.metaVal}>{form.form_no}</span></span>
-            <span>Truck.No <span style={S.metaVal}>{form.truck_no}</span></span>
-            <span>Driver Name <span style={S.metaVal}>{form.driver_name}</span></span>
-            <span>Date <span style={S.metaVal}>{form.date}</span></span>
+            {[
+              ['Form No', form.form_no],
+              ['Truck',   form.truck_no],
+              ['Driver',  form.driver_name],
+              ['Date',    form.date],
+            ].map(([label, val]) => (
+              <span key={label}>
+                <span style={S.metaLabel}>{label}</span>
+                <span style={S.metaVal}>{val}</span>
+              </span>
+            ))}
           </div>
         </div>
         <div style={S.topRight}>
           <span style={S.statusBadge(form.status)}>{form.status}</span>
           {!isApproved && (
-            <button onClick={handleSave} disabled={!dirty || saving} style={S.saveBtn(dirty, saving)}>
+            <button
+              onClick={handleSave}
+              disabled={!dirty || saving}
+              style={S.saveBtn(dirty, saving)}
+            >
               {saving ? 'Saving…' : dirty ? '● Save' : 'Saved'}
             </button>
           )}
           <button
             onClick={approve}
-            disabled={isApproved || dirty || userRole !== 'supervisor'}
-            style={S.approveBtn(isApproved || dirty || userRole !== 'supervisor')}
-            title={userRole !== 'supervisor'
-              ? 'Only supervisor can approve'
-              :dirty ? 'Save first' : ''
+            disabled={!canApprove}
+            style={S.approveBtn(!canApprove)}
+            title={
+              isApproved         ? 'Already approved' :
+              dirty              ? 'Save first' :
+              userRole !== 'supervisor' ? 'Supervisor only' : ''
             }
           >
             {isApproved ? '✓ Approved' : 'Approve'}
@@ -759,13 +824,13 @@ export default function TruckFormPage() {
         </div>
       </div>
 
-      {/* Alerts */}
+      {/* ── Alerts ── */}
       {error   && <div style={S.errorBox}>⚠ {error}</div>}
       {success && <div style={S.successBox}>✓ {success}</div>}
 
-      {/* Form Details */}
+      {/* ── Form Details ── */}
       <div style={S.section}>
-        <div style={S.sectionHead}>Form Details</div>
+        <SectionHead label="Form Details" />
         <div style={S.sectionBody}>
           <div style={S.fieldGrid}>
 
@@ -787,32 +852,22 @@ export default function TruckFormPage() {
               <input style={S.input(isApproved)} disabled={isApproved}
                 type="number"
                 value={form.net_weight ?? ''}
-                onChange={(e) =>
-                  setField('net_weight', e.target.value ? Number(e.target.value) : null)
-                }
+                onChange={(e) => setField('net_weight', e.target.value ? Number(e.target.value) : null)}
                 placeholder="—" />
             </Field>
 
             <Field label="Start Loading" disabled={isApproved}>
-              <input
-                style={S.input(isApproved)}
-                disabled={isApproved}
+              <input style={S.input(isApproved)} disabled={isApproved}
                 type="datetime-local"
-                // ✅ normalize ISO → datetime-local format
                 value={toDatetimeLocal(form.start_loading_time)}
-                onChange={(e) => setField('start_loading_time', e.target.value || null)}
-              />
+                onChange={(e) => setField('start_loading_time', e.target.value || null)} />
             </Field>
 
             <Field label="End Loading" disabled={isApproved}>
-              <input
-                style={S.input(isApproved)}
-                disabled={isApproved}
+              <input style={S.input(isApproved)} disabled={isApproved}
                 type="datetime-local"
-                // ✅ normalize ISO → datetime-local format
                 value={toDatetimeLocal(form.end_loading_time)}
-                onChange={(e) => setField('end_loading_time', e.target.value || null)}
-              />
+                onChange={(e) => setField('end_loading_time', e.target.value || null)} />
             </Field>
 
             <div style={{ ...S.fieldGroup, gridColumn: 'span 2' }}>
@@ -835,94 +890,73 @@ export default function TruckFormPage() {
         </div>
       </div>
 
-      {/* Orders */}
+      {/* ── Orders ── */}
       <div style={S.section}>
-        <div style={S.sectionHead}>Orders</div>
+        <SectionHead label="Orders" />
         <div style={S.sectionBody}>
-          {/* ✅ horizontal scroll on mobile */}
           <div style={S.tableWrapper}>
             <table style={S.table}>
               <thead>
                 <tr>
                   <th style={{ ...S.th, minWidth: 160 }}>Invoice No</th>
-                  <th style={{ ...S.th, width: 72 }}>Qty</th>
+                  <th style={{ ...S.th, width: 80 }}>Qty</th>
                   <th style={{ ...S.th, minWidth: 80 }}>Dock</th>
-                  <th style={{ ...S.th, minWidth: 100 }}>Checked By</th>
-                  {!isApproved && <th style={{ ...S.th, width: 52 }}></th>}
+                  <th style={{ ...S.th, minWidth: 110 }}>Checked By</th>
+                  {!isApproved && <th style={{ ...S.th, width: 54 }} />}
                 </tr>
               </thead>
               <tbody>
-                {(form.orders ?? []).map((order, i) => {
+                {(form.orders ?? []).length === 0 ? (
+                  <tr>
+                    <td colSpan={isApproved ? 4 : 5} style={S.emptyRow}>
+                      No orders yet
+                    </td>
+                  </tr>
+                ) : (form.orders ?? []).map((order, i) => {
                   const editable = !isApproved && canEditOrder(order)
                   return (
                     <tr key={i}>
-                      {/* Invoice + scan button */}
                       <td style={S.td}>
                         <div style={S.invoiceCell}>
-                          <input
-                            style={S.tableInput(!editable)}
-                            disabled={!editable}
+                          <input style={S.tableInput(!editable)} disabled={!editable}
                             value={order.invoice_no}
                             onChange={(e) => updateOrder(i, 'invoice_no', e.target.value.toUpperCase())}
-                            placeholder="INV-001"
-                          />
+                            placeholder="INV-001" />
                           {editable && (
-                            <button
-                              style={S.scanBtn}
+                            <button style={S.scanBtn}
                               onClick={() => { scannedRef.current = false; setScanningRow(i) }}
-                              title="Scan barcode"
-                            >
+                              title="Scan barcode">
                               <Camera size={13} />
                             </button>
                           )}
                         </div>
-                        {/* ✅ hiện ai tạo row này */}
                         {order.created_by_id && !editable && (
-                          <div style={S.ownerTag}>locked</div>
+                          <div style={S.lockedTag}>🔒 locked</div>
                         )}
                       </td>
-
                       <td style={S.td}>
-                        <input
-                          style={S.tableInput(!editable)}
-                          disabled={!editable}
+                        <input style={S.tableInput(!editable)} disabled={!editable}
                           type="number"
                           value={order.quantity ?? ''}
-                          onChange={(e) =>
-                            updateOrder(i, 'quantity', e.target.value ? Number(e.target.value) : null)
-                          }
-                          placeholder="0"
-                        />
+                          onChange={(e) => updateOrder(i, 'quantity', e.target.value ? Number(e.target.value) : null)}
+                          placeholder="0" />
                       </td>
-
                       <td style={S.td}>
-                        <input
-                          style={S.tableInput(!editable)}
-                          disabled={!editable}
+                        <input style={S.tableInput(!editable)} disabled={!editable}
                           value={order.dock_no}
                           onChange={(e) => updateOrder(i, 'dock_no', e.target.value)}
-                          placeholder="D-01"
-                        />
+                          placeholder="D-01" />
                       </td>
-
                       <td style={S.td}>
-                        {/* ✅ checked_by là read-only — tự điền khi tạo row */}
-                        <input
-                          style={S.tableInput(true)}
-                          disabled
+                        <input style={S.tableInput(true)} disabled
                           value={order.checked_by}
-                          title="Auto-filled from your account"
-                        />
+                          title="Auto-filled from your account" />
                       </td>
-
                       {!isApproved && (
                         <td style={S.td}>
-                          <button
-                            style={S.delBtn(editable)}
-                            disabled={!editable}
+                          <button style={S.delBtn(editable)} disabled={!editable}
                             onClick={() => editable && deleteOrder(i)}
-                            title={editable ? 'Delete' : 'Only the creator can delete this row'}
-                          >
+                            title={editable ? 'Delete' : 'Only the creator can delete'}>
                             Del
                           </button>
                         </td>
@@ -930,39 +964,25 @@ export default function TruckFormPage() {
                     </tr>
                   )
                 })}
-
-                {(form.orders ?? []).length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={isApproved ? 4 : 5}
-                      style={{ ...S.td, textAlign: 'center', color: '#1e2533', fontSize: 12, padding: 20 }}
-                    >
-                      No orders
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
-
           {!isApproved && (
-            <button style={S.addRowBtn} onClick={addOrder}>
-              + Add Order
-            </button>
+            <button style={S.addRowBtn} onClick={addOrder}>+ Add Order</button>
           )}
         </div>
       </div>
 
-      {/* Checklist */}
+      {/* ── Checklist ── */}
       <div style={S.section}>
-        <div style={S.sectionHead}>Checklist</div>
+        <SectionHead label="Checklist" />
         <div style={S.tableWrapper}>
-          <table style={{ ...S.table, minWidth: 340 }}>
+          <table style={{ ...S.table, minWidth: 320 }}>
             <thead>
               <tr>
                 <th style={{ ...S.th, paddingLeft: 14 }}>Item</th>
-                <th style={{ ...S.th, width: 56, textAlign: 'center' as const }}>Pass</th>
-                <th style={{ ...S.th, width: 56, textAlign: 'center' as const }}>Fail</th>
+                <th style={{ ...S.th, width: 58, textAlign: 'center' as const }}>Pass</th>
+                <th style={{ ...S.th, width: 58, textAlign: 'center' as const }}>Fail</th>
               </tr>
             </thead>
             <tbody>
@@ -971,24 +991,20 @@ export default function TruckFormPage() {
                 const isDisabled = isApproved || isSaving
                 return (
                   <tr key={item.id}>
-                    <td style={{ ...S.td, paddingLeft: 14, fontSize: 12, color: '#a0aec0', lineHeight: 1.4 }}>
+                    <td style={{ ...S.td, ...S.checklistLabel }}>
                       {item.label_vi || item.label_en}
                     </td>
                     <td style={{ ...S.td, textAlign: 'center' as const }}>
-                      <button
-                        disabled={isDisabled}
+                      <button disabled={isDisabled}
                         onClick={() => updateItem(item.id, 'pass')}
-                        style={S.passBtn(item.status === 'pass', isDisabled)}
-                      >
+                        style={S.passBtn(item.status === 'pass', isDisabled)}>
                         {isSaving && item.status === 'pass' ? '…' : '✓'}
                       </button>
                     </td>
                     <td style={{ ...S.td, textAlign: 'center' as const }}>
-                      <button
-                        disabled={isDisabled}
+                      <button disabled={isDisabled}
                         onClick={() => updateItem(item.id, 'fail')}
-                        style={S.failBtn(item.status === 'fail', isDisabled)}
-                      >
+                        style={S.failBtn(item.status === 'fail', isDisabled)}>
                         {isSaving && item.status === 'fail' ? '…' : '✕'}
                       </button>
                     </td>
@@ -1000,13 +1016,15 @@ export default function TruckFormPage() {
         </div>
       </div>
 
-      {/* Signatures */}
+      {/* ── Signatures ── */}
       <div style={S.section}>
-        <div style={S.sectionHead}>Signatures</div>
+        <SectionHead label="Signatures" />
         <div style={S.sectionBody}>
           <div style={S.signaturesRow}>
             {ALL_SIGNATURE_ROLES.map((role) => {
               const isRequired = (REQUIRED_ROLES as readonly string[]).includes(role)
+              const hasSig     = !!form.signatures?.[role]?.signature_url
+              const canSign    = !isApproved && userRole === role
               return (
                 <div key={role} style={S.signatureCard(isRequired)}>
                   <div style={S.signatureRole}>{role}</div>
@@ -1015,27 +1033,15 @@ export default function TruckFormPage() {
                   </div>
                   <SignaturePad
                     label={`Sign as ${role}`}
-                    disabled={isApproved || userRole !== role}
+                    disabled={!canSign}
                     existingSignature={form.signatures?.[role]?.signature_url ?? null}
                     onSave={(url) => saveSignature(role, url)}
                   />
-                  {userRole === role &&
-                    form.signatures?.[role]?.signature_url &&!isApproved && (
-                      <button
-                        onClick={() => clearSignature(role)}
-                        style={{
-                          marginTop: 6,
-                          fontSize: 10,
-                          border: '1px solid #742a2a',
-                          color: '#fc8181',
-                          background: 'transparent',
-                          padding: '4px 8px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Clear
-                      </button>
-                    )}
+                  {canSign && hasSig && (
+                    <button style={S.clearSigBtn} onClick={() => clearSignature(role)}>
+                      Clear
+                    </button>
+                  )}
                 </div>
               )
             })}
@@ -1043,7 +1049,7 @@ export default function TruckFormPage() {
         </div>
       </div>
 
-      {/* QR Scanner modal */}
+      {/* ── QR Scanner modal ── */}
       {scanningRow !== null && (
         <QRScanner
           onScan={handleScan}
@@ -1057,22 +1063,38 @@ export default function TruckFormPage() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function Field({
-  label,
-  disabled,
-  children,
-}: {
+function SectionHead({ label }: { label: string }) {
+  return (
+    <div style={{
+      padding: '9px 16px',
+      background: C.bg2,
+      borderBottom: `1px solid ${C.border}`,
+      fontSize: 10,
+      letterSpacing: '0.2em',
+      textTransform: 'uppercase' as const,
+      color: C.textSec,
+      fontWeight: 700,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.gold, flexShrink: 0, display: 'inline-block' }} />
+      {label}
+    </div>
+  )
+}
+
+function Field({ label, disabled, children }: {
   label: string
   disabled: boolean
   children: React.ReactNode
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0 }}>
       <label style={{
-        fontSize: 9,
-        letterSpacing: '0.14em',
+        fontSize: 9, letterSpacing: '0.14em',
         textTransform: 'uppercase' as const,
-        color: disabled ? '#4a5568' : '#a0aec0',
+        color: disabled ? C.textTer : C.textSec,
         fontWeight: 700,
       }}>
         {label}
