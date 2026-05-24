@@ -53,6 +53,7 @@ const REQUIRED_ROLES      = ['driver', 'warehouse', 'approver'] as const
 const OPTIONAL_ROLES      = ['security'] as const
 const ALL_SIGNATURE_ROLES = [...REQUIRED_ROLES, ...OPTIONAL_ROLES] as const
 type SignatureRole = (typeof ALL_SIGNATURE_ROLES)[number]
+const userRole = (session?.user as any)?.role
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -714,9 +715,12 @@ export default function TruckFormPage() {
           )}
           <button
             onClick={approve}
-            disabled={isApproved || dirty}
+            disabled={isApproved || dirty || userRole !== 'supervisor'}
             style={S.approveBtn(isApproved || dirty)}
-            title={dirty ? 'Save first' : ''}
+            title={userRole !== 'supervisor'
+              ? 'Only supervisor can approve'
+              :dirty ? 'Save first' : ''
+            }
           >
             {isApproved ? '✓ Approved' : 'Approve'}
           </button>
