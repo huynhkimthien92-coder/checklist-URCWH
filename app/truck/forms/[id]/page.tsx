@@ -53,7 +53,7 @@ const REQUIRED_ROLES      = ['driver', 'warehouse', 'approver'] as const
 const OPTIONAL_ROLES      = ['security'] as const
 const ALL_SIGNATURE_ROLES = [...REQUIRED_ROLES, ...OPTIONAL_ROLES] as const
 type SignatureRole = (typeof ALL_SIGNATURE_ROLES)[number]
-const userRole = (session?.user as any)?.role
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -464,6 +464,7 @@ export default function TruckFormPage() {
   const params              = useParams()
   const id                  = params?.id as string
   const { data: session }   = useSession()
+  const userRole = (session?.user as any)?.role
   const currentUserId       = (session?.user as any)?.id   as string | undefined
   const currentUserName     = session?.user?.name          ?? 'Unknown'
 
