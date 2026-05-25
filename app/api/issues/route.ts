@@ -7,8 +7,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { createServiceClient } from '@/lib/supabase'
+import { SupabaseClient } from '@supabase/supabase-js'
 
-async function getPermissions(supabase, userId: string) {
+async function getPermissions(supabase : SupabaseClient , userId: string) {
   const { data } = await supabase
     .from('issue_permissions')
     .select('*')
