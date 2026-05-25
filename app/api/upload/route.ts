@@ -21,6 +21,13 @@ export async function POST(req: NextRequest) {
   const day         = formData.get('day') as string
 
   if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 })
+  if (!file.type.startsWith('image/')) {
+    return NextResponse.json(
+      { error: 'Only image files are allowed' },
+      { status: 400 }
+    )
+  }
+
 
   try {
     const arrayBuffer = await file.arrayBuffer()
