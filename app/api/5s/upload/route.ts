@@ -31,6 +31,13 @@ export async function POST(req: NextRequest) {
   if (!file) {
     return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
   }
+  if (!file.type.startsWith('image/')) {
+    return NextResponse.json(
+      { error: 'Only image files are allowed' },
+      { status: 400 }
+    )
+  }
+
 
   if (!issueId) {
     return NextResponse.json({ error: 'Missing issueId' }, { status: 400 })
