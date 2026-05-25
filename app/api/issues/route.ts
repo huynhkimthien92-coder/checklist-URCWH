@@ -8,10 +8,36 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { createServiceClient } from '@/lib/supabase'
 
-export async function GET() {
+async function getPermissions(supabase, userId: string) {
+  const { data } = await supabase
+    .from('issue_permissions')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
 
+  return data
+}
+
+export async function GET() {
+  const session = await getServerSession(authOptions)
+
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const userRole = (session.user as any)?.role
   const supabase = createServiceClient()
 
+  // ✅ chỉ check permission nếu KHÔNG phải admin
+  if (userRole !== 'admin') {
+    const perm = await getPermissions(supabase, session.user.id)
+
+    if (!perm?.can_view) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+  }
+
+  // ✅ chạy query cho ALL user (kể cả admin)
   const { data, error } = await supabase
     .from('issues')
     .select('*')
@@ -24,17 +50,29 @@ export async function GET() {
   return NextResponse.json(data)
 }
 
-export async function POST(req: NextRequest) {
 
+export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
+
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const userRole = (session.user as any)?.role
+  const supabase = createServiceClient()
+
+  // ✅ CHỈ CHECK PERMISSION nếu KHÔNG phải admin
+  if (userRole !== 'admin') {
+    const perm = await getPermissions(supabase, session.user.id)
+
+    if (!perm?.can_create) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
   }
 
   const body = await req.json()
 
   const {
-    id,
     title,
     description,
     image_before,
@@ -52,12 +90,9 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const supabase = createServiceClient()
-
   const { data, error } = await supabase
     .from('issues')
     .insert({
-      id,
       title,
       description,
       image_before,
