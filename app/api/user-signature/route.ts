@@ -1,6 +1,7 @@
 /**
  * app/api/user-signature/route.ts
  *
+ *
  * GET    → trả về chữ ký cá nhân đã khai báo của user đang đăng nhập.
  * DELETE → xoá chữ ký đã khai báo (để khai báo lại từ đầu).
  */
