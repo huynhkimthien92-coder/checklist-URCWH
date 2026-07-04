@@ -1083,6 +1083,9 @@ export default function TruckFormPage() {
                           label={`Ký — ${role}`}
                           existingSignature={null}
                           disabled={false}
+                          // Driver luôn phải tự vẽ tay; security/warehouse/approver
+                          // được phép dùng chữ ký cá nhân đã khai báo.
+                          allowUseSavedSignature={role !== 'driver'}
                           onSave={(url) => saveSignature(role, url)}
                         />
                       </div>
