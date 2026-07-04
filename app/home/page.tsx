@@ -48,6 +48,7 @@ export default function HomePage() {
   const [pending, setPending] = useState(0)
   const [openMenu, setOpenMenu] = useState(false)
   const [showSignature, setShowSignature] = useState(false)
+  const [mySignatureUrl, setMySignatureUrl] = useState<string | null>(null)
 
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -64,6 +65,26 @@ export default function HomePage() {
   })
 
   const role = session?.user?.role
+
+  // ===== LẤY CHỮ KÝ CÁ NHÂN ĐÃ KHAI BÁO =====
+  useEffect(() => {
+    if (status !== 'authenticated') return
+
+    let cancelled = false
+
+    fetch('/api/user-signature')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (!cancelled) setMySignatureUrl(data?.url || null)
+      })
+      .catch(() => {
+        if (!cancelled) setMySignatureUrl(null)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [status])
 
   // ===== CLICK OUTSIDE CLOSE DROPDOWN =====
   useEffect(() => {
@@ -186,16 +207,15 @@ export default function HomePage() {
           {openMenu && (
             <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg overflow-hidden text-sm z-50 animate-fade-in">
 
-              {/* <button
+              <button
                 onClick={() => {
                   setShowSignature(true)
                   setOpenMenu(false)
                 }}
                 className="w-full text-left px-4 py-2 hover:bg-slate-100"
               >
-                ✍️ Cập nhật chữ ký
+                ✍️ {mySignatureUrl ? 'Cập nhật chữ ký' : 'Khai báo chữ ký'}
               </button>
-              */}
 
               <button
                 onClick={() =>{
@@ -260,13 +280,19 @@ export default function HomePage() {
 
       </main>
 
-      {/* ===== MODAL SIGNATURE ===== */}
+      {/* ===== MODAL SIGNATURE (khai báo chữ ký cá nhân) ===== */}
       {showSignature && (
         <SignaturePad
-          label="Cập nhật chữ ký"
+          label={mySignatureUrl ? 'Cập nhật chữ ký' : 'Khai báo chữ ký'}
           autoOpen
-          onSave={() => {
-            alert('✅ Đã cập nhật chữ ký')
+          existingSignature={null}
+          saveAsProfile
+          allowUseSavedSignature={false}
+          onSave={(url) => {
+            if (url) {
+              setMySignatureUrl(url)
+              alert('✅ Đã lưu chữ ký cá nhân. Từ giờ bạn có thể dùng lại khi ký checklist.')
+            }
             setShowSignature(false)
           }}
         />
